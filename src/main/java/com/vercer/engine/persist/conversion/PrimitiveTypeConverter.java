@@ -8,7 +8,7 @@ import java.util.Set;
 
 import com.vercer.engine.persist.util.generic.GenericTypeReflector;
 
-public class DefaultTypeConverters extends TypeConverters
+public class PrimitiveTypeConverter implements TypeConverter
 {
 	private static final Map<Class<?>, Class<?>> primitives = new HashMap<Class<?>, Class<?>>();
 	private static final Set<Class<?>> wrappers = new HashSet<Class<?>>();
@@ -27,24 +27,11 @@ public class DefaultTypeConverters extends TypeConverters
 		wrappers.addAll(primitives.values());
 	}
 
-	public DefaultTypeConverters()
-	{
-		register(new BlobToSerializable());
-		register(new SerializableToBlob());
-		register(new TextToString());
-		register(new StringToText());
-	}
 
 	@SuppressWarnings("unchecked")
-	@Override
 	public <T> T convert(Object source, Type type)
 	{
-		if (source.getClass().equals(type))
-		{
-			return (T) source;
-		}
-
-		// if we have a primitive wrapper or primitive get the wrapper
+		// if we have a primitive or wrapper get the wrapper
 		Class<?> erased = GenericTypeReflector.erase(type);
 		Class<?> wrapper = null;
 		if (erased.isPrimitive())
@@ -63,8 +50,18 @@ public class DefaultTypeConverters extends TypeConverters
 			wrapper = erased;
 		}
 
-		// we have a primitive wrapper so convert directly
-		if (wrapper != null)
+		// convert any primitives to string
+		if ((primitives.containsKey(source.getClass()) || wrappers.contains(source.getClass())) && type == String.class)
+		{
+			return (T) source.toString();
+		}
+
+		// we need a primitive wrapper so convert directly
+		if (wrapper == null)
+		{
+			return null;
+		}
+		else
 		{
 			// please tell me if you know a better way to do this!
 			if (wrapper == Integer.class)
@@ -232,10 +229,6 @@ public class DefaultTypeConverters extends TypeConverters
 
 			throw new IllegalArgumentException("Could not convert from " + source + " to wrapper " + wrapper);
 		}
-		else
-		{
-			// use the registered converters
-			return super.convert(source, type);
-		}
 	}
+
 }

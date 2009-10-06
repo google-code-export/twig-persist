@@ -1,13 +1,12 @@
 package com.vercer.engine.persist.translator;
 
 import java.lang.reflect.Type;
-import java.util.Collections;
 import java.util.Set;
 
 import com.vercer.engine.persist.Path;
 import com.vercer.engine.persist.Property;
 import com.vercer.engine.persist.PropertyTranslator;
-import com.vercer.engine.persist.util.SimpleProperty;
+import com.vercer.engine.persist.util.SinglePropertySet;
 import com.vercer.util.reference.ObjectReference;
 import com.vercer.util.reference.ReadOnlyObjectReference;
 
@@ -34,8 +33,7 @@ public class DelayedTranslator extends DecoratingTranslator
 				return properties.iterator().next().getValue();
 			}
 		};
-		Property property = new SimpleProperty(path, reference, indexed);
-		return Collections.singleton(property);
+		return new SinglePropertySet(path, reference, indexed);
 	}
 
 }

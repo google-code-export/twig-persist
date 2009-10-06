@@ -6,9 +6,13 @@ public interface KeyCache
 {
 	void clearKeyCache();
 
-	Key evictEntity(Object reference);
+	Key evictEntity(Object entity);
 
 	Object evictKey(Key key);
-	
-	void cache(Key key, Object instance);
+
+	void cache(Key key, Object entity);
+
+	<T> T getCachedEntity(Key key);
+
+	Key getCachedKey(Object entity);
 }

@@ -5,7 +5,7 @@ import com.google.appengine.tools.development.ApiProxyLocalImpl;
 import com.google.apphosting.api.ApiProxy;
 import com.vercer.engine.LocalServiceTestCase;
 
-public class LocalDatastoreTestCase extends LocalServiceTestCase {
+public abstract class LocalDatastoreTestCase extends LocalServiceTestCase {
 
     @Override
     public void setUp() throws Exception {

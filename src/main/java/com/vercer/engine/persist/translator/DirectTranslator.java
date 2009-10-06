@@ -1,13 +1,13 @@
 package com.vercer.engine.persist.translator;
 
 import java.lang.reflect.Type;
-import java.util.Collections;
 import java.util.Set;
 
 import com.vercer.engine.persist.Path;
 import com.vercer.engine.persist.Property;
 import com.vercer.engine.persist.PropertyTranslator;
-import com.vercer.engine.persist.util.SimpleProperty;
+import com.vercer.engine.persist.util.PropertySets;
+import com.vercer.engine.persist.util.SinglePropertySet;
 
 public class DirectTranslator implements PropertyTranslator
 {
@@ -15,15 +15,7 @@ public class DirectTranslator implements PropertyTranslator
 	{
 		if (isDirectType(type))
 		{
-			Property property = properties.iterator().next();
-			if (property == null)
-			{
-				return null;
-			}
-			else
-			{
-				return property.getValue();
-			}
+			return PropertySets.firstValue(properties);
 		}
 		else
 		{
@@ -40,7 +32,7 @@ public class DirectTranslator implements PropertyTranslator
 	{
 		if (isDirectType(object.getClass()))
 		{
-			return Collections.singleton((Property) new SimpleProperty(path, object, indexed));
+			return new SinglePropertySet(path, object, indexed);
 		}
 		else
 		{

@@ -1,42 +1,52 @@
 package com.vercer.engine.persist.translator;
 
 import java.lang.reflect.Type;
+import java.util.HashSet;
 import java.util.Set;
 
+import com.google.appengine.repackaged.com.google.common.base.Predicates;
+import com.google.appengine.repackaged.com.google.common.collect.Sets;
 import com.vercer.engine.persist.Path;
 import com.vercer.engine.persist.Property;
 import com.vercer.engine.persist.PropertyTranslator;
+import com.vercer.engine.persist.util.PathPrefixPredicate;
 import com.vercer.engine.persist.util.SimpleProperty;
 import com.vercer.util.collections.AppendingSet;
 
 public class PolymorphicTranslator extends DecoratingTranslator
 {
-	private static final String CLASS_NAME = "$class";
+	private static final String CLASS_NAME = "class";
 
 	public PolymorphicTranslator(PropertyTranslator chained)
 	{
 		super(chained);
 	}
 
-	public Object propertiesToTypesafe(Set<Property> properties, Path prefix, Type type)
+	public Object propertiesToTypesafe(Set<Property> properties, final Path prefix, Type type)
 	{
-		if (properties instanceof AppendingSet<?>)
+		String typeName = null;
+		Path typeNamePath = new Path.Builder(prefix).meta(CLASS_NAME).build();
+		for (Property property : properties)
 		{
-			AppendingSet<Property> appending = (AppendingSet<Property>) properties;
-			String name = (String) appending.getItem().getValue();
-			try
+			if (property.getPath().equals(typeNamePath))
 			{
-				Class<?> clazz = Class.forName(name);
-				return chained.propertiesToTypesafe(properties, prefix, clazz);
-			}
-			catch (ClassNotFoundException e)
-			{
-				throw new IllegalStateException(e);
+				typeName = (String) property.getValue();
+				break;
 			}
 		}
-		else
+
+		// filter out the class name
+		Set<Property> filtered = Sets.filter(properties,
+				Predicates.not(new PathPrefixPredicate(typeNamePath)));
+		filtered = new HashSet<Property>(filtered);
+		try
 		{
-			throw new IllegalStateException("Unexpected set type");
+			Class<?> clazz = Class.forName(typeName);
+			return chained.propertiesToTypesafe(filtered, prefix, clazz);
+		}
+		catch (ClassNotFoundException e)
+		{
+			throw new IllegalStateException(e);
 		}
 	}
 //
@@ -64,10 +74,11 @@ public class PolymorphicTranslator extends DecoratingTranslator
 	public Set<Property> typesafeToProperties(Object object, Path prefix, boolean indexed)
 	{
 		Set<Property> properties = chained.typesafeToProperties(object, prefix, indexed);
-		String className = object.getClass().getCanonicalName();
-		Path classNamePath = new Path.Builder(prefix).field(CLASS_NAME).build();
+
+		String className = object.getClass().getName();
+		Path classNamePath = new Path.Builder(prefix).meta(CLASS_NAME).build();
 		Property property = new SimpleProperty(classNamePath, className, true);
-		
+
 		return new AppendingSet<Property>(property, properties);
 	}
 

@@ -15,6 +15,11 @@ class Band extends ReflectiveObject
 {
 	enum HairStyle { LONG_LIKE_A_GIRL, UNKEMPT_FLOPPY, NAVY_SHORT, BALD };
 
+	public Band()
+	{
+		super(true);
+	}
+
 	@Key
 	String name;
 	Locale locale;

@@ -12,6 +12,11 @@ import com.vercer.engine.persist.annotation.Entity.Relationship;
 
 class Album extends ReflectiveObject
 {
+	public Album()
+	{
+		super(true);
+	}
+
 	@Key
 	String name;
 	String label;

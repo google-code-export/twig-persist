@@ -8,7 +8,7 @@ import com.vercer.engine.persist.Path;
 import com.vercer.engine.persist.Property;
 import com.vercer.engine.persist.PropertyTranslator;
 
-public abstract class SpecificInstanceTranslator implements PropertyTranslator
+public abstract class InstanceTranslator implements PropertyTranslator
 {
 	public Object propertiesToTypesafe(Set<Property> properties, Path prefix, Type type)
 	{

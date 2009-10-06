@@ -1,0 +1,3 @@
+syntax: glob
+target
+.DS_Store

@@ -4,52 +4,57 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.Set;
-import java.util.logging.Logger;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
-import com.vercer.engine.persist.conversion.TypeConverters;
-import com.vercer.engine.persist.strategy.NamingStrategy;
+import com.vercer.engine.persist.conversion.TypeConverter;
+import com.vercer.engine.persist.strategy.FieldTypeStrategy;
 import com.vercer.engine.persist.strategy.RelationshipStrategy;
 import com.vercer.engine.persist.strategy.StorageStrategy;
 import com.vercer.engine.persist.translator.ChainedTranslator;
-import com.vercer.engine.persist.translator.CollectionTranslator;
-import com.vercer.engine.persist.translator.CommonTypesTranslator;
+import com.vercer.engine.persist.translator.CoreTypesTranslator;
 import com.vercer.engine.persist.translator.DecoratingTranslator;
-import com.vercer.engine.persist.translator.DelayedTranslator;
-import com.vercer.engine.persist.translator.EntityTranslator;
 import com.vercer.engine.persist.translator.EnumTranslator;
-import com.vercer.engine.persist.translator.KeyCachingTranslator;
+import com.vercer.engine.persist.translator.ListTranslator;
 import com.vercer.engine.persist.translator.NativeDirectTranslator;
 import com.vercer.engine.persist.translator.ObjectFieldTranslator;
-import com.vercer.engine.persist.util.SimpleProperty;
-import com.vercer.util.reference.ObjectReference;
+import com.vercer.engine.persist.translator.PolymorphicTranslator;
+import com.vercer.engine.persist.util.PropertySets;
+import com.vercer.engine.persist.util.SimpleKeyCache;
+import com.vercer.engine.persist.util.SinglePropertySet;
 import com.vercer.util.reference.ReadOnlyObjectReference;
-import com.vercer.util.reference.SimpleObjectReference;
 
-public class StrategyTypesafeSession extends TranslatorTypesafeSession implements
-		CachingTypesafeSession
+public class StrategyTypesafeSession extends TranslatorTypesafeDatastore implements TypesafeSession
 {
-	private final NamingStrategy naming;
-	private static final Logger LOG = Logger.getLogger(StrategyTypesafeSession.class.getCanonicalName());
+	final FieldTypeStrategy naming;
+//	private static final Logger LOG = Logger.getLogger(StrategyTypesafeSession.class.getName());
 
 	// state fields
 	private KeySpecification writeKeySpec;
 	private Key readKey;
 
 	protected final PropertyTranslator componentTranslator;
+	protected final PropertyTranslator polyMorphicComponentTranslator;
 	protected final PropertyTranslator parentTranslator;
 	protected final PropertyTranslator independantTranslator;
 	protected final PropertyTranslator keyFieldTranslator;
 	protected final PropertyTranslator childTranslator;
 	protected final PropertyTranslator valueTranslator;
 	protected final PropertyTranslator defaultTranslator;
-	protected final KeyCachingTranslator keyCachingTranslator;
+	protected final SimpleKeyCache keyCache;
 
-	public StrategyTypesafeSession(DatastoreService datastore,
-			final RelationshipStrategy relationships, final StorageStrategy storage,
-			final NamingStrategy fields, final TypeConverters converters)
+	/**
+	 * Flag that indicates we are associating instances with this session so do not store them
+	 */
+	private boolean associating;
+
+	public StrategyTypesafeSession(
+			DatastoreService datastore,
+			final RelationshipStrategy relationships,
+			final StorageStrategy storage,
+			final FieldTypeStrategy fields,
+			final TypeConverter converters)
 	{
 		// use the protected constructor so we can configure the translator
 		super(datastore);
@@ -60,7 +65,6 @@ public class StrategyTypesafeSession extends TranslatorTypesafeSession implement
 		// translators
 		PropertyTranslator translator = new ObjectFieldTranslator(converters)
 		{
-
 			@Override
 			protected boolean indexed(Field field)
 			{
@@ -76,11 +80,11 @@ public class StrategyTypesafeSession extends TranslatorTypesafeSession implement
 			@Override
 			protected Type typeFromField(Field field)
 			{
-				return storage.typeOf(field);
+				return fields.typeOf(field);
 			}
 
 			@Override
-			protected String fieldName(Field field)
+			protected String fieldToPartName(Field field)
 			{
 				return fields.name(field);
 			}
@@ -109,7 +113,14 @@ public class StrategyTypesafeSession extends TranslatorTypesafeSession implement
 				}
 				else if (storage.component(field))
 				{
-					return componentTranslator;
+					if (storage.polyMorphic(field))
+					{
+						return polyMorphicComponentTranslator;
+					}
+					else
+					{
+						return componentTranslator;
+					}
 				}
 				else
 				{
@@ -117,11 +128,21 @@ public class StrategyTypesafeSession extends TranslatorTypesafeSession implement
 				}
 			}
 
+
 			@Override
-			protected void onInstanceCreated(Object instance)
+			// TODO remove this when using ObjectRefernece<Object> instead
+			protected Object createInstance(Class<?> clazz)
 			{
+				Object instance = super.createInstance(clazz);
+
 				// need to cache the instance immediately so children can ref it
-				keyCachingTranslator.cache(readKey, instance);
+				if (keyCache.getCachedEntity(readKey) == null)
+				{
+					// only cache first time - not for embedded components
+					keyCache.cache(readKey, instance);
+				}
+
+				return instance;
 			}
 
 		};
@@ -129,48 +150,46 @@ public class StrategyTypesafeSession extends TranslatorTypesafeSession implement
 		valueTranslator = createValueTranslator();
 
 		// the last option is to create a new entity and reference it by a key
-		keyCachingTranslator = new KeyCachingTranslator(new EntityTranslator(this));
+		keyCache = new SimpleKeyCache();
 
-		parentTranslator = new ParentEntityTranslator(keyCachingTranslator);
-		independantTranslator = new CollectionTranslator(new UnrelatedEntityTranslator(keyCachingTranslator));
+		parentTranslator = new ParentEntityTranslator();
+		independantTranslator = new ListTranslator(new IndependantEntityTranslator());
 		keyFieldTranslator = new KeyFieldTranslator(valueTranslator, converters);
-		childTranslator = new CollectionTranslator(new DelayedTranslator(keyCachingTranslator));
-		componentTranslator = new CollectionTranslator(translator);
+		childTranslator = new ListTranslator(new ChildEntityTranslator());
+		componentTranslator = new ListTranslator(translator);
+		polyMorphicComponentTranslator = new ListTranslator(new PolymorphicTranslator(translator));
 		defaultTranslator = createDefaultTranslator();
 
 		setPropertyTranslator(translator);
 	}
 
-	protected ChainedTranslator createDefaultTranslator()
+	protected PropertyTranslator createDefaultTranslator()
 	{
-		return new ChainedTranslator(valueTranslator, independantTranslator);
+		return new ListTranslator(new ChainedTranslator(valueTranslator, independantTranslator));
 	}
 
 	protected ChainedTranslator createValueTranslator()
 	{
 		ChainedTranslator result = new ChainedTranslator();
 		result.append(new NativeDirectTranslator());
-		result.append(new CommonTypesTranslator());
+		result.append(new CoreTypesTranslator());
 		result.append(new EnumTranslator());
 
 		return result;
 	}
 
 	@Override
-	public Object encode(Object object)
+	public final Object encode(Object object)
 	{
-		// the main translator will <b>always</b> try to read fields first so
-		// must use value translator
+		// the main translator will always try to read fields first so must use value translator
 		Set<Property> properties = defaultTranslator.typesafeToProperties(object, Path.EMPTY_PATH, true);
 		return properties.iterator().next().getValue();
 	}
 
 	@Override
-	protected String typeToKind(Type type)
+	public String typeToKind(Type type)
 	{
-		String kind = naming.typeToKind(type);
-		writeKeySpec.setKind(kind);
-		return kind;
+		return naming.typeToKind(type);
 	}
 
 	@Override
@@ -180,14 +199,14 @@ public class StrategyTypesafeSession extends TranslatorTypesafeSession implement
 	}
 
 	@Override
-	protected void onBeforeSave(Object instance)
+	protected void onBeforeStore(Object instance)
 	{
-		KeySpecification keySpec = new KeySpecification();
+		if (keyCache.getCachedKey(instance) != null)
+		{
+			throw new IllegalStateException("Cannot store same instance twice: " + instance);
+		}
 
-		// TODO this should use a ref to teh cache and maybe use
-		// a different way to know we are a child
-		// perhaps child translator should set parent key ref
-		// which would mean writeKeySpec must already exist... hmmmmm
+		KeySpecification keySpec = new KeySpecification();
 
 		// an existing write key spec indicates that we are a child
 		if (writeKeySpec != null)
@@ -195,35 +214,54 @@ public class StrategyTypesafeSession extends TranslatorTypesafeSession implement
 			keySpec.setParentKeyReference(writeKeySpec.toObjectReference());
 		}
 
-		keyCachingTranslator.cacheKeyReferenceForInstance(instance, keySpec.toObjectReference());
+		keyCache.cacheKeyReferenceForInstance(instance, keySpec.toObjectReference());
 
 		writeKeySpec = keySpec;
 	}
 
 	@Override
-	protected void onAfterStore(Object instance, Key key)
+	protected void onAfterStore(Object instance, Entity entity)
 	{
 		writeKeySpec = null;
+		keyCache.cache(entity.getKey(), instance);
 	}
 
 	@Override
-	protected void onBeforeRestore(Entity entity)
+	@SuppressWarnings("unchecked")
+	public <T> T toTypesafe(Entity entity)
 	{
-		readKey = entity.getKey();
+		// cast needed to avoid sun generics bug "no unique maximal instance exists..."
+		T typesafe = (T) keyCache.getCachedEntity(entity.getKey());
+		if (typesafe == null)
+		{
+			Key current = readKey;
+			readKey = entity.getKey();
+			// cast needed to avoid sun generics bug "no unique maximal instance exists..."
+			typesafe = (T) super.toTypesafe(entity);
+			readKey = current;
+		}
+
+		return typesafe;
 	}
 
 	@Override
-	protected void onAfterRestore(Entity entity, Object instance)
+	@SuppressWarnings("unchecked")
+	public <T> T load(Key key)
 	{
-		readKey = null;
+		T typesafe = (T) keyCache.getCachedEntity(key);
+		if (typesafe == null)
+		{
+			typesafe = (T) super.load(key);
+		}
+		return typesafe;
 	}
 
 	@Override
 	protected Entity createEntity(KeySpecification specification)
 	{
 		// add any key info we have gathered while writing the fields
-		specification.merge(writeKeySpec);
-		return super.createEntity(specification);
+		writeKeySpec.merge(specification);
+		return super.createEntity(writeKeySpec);
 	}
 
 	protected boolean propertiesIndexedByDefault()
@@ -231,37 +269,47 @@ public class StrategyTypesafeSession extends TranslatorTypesafeSession implement
 		return true;
 	}
 
-	protected void configure(ChainedTranslator chained)
+	public final void disassociate(Object reference)
 	{
+		keyCache.evictEntity(reference);
 	}
 
-	public final void clearKeyCache()
+	public final void associate(Object instance, Key key)
 	{
-		keyCachingTranslator.clearKeyCache();
+		keyCache.cache(key, instance);
 	}
 
-	public final Key evictEntity(Object reference)
+	public final void associate(Object instance)
 	{
-		return keyCachingTranslator.evictEntity(reference);
-	}
-
-	public final Object evictKey(Key key)
-	{
-		return keyCachingTranslator.evictKey(key);
-	}
-
-	public void cache(Key key, Object instance)
-	{
-		keyCachingTranslator.cache(key, instance);
-	}
-
-	protected <T> ObjectReference<T> createStateReference()
-	{
-		return new SimpleObjectReference<T>();
+		// convert the instance so
+		associating = true;
+		store(instance);
+		associating = false;
 	}
 
 	@Override
-	protected RuntimeException exceptionOnTranslateWrite(RuntimeException e, Object instance)
+	protected Key putEntityToDatstore(Entity entity)
+	{
+		if (associating == false)
+		{
+			// actually save the entity
+			return super.putEntityToDatstore(entity);
+		}
+		else
+		{
+			// do not save the entity because we just want the key
+			Key key = entity.getKey();
+			if (!key.isComplete())
+			{
+				// incomplete keys are no good to us
+				throw new IllegalArgumentException("Entity does not have complete key: " + entity);
+			}
+			return key;
+		}
+	}
+
+	@Override
+	protected RuntimeException exceptionOnTranslateWrite(Exception e, Object instance)
 	{
 		String message = "There was a problem translating instance " + instance + "\n";
 		message += "Make sure instances are either Serializable or configured as components or entities.";
@@ -270,41 +318,50 @@ public class StrategyTypesafeSession extends TranslatorTypesafeSession implement
 
 	private final class KeyFieldTranslator extends DecoratingTranslator
 	{
-		private final TypeConverters converters;
+		private final TypeConverter converters;
 
-		private KeyFieldTranslator(PropertyTranslator chained, TypeConverters converters)
+		private KeyFieldTranslator(PropertyTranslator chained, TypeConverter converters)
 		{
 			super(chained);
 			this.converters = converters;
 		}
 
-		public Set<Property> typesafeToProperties(Object keyObject, Path prefix, boolean indexed)
+		public Set<Property> typesafeToProperties(Object instance, Path prefix, boolean indexed)
 		{
-			// the key name is not stored in the fields but only in key
-			// TODO might be able to use long directly also
-			String keyName = converters.convert(keyObject, String.class);
-			writeKeySpec.setName(keyName);
+			// key spec may be null if we are in an update as we already have the key
+			if (writeKeySpec != null)
+			{
+				if (instance != null)
+				{
+					// treat 0 the same as null
+					if (!instance.equals(0))
+					{
+						// the key name is not stored in the fields but only in key
+						String keyName = converters.convert(instance, String.class);
+						writeKeySpec.setName(keyName);
+					}
+				}
+			}
 			return Collections.emptySet();
 		}
 
 		public Object propertiesToTypesafe(Set<Property> properties, Path prefix, Type type)
 		{
+			assert properties.isEmpty();
+
 			// the key value is not stored in the properties but in the key
-			String keyName = readKey.getName();
-			Object keyObject = converters.convert(keyName, type);
+			Object keyValue = readKey.getName();
+			if (keyValue == null)
+			{
+				keyValue = readKey.getId();
+			}
+			Object keyObject = converters.convert(keyValue, type);
 			return keyObject;
 		}
 	}
 
 	private final class ParentEntityTranslator implements PropertyTranslator
 	{
-		private final PropertyTranslator chained;
-
-		private ParentEntityTranslator(PropertyTranslator chained)
-		{
-			this.chained = chained;
-		}
-
 		public Object propertiesToTypesafe(Set<Property> properties, Path prefix, Type type)
 		{
 			// properties are not used as the parent is found by the key
@@ -318,14 +375,10 @@ public class StrategyTypesafeSession extends TranslatorTypesafeSession implement
 				throw new IllegalStateException("No parent for key: " + readKey);
 			}
 
-			Property property = new SimpleProperty(prefix, parentKey, true);
-			properties = Collections.singleton(property);
-
-			// pass the key to normal cache/reading chain
-			return chained.propertiesToTypesafe(properties, prefix, type);
+			return getInstanceFromCacheOrLoad(parentKey);
 		}
 
-		public Set<Property> typesafeToProperties(final Object object, final Path prefix, final boolean indexed)
+		public Set<Property> typesafeToProperties(final Object instance, final Path prefix, final boolean indexed)
 		{
 			// the parent key is not stored as properties but inside the key
 			ReadOnlyObjectReference<Key> keyReference = new ReadOnlyObjectReference<Key>()
@@ -336,15 +389,16 @@ public class StrategyTypesafeSession extends TranslatorTypesafeSession implement
 					KeySpecification current = writeKeySpec;
 					writeKeySpec = null;
 
-					Set<Property> properties = chained.typesafeToProperties(object, prefix, indexed);
+					Key key = getKeyFromCacheOrStore(instance);
+
 					writeKeySpec = current;
 
-					return (Key) properties.iterator().next().getValue();
+					return key;
 				}
 			};
 
 			// an existing parent key ref shows parent is still being stored
-			if (writeKeySpec.getParentKeyReference() == null)
+			if (writeKeySpec != null && writeKeySpec.getParentKeyReference() == null)
 			{
 				// store the parent key inside the current key
 				writeKeySpec.setParentKeyReference(keyReference);
@@ -355,21 +409,51 @@ public class StrategyTypesafeSession extends TranslatorTypesafeSession implement
 		}
 	}
 
-	private final class UnrelatedEntityTranslator extends DecoratingTranslator
+	private final class ChildEntityTranslator implements PropertyTranslator
 	{
-		public UnrelatedEntityTranslator(PropertyTranslator chained)
-		{
-			super(chained);
-		}
-
 		public Object propertiesToTypesafe(Set<Property> properties, Path prefix, Type type)
 		{
-			return chained.propertiesToTypesafe(properties, prefix, type);
+			Key key = PropertySets.firstValue(properties);
+			return getInstanceFromCacheOrLoad(key);
 		}
 
-		public Set<Property> typesafeToProperties(final Object object, final Path path, final boolean indexed)
+		public Set<Property> typesafeToProperties(final Object instance, final Path path, final boolean indexed)
 		{
+			ReadOnlyObjectReference<Key> keyReference = new ReadOnlyObjectReference<Key>()
+			{
+				public Key get()
+				{
+					// clear the current key spec so it is not used as parent
+					KeySpecification current = writeKeySpec;
 
+					Key key = keyCache.getCachedKey(instance);
+					if (key == null)
+					{
+						key = store(instance);
+					}
+
+					// replace it to continue processing potential children
+					writeKeySpec = current;
+
+					return key;
+				}
+			};
+
+			return new SinglePropertySet(path, keyReference, indexed);
+		}
+	}
+
+	private final class IndependantEntityTranslator implements PropertyTranslator
+	{
+		public Object propertiesToTypesafe(Set<Property> properties, Path prefix, Type type)
+		{
+			Key key = PropertySets.firstValue(properties);
+			return getInstanceFromCacheOrLoad(key);
+		}
+
+		public Set<Property> typesafeToProperties(final Object instance, final Path path, final boolean indexed)
+		{
+			assert instance != null;
 			ReadOnlyObjectReference<Key> keyReference = new ReadOnlyObjectReference<Key>()
 			{
 				public Key get()
@@ -378,17 +462,75 @@ public class StrategyTypesafeSession extends TranslatorTypesafeSession implement
 					KeySpecification current = writeKeySpec;
 					writeKeySpec = null;
 
-					Set<Property> properties = chained.typesafeToProperties(object, path, indexed);
+					Key key = getKeyFromCacheOrStore(instance);
 
 					// replace it to continue processing potential children
 					writeKeySpec = current;
 
-					return (Key) properties.iterator().next().getValue();
+					return key;
 				}
 			};
 
-			Property property = new SimpleProperty(path, keyReference, indexed);
-			return Collections.singleton(property);
+			return new SinglePropertySet(path, keyReference, indexed);
 		}
+	}
+
+	public final <T> T find(Class<T> type, Object parent, String name)
+	{
+		return find(type, keyCache.getCachedKey(parent), name);
+	}
+
+	public final <T> Iterable<T> find(Class<T> type, Object parent)
+	{
+		return find(type, keyCache.getCachedKey(parent));
+	}
+
+	public final void update(Object instance)
+	{
+		Key key = keyCache.getCachedKey(instance);
+		if (key == null)
+		{
+			throw new IllegalArgumentException("Can only update entities in the session");
+		}
+		update(instance, key);
+	}
+
+
+	public final void delete(Object instance)
+	{
+		delete(keyCache.getCachedKey(instance));
+	}
+
+	private Object getInstanceFromCacheOrLoad(Key key)
+	{
+		Object instance = keyCache.getCachedEntity(key);
+		if (instance == null)
+		{
+			instance = load(key);
+			assert instance != null;
+		}
+		return instance;
+	}
+
+	private Key getKeyFromCacheOrStore(final Object instance)
+	{
+		Key key = keyCache.getCachedKey(instance);
+		if (key == null)
+		{
+			key = store(instance);
+		}
+		return key;
+	}
+
+	public Key store(Object instance, Object parent)
+	{
+		Key parentKey = keyCache.getCachedKey(parent);
+		return store(instance, parentKey);
+	}
+
+	public Key store(Object instance, Object parent, String name)
+	{
+		Key parentKey = keyCache.getCachedKey(parent);
+		return store(instance, parentKey, name);
 	}
 }

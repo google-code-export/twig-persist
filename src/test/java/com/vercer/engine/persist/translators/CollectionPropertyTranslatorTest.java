@@ -16,8 +16,8 @@ import org.junit.Test;
 import com.vercer.engine.persist.Path;
 import com.vercer.engine.persist.Property;
 import com.vercer.engine.persist.PropertyTranslator;
-import com.vercer.engine.persist.translator.CollectionTranslator;
 import com.vercer.engine.persist.translator.DirectTranslator;
+import com.vercer.engine.persist.translator.ListTranslator;
 import com.vercer.engine.persist.util.SimpleProperty;
 
 public class CollectionPropertyTranslatorTest
@@ -39,7 +39,7 @@ public class CollectionPropertyTranslatorTest
 		// create dummy translator that always returns a single property containing the instance
 		PropertyTranslator chained = new DirectTranslator();
 
-		CollectionTranslator translator = new CollectionTranslator(chained);
+		ListTranslator translator = new ListTranslator(chained);
 		Set<Property> encoded = translator.typesafeToProperties(values, Path.EMPTY_PATH, true);
 
 		// should be a single property with a list of values
@@ -74,11 +74,12 @@ public class CollectionPropertyTranslatorTest
 			}
 		};
 
-		CollectionTranslator translator = new CollectionTranslator(chained);
+		ListTranslator translator = new ListTranslator(chained);
 		Set<Property> encoded = translator.typesafeToProperties(values, Path.EMPTY_PATH, true);
 
-		assertEquals(6, encoded.size());
-		assertEquals(2, encoded.iterator().next().getPath().getParts().size());
+		assertEquals(2, encoded.size());
+		assertEquals(3, ((List<?>) encoded.iterator().next().getValue()).size());
+		assertEquals(1, encoded.iterator().next().getPath().getParts().size());
 
 		Field field = getClass().getDeclaredField("values");
 
@@ -87,7 +88,6 @@ public class CollectionPropertyTranslatorTest
 
 		assertEquals("is", decoded.get(1));
 		assertEquals(3, decoded.size());
-
 	}
 
 }

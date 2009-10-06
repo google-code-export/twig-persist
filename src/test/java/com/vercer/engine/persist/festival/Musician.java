@@ -6,6 +6,7 @@ public class Musician extends ReflectiveObject
 {
 	public Musician(String name)
 	{
+		super(true);
 		this.name = name;
 	}
 

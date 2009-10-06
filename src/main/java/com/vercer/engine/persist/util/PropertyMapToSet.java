@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package com.vercer.engine.persist.util;
 
@@ -12,12 +12,12 @@ import com.vercer.engine.persist.Path;
 import com.vercer.engine.persist.Property;
 
 
-public final class MapToPropertySet extends AbstractSet<Property>
+public final class PropertyMapToSet extends AbstractSet<Property>
 {
 	private final Map<String, Object> properties;
 	private final boolean indexed;
 
-	public MapToPropertySet(Map<String, Object> properties, boolean indexed)
+	public PropertyMapToSet(Map<String, Object> properties, boolean indexed)
 	{
 		this.properties = properties;
 		this.indexed = indexed;
@@ -36,24 +36,8 @@ public final class MapToPropertySet extends AbstractSet<Property>
 
 			public Property next()
 			{
-				final Entry<String, Object> next = iterator.next();
-				return new Property()
-				{
-					public Object getValue()
-					{
-						return next.getValue();
-					}
-					
-					public Path getPath()
-					{
-						return new Path(next.getKey());
-					}
-					
-					public boolean isIndexed()
-					{
-						return indexed;
-					}
-				};
+				Entry<String, Object> next = iterator.next();
+				return new SimpleProperty(new Path(next.getKey()), next.getValue(), indexed);
 			}
 
 			public void remove()

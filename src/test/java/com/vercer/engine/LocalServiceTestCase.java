@@ -10,7 +10,7 @@ import org.junit.Before;
 import com.google.appengine.tools.development.ApiProxyLocalImpl;
 import com.google.apphosting.api.ApiProxy;
 
-public class LocalServiceTestCase
+public abstract class LocalServiceTestCase
 {
 
 	@Before

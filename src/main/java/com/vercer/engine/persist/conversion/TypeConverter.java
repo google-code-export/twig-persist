@@ -1,6 +1,8 @@
 package com.vercer.engine.persist.conversion;
 
-public interface TypeConverter<S, T>
+import java.lang.reflect.Type;
+
+public interface TypeConverter
 {
-	T convert(S source);
+	<T> T convert(Object source, Type type);
 }

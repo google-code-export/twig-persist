@@ -7,12 +7,11 @@ import java.util.List;
 import com.google.appengine.repackaged.com.google.common.collect.AbstractIterator;
 import com.vercer.util.Strings;
 
-public class Path
+public class Path implements Comparable<Path>
 {
-	private final static char Field = '.';
-	private final static char ARRAY_START = '[';
-	private final static char ARRAY_END = ']';
-	private final static char[] SEPERATORS = { Field, ARRAY_START };
+	private final static char FIELD = '.';
+	private final static char TYPE = '$';
+	private final static char[] SEPERATORS = { FIELD, TYPE };
 
 	public static final Path EMPTY_PATH = new Path("");
 
@@ -39,17 +38,16 @@ public class Path
 		{
 			if (builder.length() > 0)
 			{
-				builder.append(Field);
+				builder.append(FIELD);
 			}
 			builder.append(name);
 			return this;
 		}
 
-		public Builder array(int index)
+		public Builder meta(String name)
 		{
-			builder.append(ARRAY_START);
-			builder.append(index);
-			builder.append(ARRAY_END);
+			builder.append(TYPE);
+			builder.append(name);
 			return this;
 		}
 	}
@@ -63,14 +61,14 @@ public class Path
 			this.text = text;
 		}
 
-		public boolean isArray()
-		{
-			return text.charAt(0) == ARRAY_START;
-		}
-
 		public boolean isField()
 		{
-			return text.charAt(0) == Field;
+			return text.charAt(0) == FIELD;
+		}
+
+		public boolean isType()
+		{
+			return text.charAt(0) == FIELD;
 		}
 
 		public boolean isRoot()
@@ -86,7 +84,7 @@ public class Path
 			return true;
 		}
 
-		public String getFieldName()
+		public String getName()
 		{
 			if (isRoot())
 			{
@@ -98,11 +96,6 @@ public class Path
 			}
 		}
 
-		public int getArrayIndex()
-		{
-			assert isArray();
-			return Integer.parseInt(text.substring(1, text.length() - 2));
-		}
 	}
 
 	private final String value;
@@ -119,10 +112,18 @@ public class Path
 			@Override
 			public Part get(int index)
 			{
-				int begin = Strings.nthIndexOf(value, index, SEPERATORS);
-				if (begin > 0)
+				int begin;
+				if (index == 0)
 				{
-					int end = Strings.firstIndexOf(value, begin, SEPERATORS);
+					begin = 0;
+				}
+				else
+				{
+					begin = Strings.nthIndexOf(value, index, SEPERATORS);
+				}
+				if (begin >= 0)
+				{
+					int end = Strings.firstIndexOf(value, begin + 1, SEPERATORS);
 					if (end > 0)
 					{
 						return new Part(value.substring(begin, end));
@@ -141,6 +142,10 @@ public class Path
 			@Override
 			public int size()
 			{
+				if (value.length() == 0)
+				{
+					return 0;
+				}
 				int index = 0;
 				int count = 0;
 				do
@@ -188,7 +193,7 @@ public class Path
 
 	public Path tail()
 	{
-		return new Path(value.substring(value.indexOf(Field) + 1));
+		return new Path(value.substring(value.indexOf(FIELD) + 1));
 	}
 
 	public Part firstPart()
@@ -218,8 +223,8 @@ public class Path
 	public boolean hasPrefix(Path path)
 	{
 		return value.startsWith(path.value)
-			&& value.length() > path.value.length()
-			&& isSeperator(value.charAt(path.value.length()));
+			&& (value.length() == path.value.length() ||
+			isSeperator(value.charAt(path.value.length())));
 	}
 
 	private boolean isSeperator(char c)
@@ -270,6 +275,11 @@ public class Path
 			return false;
 		}
 		return true;
+	}
+
+	public int compareTo(Path o)
+	{
+		return value.compareTo(o.value);
 	}
 
 }

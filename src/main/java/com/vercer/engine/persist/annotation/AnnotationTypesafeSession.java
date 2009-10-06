@@ -2,14 +2,14 @@ package com.vercer.engine.persist.annotation;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.vercer.engine.persist.StrategyTypesafeSession;
-import com.vercer.engine.persist.conversion.DefaultTypeConverters;
-import com.vercer.engine.persist.conversion.TypeConverters;
-import com.vercer.engine.persist.strategy.DefaultNameStrategy;
-import com.vercer.engine.persist.strategy.NamingStrategy;
+import com.vercer.engine.persist.conversion.DefaultTypeConverter;
+import com.vercer.engine.persist.conversion.TypeConverter;
+import com.vercer.engine.persist.strategy.DefaultFieldTypeStrategy;
+import com.vercer.engine.persist.strategy.FieldTypeStrategy;
 
 public class AnnotationTypesafeSession extends StrategyTypesafeSession
 {
-	private static final TypeConverters CONVERTERS = new DefaultTypeConverters();
+	private static final TypeConverter CONVERTERS = new DefaultTypeConverter();
 
 	public AnnotationTypesafeSession(DatastoreService datastore)
 	{
@@ -21,18 +21,18 @@ public class AnnotationTypesafeSession extends StrategyTypesafeSession
 		this(datastore, new AnnotationStrategy(indexed));
 	}
 
-	public AnnotationTypesafeSession(DatastoreService datastore, NamingStrategy names)
+	public AnnotationTypesafeSession(DatastoreService datastore, FieldTypeStrategy fields)
 	{
-		this(datastore, new AnnotationStrategy(true), names);
+		this(datastore, new AnnotationStrategy(true), fields);
 	}
 
-	private AnnotationTypesafeSession(DatastoreService datastore, AnnotationStrategy strategy)
+	protected AnnotationTypesafeSession(DatastoreService datastore, AnnotationStrategy strategy)
 	{
-		super(datastore, strategy, strategy, new DefaultNameStrategy(), CONVERTERS);
+		super(datastore, strategy, strategy, new DefaultFieldTypeStrategy(), CONVERTERS);
 	}
 
-	private AnnotationTypesafeSession(DatastoreService datastore, AnnotationStrategy strategy, NamingStrategy names)
+	protected AnnotationTypesafeSession(DatastoreService datastore, AnnotationStrategy strategy, FieldTypeStrategy names)
 	{
-		super(datastore, strategy, strategy, new DefaultNameStrategy(), CONVERTERS);
+		super(datastore, strategy, strategy, new DefaultFieldTypeStrategy(), CONVERTERS);
 	}
 }

@@ -4,10 +4,10 @@ import java.util.AbstractSet;
 import java.util.Iterator;
 import java.util.Set;
 
+import com.google.appengine.repackaged.com.google.common.base.Predicate;
 import com.google.appengine.repackaged.com.google.common.collect.Iterators;
 import com.vercer.engine.persist.Path;
 import com.vercer.engine.persist.Property;
-import com.vercer.util.collections.IteratorFilter;
 
 public class PrefixFilteringPropertySet extends AbstractSet<Property>
 {
@@ -23,15 +23,14 @@ public class PrefixFilteringPropertySet extends AbstractSet<Property>
 	@Override
 	public Iterator<Property> iterator()
 	{
-		return new IteratorFilter<Property>(properties.iterator())
+		return Iterators.filter(properties.iterator(), new Predicate<Property>()
 		{
-			@Override
-			protected boolean include(Property source)
+			public boolean apply(Property source)
 			{
 				Path path = source.getPath();
 				return path.equals(prefix) || path.hasPrefix(prefix);
 			}
-		};
+		});
 	}
 
 	@Override

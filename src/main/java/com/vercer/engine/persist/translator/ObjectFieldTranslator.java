@@ -4,53 +4,103 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 
+import com.google.appengine.repackaged.com.google.common.collect.Iterators;
+import com.google.appengine.repackaged.com.google.common.collect.PeekingIterator;
 import com.vercer.engine.persist.Path;
 import com.vercer.engine.persist.Property;
 import com.vercer.engine.persist.PropertyTranslator;
-import com.vercer.engine.persist.conversion.TypeConverters;
-import com.vercer.engine.persist.util.PrefixFilteringPropertySet;
+import com.vercer.engine.persist.conversion.TypeConverter;
 import com.vercer.engine.persist.util.SimpleProperty;
 import com.vercer.engine.persist.util.generic.GenericTypeReflector;
+import com.vercer.util.Pair;
 import com.vercer.util.Reflection;
 import com.vercer.util.collections.MergeSet;
 
+/**
+ * @author John Patterson <john@vercer.com>
+ *
+ */
 public abstract class ObjectFieldTranslator implements PropertyTranslator
 {
-	private final TypeConverters converters;
+	private static final Comparator<Field> comparator = new Comparator<Field>()
+	{
+		public int compare(Field o1, Field o2)
+		{
+			return o1.getName().compareTo(o2.getName());
+		}
+	};
+	private final TypeConverter converters;
+	private static Map<Class<?>, List<Field>> classFields = new ConcurrentHashMap<Class<?>, List<Field>>();
+	private static Map<Pair<Type, Class<?>>, Boolean> superTypes = new ConcurrentHashMap<Pair<Type, Class<?>>, Boolean>();
 
-	public ObjectFieldTranslator(TypeConverters converters)
+	public ObjectFieldTranslator(TypeConverter converters)
 	{
 		this.converters = converters;
 	}
 
 	public final Object propertiesToTypesafe(Set<Property> properties, Path path, Type type)
 	{
-			Class<?> clazz = GenericTypeReflector.erase(type);
-			Object instance = createInstance(clazz);
-			onInstanceCreated(instance);
-			activate(properties, clazz, instance, path);
-			return instance;
+		Class<?> clazz = GenericTypeReflector.erase(type);
+		Object instance = createInstance(clazz);
+		activate(properties, instance, path);
+		return instance;
 	}
 
-	protected void onInstanceCreated(Object instance)
+	private void activate(Set<Property> properties, Object instance, Path path)
 	{
-	}
+		// ensure the properties are sorted
+		if (properties instanceof SortedSet<?> == false)
+		{
+			properties = new TreeSet<Property>(properties);
+		}
 
-	private void activate(Set<Property> properties, Class<?> clazz, Object instance, Path path)
-	{
-		List<Field> fields = Reflection.getAccessibleFields(clazz);
+		// both fields and properties are sorted by name
+		List<Field> fields = getSortedFields(instance);
+		PeekingIterator<Property> peeking = Iterators.peekingIterator(properties.iterator());
+		List<Property> fieldProperties = new ArrayList<Property>();  // reusable instance
 		for (Field field : fields)
 		{
-			if (stored(field))
+			if (!Modifier.isTransient(field.getModifiers()) && stored(field))
 			{
-				Object value = memberFromProperties(properties, field, path);
+
+				String name = fieldToPartName(field);
+
+				Path childPath = new Path.Builder(path).field(name).build();
+
+				// get fields starting with part
+				while (peeking.hasNext() && peeking.peek().getPath().hasPrefix(childPath))
+				{
+					fieldProperties.add(peeking.next());
+				}
+
+				Property[] elements = fieldProperties.toArray(new Property[fieldProperties.size()]);
+
+				// TODO should be working the original ASS a little harder with offsets
+				Set<Property> childProperties = new ArraySortedSet<Property>(elements);
+				fieldProperties.clear();  // reuse
+
+				PropertyTranslator translator = translator(field);
+
+				// get the type that we need to store
+				Type type = typeFromField(field);
+
+				// create instance
+				Object value = translator.propertiesToTypesafe(childProperties, childPath, type);
 				if (value != null)
 				{
 					// if the value was converted to another type we may need to convert it back
-					if (!GenericTypeReflector.isSuperType(field.getGenericType(), value.getClass()))
+
+					if (!isSuperType(field.getGenericType(), value.getClass()))
 					{
 						value = converters.convert(value, field.getGenericType());
 					}
@@ -68,16 +118,23 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 		}
 	}
 
-	protected Object memberFromProperties(Set<Property> properties, Field field, Path path)
+	private static boolean isSuperType(Type type, Class<? extends Object> clazz)
 	{
-		String name = fieldName(field);
-		Path childPath = new Path(name);
-		Set<Property> fieldProperties = new PrefixFilteringPropertySet(childPath, properties);
-		PropertyTranslator translator = translator(field);
-		return translator.propertiesToTypesafe(fieldProperties, childPath, typeFromField(field));
+		Pair<Type, Class<?>> key = new Pair<Type, Class<?>>(type, clazz);
+		Boolean superType = superTypes.get(key);
+		if (superType != null)
+		{
+			return superType;
+		}
+		else
+		{
+			boolean result = GenericTypeReflector.isSuperType(type, clazz);
+			superTypes.put(key, result);
+			return result;
+		}
 	}
 
-	protected String fieldName(Field field)
+	protected String fieldToPartName(Field field)
 	{
 		return field.getName();
 	}
@@ -91,15 +148,15 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 	{
 		try
 		{
-		// use no-args constructor
-		Constructor<?> constructor = clazz.getDeclaredConstructor();
+			// use no-args constructor
+			Constructor<?> constructor = clazz.getDeclaredConstructor();
 
-		// allow access to private constructor
-		if (!constructor.isAccessible())
-		{
-			constructor.setAccessible(true);
-		}
-		return constructor.newInstance();
+			// allow access to private constructor
+			if (!constructor.isAccessible())
+			{
+				constructor.setAccessible(true);
+			}
+			return constructor.newInstance();
 		}
 		catch (Exception e)
 		{
@@ -111,7 +168,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 	{
 		try
 		{
-			List<Field> fields = Reflection.getAccessibleFields(object.getClass());
+			List<Field> fields = getSortedFields(object);
 			MergeSet<Property> merged = new MergeSet<Property>(fields.size());
 			for (Field field : fields)
 			{
@@ -132,12 +189,12 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 						continue;
 					}
 
-					if (!GenericTypeReflector.isSuperType(type, value.getClass()))
+					if (!isSuperType(type, value.getClass()))
 					{
 						value = converters.convert(value, type);
 					}
 
-					Path childPath = new Path(fieldName(field));
+					Path childPath = new Path.Builder(path).field(fieldToPartName(field)).build();
 
 					PropertyTranslator translator = translator(field);
 					Set<Property> properties = translator.typesafeToProperties(value, childPath, indexed(field));
@@ -154,15 +211,32 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 		}
 	}
 
+	private List<Field> getSortedFields(Object object)
+	{
+		// fields are cached and stored as a map because reading more common than writing
+		List<Field> fields = classFields.get(object.getClass());
+		if (fields == null)
+		{
+			fields = Reflection.getAccessibleFields(object.getClass());
+
+			// sort the fields by name
+			Collections.sort(fields, comparator);
+
+			// cache because reflection is costly
+			classFields.put(object.getClass(), fields);
+		}
+		return fields;
+	}
+
 	protected boolean isNullStored()
 	{
 		return false;
 	}
 
 	protected abstract boolean indexed(Field field);
+
 	protected abstract boolean stored(Field field);
 
 	protected abstract PropertyTranslator translator(Field field);
-
 
 }

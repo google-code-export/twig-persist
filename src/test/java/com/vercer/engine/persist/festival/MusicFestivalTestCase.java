@@ -22,9 +22,9 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 	public Festival createFestival() throws ParseException
 	{
 		DateFormat dateFormat = new SimpleDateFormat("d MMM yyyy");
-		
+
 		Festival festival = new Festival();
-		
+
 		RockBand ledzep = new RockBand();
 		ledzep.name = "Led Zeppelin";
 		ledzep.locale = Locale.UK;
@@ -50,16 +50,16 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		bonham.name = "John Bonham";
 		bonham.birthday = dateFormat.parse("31 May 1948");
 		ledzep.members.add(bonham);
-		
+
 		Album houses = new Album();
 		houses.name = "Houses of the Holy";
 		houses.released = dateFormat.parse("28 March 1973");
 		houses.label = "Atlantic";
 		houses.rocksTheHouse = true;
 		houses.sold = 18000000;
-		
+
 		ledzep.albums.add(houses);
-		
+
 		houses.tracks = new Album.Track[3];
 		houses.tracks[0] = new Album.Track();
 		houses.tracks[0].title = "The Song Remains the Same";
@@ -79,25 +79,25 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		iv.rocksTheHouse = true;
 		iv.sold = 22000000;
 		iv.band = ledzep;
-		
+
 		ledzep.albums.add(iv);
-		
+
 		festival.performances.add(ledzep);
-		
+
 		RockBand firm = new RockBand();
 		firm.name = "The Firm";
 		firm.hair = HairStyle.BALD;
-		
+
 		firm.members.add(page);
-		
+
 		Musician rogers = new Musician();
 		rogers.name = "Paul Rogers";
 		rogers.birthday = dateFormat.parse("17 December 1949");
-		
+
 		firm.members.add(rogers);
-		
+
 		festival.performances.add(firm);
-		
+
 		DanceBand soulwax = new DanceBand();
 		soulwax.name = "Soulwax";
 		soulwax.locale = new Locale("nl", "be");
@@ -105,7 +105,7 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		soulwax.members.add(new Musician("David Dewaele"));
 		soulwax.hair = Band.HairStyle.UNKEMPT_FLOPPY;
 		soulwax.tabletsConfiscated = 12; // but they are still acting suspiciously
-		
+
 		Album swradio = new Album();
 		swradio.name = "As Heard on Radio Soulwax Pt. 2";
 		swradio.label = "Play It Again Sam";
@@ -114,35 +114,49 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		swradio.sold = 500000;
 		swradio.band = soulwax;
 
-		swradio.tracks = new Album.Track[3];
+		swradio.tracks = new Album.Track[2];
 		swradio.tracks[0] = new Album.Track();
 		swradio.tracks[0].title = "Where's Your Head At";
 		swradio.tracks[0].length = 2.49f;
 		swradio.tracks[1] = new Album.Track();
-		swradio.tracks[1].title = "F**k the Pain Away";
+		swradio.tracks[1].title = "A really long track name that is certainly over 500 chars" +
+				"long expecially because it is repeated again and again and again" +
+				"long expecially because it is repeated again and again and again" +
+				"long expecially because it is repeated again and again and again" +
+				"long expecially because it is repeated again and again and again" +
+				"long expecially because it is repeated again and again and again" +
+				"long expecially because it is repeated again and again and again" +
+				"long expecially because it is repeated again and again and again" +
+				"long expecially because it is repeated again and again and again" +
+				"long expecially because it is repeated again and again and again" +
+				"long expecially because it is repeated again and again and again" +
+				"long expecially because it is repeated again and again and again" +
+				"long expecially because it is repeated again and again and again" +
+				"long expecially because it is repeated again and again and again";
+
 		swradio.tracks[1].length = 1.38f;
-		
+
 		festival.performances.add(soulwax);
-		
+
 		return festival;
 	}
-	
+
 	@Test
 	public void holdFestival() throws ParseException
 	{
 		Festival festival = createFestival();
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 		AnnotationTypesafeSession typesafe = new AnnotationTypesafeSession(datastore);
-		
+
 		Key key = typesafe.store(festival);
-		
+
 		AnnotationTypesafeSession typesafe2 = new AnnotationTypesafeSession(datastore);
-		
+
 		Object reloaded = typesafe2.load(key);
-		
+
 		// they should be different instances from distinct sessions
 		assertNotSame(reloaded, festival);
 		assertEquals(reloaded, festival);
-		
+
 	}
 }

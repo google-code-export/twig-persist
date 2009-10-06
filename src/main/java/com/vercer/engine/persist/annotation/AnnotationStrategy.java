@@ -14,7 +14,7 @@ public class AnnotationStrategy implements RelationshipStrategy, StorageStrategy
 	{
 		this.indexed = indexed;
 	}
-	
+
 	public boolean child(Field field)
 	{
 		Entity annotation = field.getAnnotation(Entity.class);
@@ -22,7 +22,7 @@ public class AnnotationStrategy implements RelationshipStrategy, StorageStrategy
 		{
 			annotation = field.getType().getAnnotation(Entity.class);
 		}
-		
+
 		if (annotation != null)
 		{
 			return annotation.value() == Entity.Relationship.CHILD;
@@ -40,7 +40,7 @@ public class AnnotationStrategy implements RelationshipStrategy, StorageStrategy
 		{
 			annotation = field.getType().getAnnotation(Entity.class);
 		}
-		
+
 		if (annotation != null)
 		{
 			return annotation.value() == Entity.Relationship.PARENT;
@@ -50,10 +50,15 @@ public class AnnotationStrategy implements RelationshipStrategy, StorageStrategy
 			return false;
 		}
 	}
-	
+
 	public boolean component(Field field)
 	{
 		Component annotation = field.getAnnotation(Component.class);
+		if (annotation == null)
+		{
+			annotation = field.getType().getAnnotation(Component.class);
+		}
+
 		if (annotation != null)
 		{
 			return annotation.value();
@@ -76,7 +81,7 @@ public class AnnotationStrategy implements RelationshipStrategy, StorageStrategy
 			return true;
 		}
 	}
-	
+
 	public boolean indexed(Field field)
 	{
 		Indexed annotation = field.getAnnotation(Indexed.class);
