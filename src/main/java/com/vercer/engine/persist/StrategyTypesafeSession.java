@@ -3,6 +3,7 @@ package com.vercer.engine.persist;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Set;
 
 import com.google.appengine.api.datastore.DatastoreService;
@@ -20,8 +21,8 @@ import com.vercer.engine.persist.translator.ListTranslator;
 import com.vercer.engine.persist.translator.NativeDirectTranslator;
 import com.vercer.engine.persist.translator.ObjectFieldTranslator;
 import com.vercer.engine.persist.translator.PolymorphicTranslator;
-import com.vercer.engine.persist.util.PropertySets;
 import com.vercer.engine.persist.util.KeyCache;
+import com.vercer.engine.persist.util.PropertySets;
 import com.vercer.engine.persist.util.SinglePropertySet;
 import com.vercer.util.reference.ReadOnlyObjectReference;
 
@@ -480,7 +481,7 @@ public class StrategyTypesafeSession extends TranslatorTypesafeDatastore impleme
 		return find(type, keyCache.getCachedKey(parent), name);
 	}
 
-	public final <T> Iterable<T> find(Class<T> type, Object parent)
+	public final <T> Iterator<T> find(Class<T> type, Object parent)
 	{
 		return find(type, keyCache.getCachedKey(parent));
 	}
