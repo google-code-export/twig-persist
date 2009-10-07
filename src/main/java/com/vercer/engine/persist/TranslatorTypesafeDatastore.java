@@ -11,7 +11,6 @@ import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
-import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.repackaged.com.google.common.base.Function;
 import com.google.appengine.repackaged.com.google.common.base.Nullable;
@@ -24,7 +23,7 @@ import com.vercer.util.reference.ObjectReference;
  *
  * @author John Patterson <john@vercer.com>
  */
-public class TranslatorTypesafeDatastore implements TypesafeDatastore
+public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 {
 	private final DatastoreService datastore;
 	private PropertyTranslator translator;
@@ -141,11 +140,6 @@ public class TranslatorTypesafeDatastore implements TypesafeDatastore
 		return store(instance, null, name);
 	}
 
-	public final Key store(Object value, Key parentKey)
-	{
-		return store(value, parentKey, null);
-	}
-
 	public final Key store(Object instance)
 	{
 		return store(instance, null, null);
@@ -208,30 +202,12 @@ public class TranslatorTypesafeDatastore implements TypesafeDatastore
 		}
 	}
 
-	public final <T> T find(Class<T> type, Key parent, String name)
-	{
-		String kind = typeToKind(type);
-		Key key = KeyFactory.createKey(parent, kind, name);
-
-		// needed to avoid sun generics bug "no unique maximal instance exists..."
-		@SuppressWarnings("unchecked")
-		T result = (T) load(key);
-		return result;
-	}
-
 	public final <T> T find(Class<T> type, String name)
 	{
 		return find(type, null, name);
 	}
 
-	public final <T> Iterator<T> find(final Class<T> type, final Key parent)
-	{
-		String kind = typeToKind(type);
-		Query query = new Query(kind, parent);
-		return find(query);
-	}
-
-	public final <T> Iterator<T> find(final Class<T> type)
+	public final <T> Iterable<T> find(final Class<T> type)
 	{
 		String kind = typeToKind(type);
 		Query query = new Query(kind);
@@ -319,17 +295,15 @@ public class TranslatorTypesafeDatastore implements TypesafeDatastore
 		return datastore;
 	}
 
-	@SuppressWarnings("unchecked")
-	public final <T> Iterator<T> find(Query query)
+	public final <T> Iterable<T> find(Query query)
 	{
-		Iterator<Entity> entities = queryToEntityIterator(query);
 		if (query.isKeysOnly())
 		{
-			return (Iterator<T>) Iterators.transform(entities, entityToInstanceFunction);
+			return new KeysOnlyQueryIterable<T>(query);
 		}
 		else
 		{
-			return (Iterator<T>) Iterators.transform(entities, keyToInstanceFunction);
+			return new EntityQueryIterable<T>(query);
 		}
 	}
 
@@ -379,12 +353,48 @@ public class TranslatorTypesafeDatastore implements TypesafeDatastore
 	{
 	}
 
-	protected Iterator<Entity> queryToEntityIterator(Query query)
+	protected final class EntityQueryIterable<T> implements Iterable<T>
 	{
-		return datastore.prepare(query).asIterator();
+		Iterable<Entity> iterable;
+
+		private EntityQueryIterable(Query query)
+		{
+			assert query.isKeysOnly() == false;
+			iterable = queryToEntityIterable(query);
+		}
+
+		@SuppressWarnings("unchecked")
+		public Iterator<T> iterator()
+		{
+			Iterator<Entity> iterator = iterable.iterator();
+			return (Iterator<T>) Iterators.transform(iterator, entityToInstanceFunction);
+		}
 	}
 
-	protected final class EntityToInstanceFunction<T> implements Function<Entity, T>
+	protected final class KeysOnlyQueryIterable<T> implements Iterable<T>
+	{
+		Iterable<Entity> iterable;
+
+		private KeysOnlyQueryIterable(Query query)
+		{
+			assert query.isKeysOnly();
+			iterable = queryToEntityIterable(query);
+		}
+
+		@SuppressWarnings("unchecked")
+		public Iterator<T> iterator()
+		{
+			Iterator<Entity> iterator = iterable.iterator();
+			return (Iterator<T>) Iterators.transform(iterator, keyToInstanceFunction);
+		}
+	}
+
+	protected Iterable<Entity> queryToEntityIterable(Query query)
+	{
+		return datastore.prepare(query).asIterable();
+	}
+
+	private final class EntityToInstanceFunction<T> implements Function<Entity, T>
 	{
 		@SuppressWarnings("unchecked")
 		public T apply(Entity entity)
@@ -393,7 +403,7 @@ public class TranslatorTypesafeDatastore implements TypesafeDatastore
 		}
 	}
 
-	protected final class KeyToInstanceFunction<T> implements Function<Entity, T>
+	private final class KeyToInstanceFunction<T> implements Function<Entity, T>
 	{
 		public T apply(Entity entity)
 		{

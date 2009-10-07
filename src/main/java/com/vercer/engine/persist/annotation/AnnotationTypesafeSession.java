@@ -1,13 +1,13 @@
 package com.vercer.engine.persist.annotation;
 
 import com.google.appengine.api.datastore.DatastoreService;
-import com.vercer.engine.persist.StrategyTypesafeSession;
+import com.vercer.engine.persist.StrategyTypesafeDatastore;
 import com.vercer.engine.persist.conversion.DefaultTypeConverter;
 import com.vercer.engine.persist.conversion.TypeConverter;
 import com.vercer.engine.persist.strategy.DefaultFieldTypeStrategy;
 import com.vercer.engine.persist.strategy.FieldTypeStrategy;
 
-public class AnnotationTypesafeSession extends StrategyTypesafeSession
+public class AnnotationTypesafeSession extends StrategyTypesafeDatastore
 {
 	private static final TypeConverter CONVERTERS = new DefaultTypeConverter();
 

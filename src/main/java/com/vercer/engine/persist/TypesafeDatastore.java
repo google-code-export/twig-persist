@@ -1,43 +1,33 @@
 package com.vercer.engine.persist;
 
-import java.util.Iterator;
-
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
-import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.Query;
 
 public interface TypesafeDatastore
 {
 	Key store(Object instance);
-
 	Key store(Object instance, String name);
+	Key store(Object instance, Object parent);
+	Key store(Object instance, Object parent, String name);
 
-	Key store(Object instance, Key parentKey);
-
-	Key store(Object instance, Key parentKey, String name);
-
-	void update(Object instance, Key key);
-
-	void delete(Key key);
-
-	<T> Iterator<T> find(Query query);
-
-	<T> Iterator<T> find(Class<T> type, Key parent);
-
-	<T> T find(Class<T> type, Key parent, String name);
-
+	<T> Iterable<T> find(Query query);
 	<T> T find(Class<T> type, String name);
+	<T> Iterable<T> find(Class<T> type, Object parent);
+	<T> T find(Class<T> type, Object parent, String name);
 
 	Query query(Class<?> clazz);
-
-	<T> T toTypesafe(Entity entity);
-
-	<T> T load(Key key) throws EntityNotFoundException;
-
 	DatastoreService getDatastore();
-
 	Object encode(Object object);
 
+	void update(Object instance);
+	void delete(Object instance);
+
+	void associate(Object instance);
+	void disassociate(Object instance);
+	Key associatedKey(Object instance);
+
+	<T> T toTypesafe(Entity entity);
+	<T> T load(Key key);
 }

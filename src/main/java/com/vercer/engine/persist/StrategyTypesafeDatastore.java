@@ -3,7 +3,6 @@ package com.vercer.engine.persist;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Set;
 
 import com.google.appengine.api.datastore.DatastoreService;
@@ -26,7 +25,7 @@ import com.vercer.engine.persist.util.PropertySets;
 import com.vercer.engine.persist.util.SinglePropertySet;
 import com.vercer.util.reference.ReadOnlyObjectReference;
 
-public class StrategyTypesafeSession extends TranslatorTypesafeDatastore implements TypesafeSession
+public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore implements TypesafeDatastore
 {
 	final FieldTypeStrategy naming;
 //	private static final Logger LOG = Logger.getLogger(StrategyTypesafeSession.class.getName());
@@ -50,7 +49,7 @@ public class StrategyTypesafeSession extends TranslatorTypesafeDatastore impleme
 	 */
 	private boolean associating;
 
-	public StrategyTypesafeSession(
+	public StrategyTypesafeDatastore(
 			DatastoreService datastore,
 			final RelationshipStrategy relationships,
 			final StorageStrategy storage,
@@ -481,7 +480,7 @@ public class StrategyTypesafeSession extends TranslatorTypesafeDatastore impleme
 		return find(type, keyCache.getCachedKey(parent), name);
 	}
 
-	public final <T> Iterator<T> find(Class<T> type, Object parent)
+	public final <T> Iterable<T> find(Class<T> type, Object parent)
 	{
 		return find(type, keyCache.getCachedKey(parent));
 	}
@@ -533,5 +532,10 @@ public class StrategyTypesafeSession extends TranslatorTypesafeDatastore impleme
 	{
 		Key parentKey = keyCache.getCachedKey(parent);
 		return store(instance, parentKey, name);
+	}
+
+	public Key associatedKey(Object instance)
+	{
+		return keyCache.getCachedKey(instance);
 	}
 }
