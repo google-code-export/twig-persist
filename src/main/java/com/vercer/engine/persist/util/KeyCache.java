@@ -1,17 +1,24 @@
 package com.vercer.engine.persist.util;
 
-import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.Map;
 
 import com.google.appengine.api.datastore.Key;
+import com.google.appengine.repackaged.com.google.common.collect.MapMaker;
 import com.vercer.util.reference.ObjectReference;
 import com.vercer.util.reference.SimpleObjectReference;
 
 public class KeyCache
 {
-	final Map<Key, Object> cacheByKey = new HashMap<Key, Object>();
-	final Map<Object, ObjectReference<Key>> cacheByValue = new IdentityHashMap<Object, ObjectReference<Key>>();
+	private Map<Key, Object> cacheByKey = new MapMaker()
+		.weakValues()
+		.concurrencyLevel(1)
+		.makeMap();
+
+
+	private Map<Object, ObjectReference<Key>> cacheByValue = new MapMaker()
+			.weakKeys()
+			.concurrencyLevel(1)
+			.makeMap();
 
 	public void cache(Key key, Object object)
 	{
