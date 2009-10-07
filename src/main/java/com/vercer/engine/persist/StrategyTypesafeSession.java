@@ -21,7 +21,7 @@ import com.vercer.engine.persist.translator.NativeDirectTranslator;
 import com.vercer.engine.persist.translator.ObjectFieldTranslator;
 import com.vercer.engine.persist.translator.PolymorphicTranslator;
 import com.vercer.engine.persist.util.PropertySets;
-import com.vercer.engine.persist.util.SimpleKeyCache;
+import com.vercer.engine.persist.util.KeyCache;
 import com.vercer.engine.persist.util.SinglePropertySet;
 import com.vercer.util.reference.ReadOnlyObjectReference;
 
@@ -42,7 +42,7 @@ public class StrategyTypesafeSession extends TranslatorTypesafeDatastore impleme
 	protected final PropertyTranslator childTranslator;
 	protected final PropertyTranslator valueTranslator;
 	protected final PropertyTranslator defaultTranslator;
-	protected final SimpleKeyCache keyCache;
+	protected final KeyCache keyCache;
 
 	/**
 	 * Flag that indicates we are associating instances with this session so do not store them
@@ -150,7 +150,7 @@ public class StrategyTypesafeSession extends TranslatorTypesafeDatastore impleme
 		valueTranslator = createValueTranslator();
 
 		// the last option is to create a new entity and reference it by a key
-		keyCache = new SimpleKeyCache();
+		keyCache = new KeyCache();
 
 		parentTranslator = new ParentEntityTranslator();
 		independantTranslator = new ListTranslator(new IndependantEntityTranslator());

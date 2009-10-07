@@ -19,7 +19,7 @@
 			<version>4.4</version>
 			<scope>test</scope>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>com.google.appengine</groupId>
 			<artifactId>appengine-api-1.0-sdk</artifactId>
@@ -32,7 +32,7 @@
 			<version>${appengine.version}</version>
 			<scope>test</scope>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>com.google.appengine</groupId>
 			<artifactId>appengine-local-runtime</artifactId>
@@ -106,15 +106,15 @@
 
 	<repositories>
 		<repository>
-        <id>twig</id>
-        <url>http://mvn.twig-persist.googlecode.com/hg/</url>
-        <releases>
-           <enabled>true</enabled>
-        </releases>
-        <snapshots>
-          <enabled>false</enabled>
-        </snapshots>        
-     </repository>
+			<id>twig</id>
+			<url>http://mvn.twig-persist.googlecode.com/hg</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
 
 	</repositories>
 

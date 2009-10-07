@@ -1,5 +1,7 @@
 package com.vercer.engine.persist;
 
+import java.util.Iterator;
+
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
@@ -20,9 +22,9 @@ public interface TypesafeDatastore
 
 	void delete(Key key);
 
-	<T> Iterable<T> find(Query query);
+	<T> Iterator<T> find(Query query);
 
-	<T> Iterable<T> find(Class<T> type, Key parent);
+	<T> Iterator<T> find(Class<T> type, Key parent);
 
 	<T> T find(Class<T> type, Key parent, String name);
 

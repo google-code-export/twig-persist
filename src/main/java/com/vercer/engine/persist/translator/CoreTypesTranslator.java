@@ -3,7 +3,6 @@ package com.vercer.engine.persist.translator;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.text.DateFormat;
 import java.util.Currency;
 import java.util.Locale;
 import java.util.Set;
@@ -17,8 +16,6 @@ import com.vercer.engine.persist.util.generic.GenericTypeReflector;
 
 public class CoreTypesTranslator implements PropertyTranslator
 {
-	private final DateFormat format = DateFormat.getDateTimeInstance();
-
 	public Object propertiesToTypesafe(Set<Property> properties, Path path, Type type)
 	{
 		Class<?> erased = GenericTypeReflector.erase(type);

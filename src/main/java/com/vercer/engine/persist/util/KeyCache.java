@@ -5,11 +5,10 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 
 import com.google.appengine.api.datastore.Key;
-import com.vercer.engine.persist.KeyCache;
 import com.vercer.util.reference.ObjectReference;
 import com.vercer.util.reference.SimpleObjectReference;
 
-public class SimpleKeyCache implements KeyCache
+public class KeyCache
 {
 	final Map<Key, Object> cacheByKey = new HashMap<Key, Object>();
 	final Map<Object, ObjectReference<Key>> cacheByValue = new IdentityHashMap<Object, ObjectReference<Key>>();
