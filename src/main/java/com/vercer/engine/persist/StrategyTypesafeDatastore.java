@@ -7,6 +7,7 @@ import java.util.Set;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
 import com.vercer.engine.persist.conversion.TypeConverter;
 import com.vercer.engine.persist.strategy.FieldTypeStrategy;
@@ -482,7 +483,12 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore imple
 
 	public final <T> Iterable<T> find(Class<T> type, Object parent)
 	{
-		return find(type, keyCache.getCachedKey(parent));
+		return find(type, parent, (FetchOptions) null);
+	}
+
+	public final <T> Iterable<T> find(Class<T> type, Object parent, FetchOptions options)
+	{
+		return find(type, keyCache.getCachedKey(parent), options);
 	}
 
 	public final void update(Object instance)

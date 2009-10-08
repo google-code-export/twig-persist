@@ -2,6 +2,7 @@ package com.vercer.engine.persist;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.Query;
 
@@ -12,10 +13,14 @@ public interface TypesafeDatastore
 	Key store(Object instance, Object parent);
 	Key store(Object instance, Object parent, String name);
 
-	<T> Iterable<T> find(Query query);
 	<T> T find(Class<T> type, String name);
-	<T> Iterable<T> find(Class<T> type, Object parent);
 	<T> T find(Class<T> type, Object parent, String name);
+	<T> Iterable<T> find(Query query);
+	<T> Iterable<T> find(Query query, FetchOptions options);
+	<T> Iterable<T> find(Class<T> type);
+	<T> Iterable<T> find(Class<T> type, FetchOptions options);
+	<T> Iterable<T> find(Class<T> type, Object parent);
+	<T> Iterable<T> find(Class<T> type, Object parent, FetchOptions options);
 
 	Query query(Class<?> clazz);
 	DatastoreService getDatastore();

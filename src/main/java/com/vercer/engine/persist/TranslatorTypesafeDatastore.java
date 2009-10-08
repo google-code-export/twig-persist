@@ -10,7 +10,9 @@ import java.util.TreeSet;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
+import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.repackaged.com.google.common.base.Function;
 import com.google.appengine.repackaged.com.google.common.base.Nullable;
@@ -207,11 +209,34 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 		return find(type, null, name);
 	}
 
-	public final <T> Iterable<T> find(final Class<T> type)
+	protected final <T> T find(Class<T> type, Key parent, String name)
+	{
+		String kind = typeToKind(type);
+		Key key = KeyFactory.createKey(parent, kind, name);
+
+		// needed to avoid sun generics bug "no unique maximal instance exists..."
+		@SuppressWarnings("unchecked")
+		T result = (T) load(key);
+		return result;
+	}
+
+	protected final <T> Iterable<T> find(final Class<T> type, final Key parent)
+	{
+		String kind = typeToKind(type);
+		Query query = new Query(kind, parent);
+		return find(query);
+	}
+
+	public final <T> Iterable<T> find(Class<T> type)
+	{
+		return find(type, (FetchOptions) null);
+	}
+
+	public final <T> Iterable<T> find(Class<T> type, FetchOptions options)
 	{
 		String kind = typeToKind(type);
 		Query query = new Query(kind);
-		return find(query);
+		return find(query, options);
 	}
 
 	public <T> T toTypesafe(Entity entity)
@@ -297,13 +322,18 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 
 	public final <T> Iterable<T> find(Query query)
 	{
+		return find(query, null);
+	}
+
+	public final <T> Iterable<T> find(Query query, FetchOptions options)
+	{
 		if (query.isKeysOnly())
 		{
-			return new KeysOnlyQueryIterable<T>(query);
+			return new KeysOnlyQueryIterable<T>(query, options);
 		}
 		else
 		{
-			return new EntityQueryIterable<T>(query);
+			return new EntityQueryIterable<T>(query, options);
 		}
 	}
 
@@ -357,10 +387,10 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 	{
 		Iterable<Entity> iterable;
 
-		private EntityQueryIterable(Query query)
+		private EntityQueryIterable(Query query, FetchOptions options)
 		{
 			assert query.isKeysOnly() == false;
-			iterable = queryToEntityIterable(query);
+			iterable = queryToEntityIterable(query, options);
 		}
 
 		@SuppressWarnings("unchecked")
@@ -375,10 +405,10 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 	{
 		Iterable<Entity> iterable;
 
-		private KeysOnlyQueryIterable(Query query)
+		private KeysOnlyQueryIterable(Query query, FetchOptions options)
 		{
 			assert query.isKeysOnly();
-			iterable = queryToEntityIterable(query);
+			iterable = queryToEntityIterable(query, options);
 		}
 
 		@SuppressWarnings("unchecked")
@@ -389,9 +419,9 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 		}
 	}
 
-	protected Iterable<Entity> queryToEntityIterable(Query query)
+	protected Iterable<Entity> queryToEntityIterable(Query query, FetchOptions options)
 	{
-		return datastore.prepare(query).asIterable();
+		return datastore.prepare(query).asIterable(options);
 	}
 
 	private final class EntityToInstanceFunction<T> implements Function<Entity, T>
