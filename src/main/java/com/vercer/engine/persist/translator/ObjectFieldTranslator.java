@@ -70,9 +70,10 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 		List<Property> fieldProperties = new ArrayList<Property>();  // reusable instance
 		for (Field field : fields)
 		{
+			alignPropertiesToField(field, peeking, path);
+
 			if (!Modifier.isTransient(field.getModifiers()) && stored(field))
 			{
-
 				String name = fieldToPartName(field);
 
 				Path childPath = new Path.Builder(path).field(name).build();
@@ -116,6 +117,19 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 				}
 			}
 		}
+	}
+
+	private void alignPropertiesToField(Field field, PeekingIterator<Property> peeking, Path prefix)
+	{
+		while (peeking.hasNext() && peekFieldName(peeking, prefix).compareTo(field.getName()) < 0)
+		{
+			peeking.next();
+		}
+	}
+
+	private String peekFieldName(PeekingIterator<Property> peeking, Path prefix)
+	{
+		return peeking.peek().getPath().firstPartAfterPrefix(prefix).getName();
 	}
 
 	private static boolean isSuperType(Type type, Class<? extends Object> clazz)

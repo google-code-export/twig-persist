@@ -142,6 +142,11 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 		return store(instance, null, name);
 	}
 
+	public final Key store(Object value, Key parentKey)
+	{
+		return store(value, parentKey, null);
+	}
+
 	public final Key store(Object instance)
 	{
 		return store(instance, null, null);
@@ -220,11 +225,11 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 		return result;
 	}
 
-	protected final <T> Iterable<T> find(final Class<T> type, final Key parent)
+	protected final <T> Iterable<T> find(Class<T> type, Key parent, FetchOptions options)
 	{
 		String kind = typeToKind(type);
 		Query query = new Query(kind, parent);
-		return find(query);
+		return find(query, options);
 	}
 
 	public final <T> Iterable<T> find(Class<T> type)
@@ -421,7 +426,14 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 
 	protected Iterable<Entity> queryToEntityIterable(Query query, FetchOptions options)
 	{
-		return datastore.prepare(query).asIterable(options);
+		if (options == null)
+		{
+			return datastore.prepare(query).asIterable();
+		}
+		else
+		{
+			return datastore.prepare(query).asIterable(options);
+		}
 	}
 
 	private final class EntityToInstanceFunction<T> implements Function<Entity, T>

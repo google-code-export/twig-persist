@@ -496,7 +496,7 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore imple
 		Key key = keyCache.getCachedKey(instance);
 		if (key == null)
 		{
-			throw new IllegalArgumentException("Can only update entities in the session");
+			throw new IllegalArgumentException("Can only update instances loaded from this session");
 		}
 		update(instance, key);
 	}

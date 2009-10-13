@@ -222,9 +222,10 @@ public class Path implements Comparable<Path>
 
 	public boolean hasPrefix(Path path)
 	{
-		return value.startsWith(path.value)
+		return path.isEmpty() ||
+			(value.startsWith(path.value)
 			&& (value.length() == path.value.length() ||
-			isSeperator(value.charAt(path.value.length())));
+			isSeperator(value.charAt(path.value.length()))));
 	}
 
 	private boolean isSeperator(char c)
