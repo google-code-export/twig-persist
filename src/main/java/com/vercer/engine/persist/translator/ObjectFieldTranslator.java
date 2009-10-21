@@ -22,7 +22,6 @@ import com.vercer.engine.persist.PropertyTranslator;
 import com.vercer.engine.persist.conversion.TypeConverter;
 import com.vercer.engine.persist.util.SimpleProperty;
 import com.vercer.engine.persist.util.generic.GenericTypeReflector;
-import com.vercer.util.Pair;
 import com.vercer.util.Reflection;
 import com.vercer.util.collections.MergeSet;
 
@@ -41,7 +40,6 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 	};
 	private final TypeConverter converters;
 	private static Map<Class<?>, List<Field>> classFields = new ConcurrentHashMap<Class<?>, List<Field>>();
-	private static Map<Pair<Type, Class<?>>, Boolean> superTypes = new ConcurrentHashMap<Pair<Type, Class<?>>, Boolean>();
 
 	public ObjectFieldTranslator(TypeConverter converters)
 	{
@@ -100,11 +98,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 				if (value != null)
 				{
 					// if the value was converted to another type we may need to convert it back
-
-					if (!isSuperType(field.getGenericType(), value.getClass()))
-					{
-						value = converters.convert(value, field.getGenericType());
-					}
+					value = converters.convert(value, field.getGenericType());
 
 					try
 					{
@@ -130,22 +124,6 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 	private String peekFieldName(PeekingIterator<Property> peeking, Path prefix)
 	{
 		return peeking.peek().getPath().firstPartAfterPrefix(prefix).getName();
-	}
-
-	private static boolean isSuperType(Type type, Class<? extends Object> clazz)
-	{
-		Pair<Type, Class<?>> key = new Pair<Type, Class<?>>(type, clazz);
-		Boolean superType = superTypes.get(key);
-		if (superType != null)
-		{
-			return superType;
-		}
-		else
-		{
-			boolean result = GenericTypeReflector.isSuperType(type, clazz);
-			superTypes.put(key, result);
-			return result;
-		}
 	}
 
 	protected String fieldToPartName(Field field)
@@ -203,10 +181,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 						continue;
 					}
 
-					if (!isSuperType(type, value.getClass()))
-					{
-						value = converters.convert(value, type);
-					}
+					value = converters.convert(value, type);
 
 					Path childPath = new Path.Builder(path).field(fieldToPartName(field)).build();
 

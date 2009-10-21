@@ -9,12 +9,18 @@ import java.lang.reflect.Type;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.util.Date;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.appengine.api.datastore.Blob;
 import com.google.appengine.api.datastore.Text;
+import com.vercer.engine.persist.util.generic.GenericTypeReflector;
+import com.vercer.util.Pair;
 
 public class DefaultTypeConverter extends CombinedTypeConverter
 {
+	private static Map<Pair<Type, Class<?>>, Boolean> superTypes = new ConcurrentHashMap<Pair<Type, Class<?>>, Boolean>();
+
 	public DefaultTypeConverter()
 	{
 		register(new BlobToSerializable());
@@ -32,17 +38,34 @@ public class DefaultTypeConverter extends CombinedTypeConverter
 	@Override
 	public <T> T convert(Object source, Type type)
 	{
-		if (source.getClass().equals(type))
+		if (isSuperType(type, source.getClass()))
 		{
 			return (T) source;
 		}
-
 		else
 		{
 			// use the registered converters
 			return (T) super.convert(source, type);
 		}
 	}
+
+
+	private static boolean isSuperType(Type type, Class<? extends Object> clazz)
+	{
+		Pair<Type, Class<?>> key = new Pair<Type, Class<?>>(type, clazz);
+		Boolean superType = superTypes.get(key);
+		if (superType != null)
+		{
+			return superType;
+		}
+		else
+		{
+			boolean result = GenericTypeReflector.isSuperType(type, clazz);
+			superTypes.put(key, result);
+			return result;
+		}
+	}
+
 
 	public static class StringToText implements SpecificTypeConverter<String, Text>
 	{
