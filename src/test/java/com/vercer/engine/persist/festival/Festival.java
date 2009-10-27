@@ -6,6 +6,7 @@ package com.vercer.engine.persist.festival;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.vercer.engine.persist.ReflectiveObject;
 import com.vercer.engine.persist.annotation.Entity;
 
 

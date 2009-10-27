@@ -7,11 +7,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import com.vercer.engine.persist.ReflectiveObject;
 import com.vercer.engine.persist.annotation.Entity;
 import com.vercer.engine.persist.annotation.Key;
 import com.vercer.engine.persist.annotation.Entity.Relationship;
 
-class Band extends ReflectiveObject
+public class Band extends ReflectiveObject
 {
 	enum HairStyle { LONG_LIKE_A_GIRL, UNKEMPT_FLOPPY, NAVY_SHORT, BALD };
 

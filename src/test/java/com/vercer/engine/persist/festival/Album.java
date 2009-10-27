@@ -6,17 +6,13 @@ package com.vercer.engine.persist.festival;
 import java.util.Arrays;
 import java.util.Date;
 
+import com.vercer.engine.persist.ReflectiveObject;
 import com.vercer.engine.persist.annotation.Entity;
 import com.vercer.engine.persist.annotation.Key;
 import com.vercer.engine.persist.annotation.Entity.Relationship;
 
-class Album extends ReflectiveObject
+public class Album
 {
-	public Album()
-	{
-		super(true);
-	}
-
 	@Key
 	String name;
 	String label;
@@ -31,53 +27,14 @@ class Album extends ReflectiveObject
 	@Entity(Relationship.CHILD)
 	Track[] tracks;
 
-	static class Track extends ReflectiveObject
+	public static class Track extends ReflectiveObject
 	{
 		String title;
 		float length;
 
-		@Override
-		public int hashCode()
+		public Track()
 		{
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + Float.floatToIntBits(length);
-			result = prime * result + ((title == null) ? 0 : title.hashCode());
-			return result;
-		}
-
-		@Override
-		public boolean equals(Object obj)
-		{
-			if (this == obj)
-			{
-				return true;
-			}
-			if (obj == null)
-			{
-				return false;
-			}
-			if (!(obj instanceof Track))
-			{
-				return false;
-			}
-			Track other = (Track) obj;
-			if (Float.floatToIntBits(length) != Float.floatToIntBits(other.length))
-			{
-				return false;
-			}
-			if (title == null)
-			{
-				if (other.title != null)
-				{
-					return false;
-				}
-			}
-			else if (!title.equals(other.title))
-			{
-				return false;
-			}
-			return true;
+			super(true);
 		}
 	}
 
@@ -85,7 +42,8 @@ class Album extends ReflectiveObject
 	public int hashCode()
 	{
 		final int prime = 31;
-		int result = 1;
+		int result = super.hashCode();
+		result = prime * result + ((band == null) ? 0 : band.hashCode());
 		result = prime * result + ((label == null) ? 0 : label.hashCode());
 		result = prime * result + ((name == null) ? 0 : name.hashCode());
 		result = prime * result + ((released == null) ? 0 : released.hashCode());
@@ -101,10 +59,6 @@ class Album extends ReflectiveObject
 		if (this == obj)
 		{
 			return true;
-		}
-		if (obj == null)
-		{
-			return false;
 		}
 		if (!(obj instanceof Album))
 		{
@@ -157,5 +111,13 @@ class Album extends ReflectiveObject
 			return false;
 		}
 		return true;
+	}
+
+	@Override
+	public String toString()
+	{
+		return "Album [band=" + band + ", label=" + label + ", name=" + name + ", released="
+				+ released + ", rocksTheHouse=" + rocksTheHouse + ", sold=" + sold + ", tracks="
+				+ Arrays.toString(tracks) + "]";
 	}
 }

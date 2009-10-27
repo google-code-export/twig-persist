@@ -1,7 +1,7 @@
 /**
  *
  */
-package com.vercer.engine.persist.translator;
+package com.vercer.util.collections;
 
 import java.util.AbstractSet;
 import java.util.Arrays;
@@ -11,7 +11,7 @@ import java.util.SortedSet;
 
 import com.google.appengine.repackaged.com.google.common.collect.Iterators;
 
-class ArraySortedSet<T extends Comparable<T>> extends AbstractSet<T> implements SortedSet<T>
+public class ArraySortedSet<T extends Comparable<T>> extends AbstractSet<T> implements SortedSet<T>
 {
 	private final T[] elements;
 	private final static Comparator<?> comparator = new Comparator<Comparable<Object>>()

@@ -12,10 +12,15 @@ public interface StorageStrategy
 {
 	/**
 	 * @param field The reflected Field to be examined
-	 * @return
+	 * @return true to store as a component of the referencing Entity
 	 */
 	boolean component(Field field);
 
+	/**
+	 * Should this field value be stored as a separate Entity
+	 * @param field
+	 * @return true to store as a datastore Entity
+	 */
 	boolean entity(Field field);
 
 	/**
@@ -36,5 +41,10 @@ public interface StorageStrategy
 	boolean stored(Field field);
 
 
-	boolean polyMorphic(Field field);
+	/**
+	 * Can this field hold sub-types of the declared field type
+	 * @param field
+	 * @return true if sub-types are allowed
+	 */
+	boolean polymorphic(Field field);
 }

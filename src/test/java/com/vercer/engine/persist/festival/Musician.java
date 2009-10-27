@@ -2,6 +2,8 @@ package com.vercer.engine.persist.festival;
 
 import java.util.Date;
 
+import com.vercer.engine.persist.ReflectiveObject;
+
 public class Musician extends ReflectiveObject
 {
 	public Musician(String name)

@@ -23,6 +23,7 @@ import com.vercer.engine.persist.conversion.TypeConverter;
 import com.vercer.engine.persist.util.SimpleProperty;
 import com.vercer.engine.persist.util.generic.GenericTypeReflector;
 import com.vercer.util.Reflection;
+import com.vercer.util.collections.ArraySortedSet;
 import com.vercer.util.collections.MergeSet;
 
 /**

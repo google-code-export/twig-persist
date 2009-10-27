@@ -3,10 +3,11 @@ package com.vercer.engine.persist.annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
+import com.vercer.engine.persist.strategy.DefaultFieldTypeStrategy;
 import com.vercer.engine.persist.strategy.RelationshipStrategy;
 import com.vercer.engine.persist.strategy.StorageStrategy;
 
-public class AnnotationStrategy implements RelationshipStrategy, StorageStrategy
+public class AnnotationStrategy extends DefaultFieldTypeStrategy implements RelationshipStrategy, StorageStrategy
 {
 	private final boolean indexed;
 
@@ -100,12 +101,13 @@ public class AnnotationStrategy implements RelationshipStrategy, StorageStrategy
 		return field.isAnnotationPresent(Key.class);
 	}
 
+	@Override
 	public java.lang.reflect.Type typeOf(Field field)
 	{
 		Type annotation = field.getAnnotation(Type.class);
 		if (annotation == null)
 		{
-			return field.getGenericType();
+			return super.typeOf(field);
 		}
 		else
 		{
@@ -113,7 +115,7 @@ public class AnnotationStrategy implements RelationshipStrategy, StorageStrategy
 		}
 	}
 
-	public boolean polyMorphic(Field field)
+	public boolean polymorphic(Field field)
 	{
 		Component annotation = field.getAnnotation(Component.class);
 		if (annotation != null)
@@ -122,7 +124,7 @@ public class AnnotationStrategy implements RelationshipStrategy, StorageStrategy
 		}
 		else
 		{
-			return !Modifier.isFinal(field.getClass().getModifiers());
+			return !Modifier.isFinal(field.getType().getModifiers());
 		}
 	}
 

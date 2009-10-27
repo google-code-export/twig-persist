@@ -4,7 +4,6 @@ import com.google.appengine.api.datastore.DatastoreService;
 import com.vercer.engine.persist.StrategyTypesafeDatastore;
 import com.vercer.engine.persist.conversion.DefaultTypeConverter;
 import com.vercer.engine.persist.conversion.TypeConverter;
-import com.vercer.engine.persist.strategy.DefaultFieldTypeStrategy;
 import com.vercer.engine.persist.strategy.FieldTypeStrategy;
 
 public class AnnotationTypesafeSession extends StrategyTypesafeDatastore
@@ -28,11 +27,11 @@ public class AnnotationTypesafeSession extends StrategyTypesafeDatastore
 
 	protected AnnotationTypesafeSession(DatastoreService datastore, AnnotationStrategy strategy)
 	{
-		super(datastore, strategy, strategy, new DefaultFieldTypeStrategy(), CONVERTERS);
+		super(datastore, strategy, strategy, strategy, CONVERTERS);
 	}
 
-	protected AnnotationTypesafeSession(DatastoreService datastore, AnnotationStrategy strategy, FieldTypeStrategy names)
+	protected AnnotationTypesafeSession(DatastoreService datastore, AnnotationStrategy strategy, FieldTypeStrategy fields)
 	{
-		super(datastore, strategy, strategy, new DefaultFieldTypeStrategy(), CONVERTERS);
+		super(datastore, strategy, strategy, fields, CONVERTERS);
 	}
 }

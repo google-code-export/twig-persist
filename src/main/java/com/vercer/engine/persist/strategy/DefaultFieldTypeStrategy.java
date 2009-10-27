@@ -2,7 +2,6 @@ package com.vercer.engine.persist.strategy;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Collection;
@@ -10,6 +9,10 @@ import java.util.List;
 
 import com.vercer.engine.persist.util.generic.GenericTypeReflector;
 
+/**
+ * @author John Patterson <john@vercer.com>
+ *
+ */
 public class DefaultFieldTypeStrategy implements FieldTypeStrategy
 {
 	public Type kindToType(String kind)
@@ -17,7 +20,6 @@ public class DefaultFieldTypeStrategy implements FieldTypeStrategy
 		try
 		{
 			kind = kind.replace('_', '.');
-			kind = kind.replace("..", ".");
 			return Class.forName(kind);
 		}
 		catch (ClassNotFoundException e)
@@ -26,6 +28,10 @@ public class DefaultFieldTypeStrategy implements FieldTypeStrategy
 		}
 	}
 
+	/**
+	 *
+	 * @see com.vercer.engine.persist.strategy.FieldTypeStrategy#name(java.lang.reflect.Field)
+	 */
 	public String name(Field field)
 	{
 		String name = field.getName();
@@ -41,15 +47,15 @@ public class DefaultFieldTypeStrategy implements FieldTypeStrategy
 		Class<?> clazz = GenericTypeReflector.erase(type);
 		String kind = clazz.getName();
 		kind = kind.replace('.', '_');
-		kind = kind.replace("__", "_");
 		return kind;
 	}
 
-	public boolean polymorphic(Field field)
-	{
-		return Modifier.isFinal(field.getModifiers()) == false;
-	}
-
+	/**
+	 * Replaces all Collection types and Arrays with List. Converts all elements of
+	 * the collection to the component type.
+	 *
+	 * @see com.vercer.engine.persist.strategy.FieldTypeStrategy#typeOf(java.lang.reflect.Field)
+	 */
 	public Type typeOf(Field field)
 	{
 		return replace(field.getGenericType());
@@ -77,38 +83,35 @@ public class DefaultFieldTypeStrategy implements FieldTypeStrategy
 			Type exact = GenericTypeReflector.getExactSuperType(type, Collection.class);
 			componentType = ((ParameterizedType) exact).getActualTypeArguments()[0];
 		}
-
-		if (componentType == null)
+		else
 		{
 			// we have a non-collection type
 			return type;
 		}
-		else
+
+		// we have a collection type so need to convert it
+
+		// recurse in case we have e.g. List<Twig[]>
+		final Type replaced = replace(componentType);
+
+		// replace the collection type with a list type
+		return new ParameterizedType()
 		{
-			// we have a collection type so need to convert it
-
-			// recurse in case we have e.g. List<Twig[]>
-			final Type replaced = replace(componentType);
-
-			// replace the collection type with a list type
-			return new ParameterizedType()
+			public Type getRawType()
 			{
-				public Type getRawType()
-				{
-					return List.class;
-				}
+				return List.class;
+			}
 
-				public Type getOwnerType()
-				{
-					return null;
-				}
+			public Type getOwnerType()
+			{
+				return null;
+			}
 
-				public Type[] getActualTypeArguments()
-				{
-					return new Type[] { replaced };
-				}
-			};
-		}
+			public Type[] getActualTypeArguments()
+			{
+				return new Type[] { replaced };
+			}
+		};
 	}
 
 }

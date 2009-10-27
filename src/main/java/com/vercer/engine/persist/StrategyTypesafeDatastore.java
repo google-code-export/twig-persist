@@ -114,7 +114,7 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore imple
 				}
 				else if (storage.component(field))
 				{
-					if (storage.polyMorphic(field))
+					if (storage.polymorphic(field))
 					{
 						return polyMorphicComponentTranslator;
 					}
@@ -528,19 +528,19 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore imple
 		return key;
 	}
 
-	public Key store(Object instance, Object parent)
+	public final Key store(Object instance, Object parent)
 	{
 		Key parentKey = keyCache.getCachedKey(parent);
 		return store(instance, parentKey);
 	}
 
-	public Key store(Object instance, Object parent, String name)
+	public final Key store(Object instance, Object parent, String name)
 	{
 		Key parentKey = keyCache.getCachedKey(parent);
 		return store(instance, parentKey, name);
 	}
 
-	public Key associatedKey(Object instance)
+	public final Key associatedKey(Object instance)
 	{
 		return keyCache.getCachedKey(instance);
 	}
