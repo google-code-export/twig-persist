@@ -24,6 +24,7 @@
 			<groupId>com.google.appengine</groupId>
 			<artifactId>appengine-api-1.0-sdk</artifactId>
 			<version>${appengine.version}</version>
+			<scope>provided</scope>
 		</dependency>
 
 		<dependency>
@@ -50,12 +51,14 @@
 			<groupId>commons-lang</groupId>
 			<artifactId>commons-lang</artifactId>
 			<version>2.4</version>
+			<scope>test</scope>
 		</dependency>
 
 		<dependency>
 			<groupId>com.google.inject</groupId>
 			<artifactId>guice</artifactId>
 			<version>${guice.version}</version>
+			<scope>provided</scope>
 		</dependency>
 
 	</dependencies>
@@ -108,14 +111,7 @@
 		<repository>
 			<id>twig</id>
 			<url>http://mvn.twig-persist.googlecode.com/hg</url>
-			<releases>
-				<enabled>true</enabled>
-			</releases>
-			<snapshots>
-				<enabled>false</enabled>
-			</snapshots>
 		</repository>
-
 	</repositories>
 
 </project>

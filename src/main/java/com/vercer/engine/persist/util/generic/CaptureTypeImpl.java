@@ -1,3 +1,7 @@
+/*
+ * Copied from Gentyref project http://code.google.com/p/gentyref/
+ * Reformatted and moved to fit package structure
+ */
 package com.vercer.engine.persist.util.generic;
 
 import java.lang.reflect.Type;
@@ -16,7 +20,7 @@ class CaptureTypeImpl implements CaptureType
 	/**
 	 * Creates an uninitialized CaptureTypeImpl. Before using this type,
 	 * {@link #init(VarMap)} must be called.
-	 * 
+	 *
 	 * @param wildcard
 	 *            The wildcard this is a capture of
 	 * @param variable

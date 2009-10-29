@@ -1,3 +1,7 @@
+/*
+ * Copied from Gentyref project http://code.google.com/p/gentyref/
+ * Reformatted and moved to fit package structure
+ */
 package com.vercer.engine.persist.util.generic;
 
 import java.io.Serializable;
@@ -538,8 +542,7 @@ public class GenericTypeReflector
 		if (type instanceof Class<?>)
 		{
 			Class<?> clazz = (Class<?>) type;
-			return clazz.isArray() ? (getTypeName(clazz.getComponentType()) + "[]") : clazz
-					.getName();
+			return clazz.isArray() ? (getTypeName(clazz.getComponentType()) + "[]") : clazz.getName();
 		}
 		else
 		{

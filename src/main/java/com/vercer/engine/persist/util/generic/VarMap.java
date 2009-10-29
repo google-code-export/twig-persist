@@ -1,5 +1,6 @@
-/**
- * 
+/*
+ * Copied from Gentyref project http://code.google.com/p/gentyref/
+ * Reformatted and moved to fit package structure
  */
 package com.vercer.engine.persist.util.generic;
 
@@ -13,7 +14,7 @@ import java.util.Map;
 
 /**
  * Mapping between type variables and actual parameters.
- * 
+ *
  * @author Wouter Coekaerts <wouter@coekaerts.be>
  */
 class VarMap

@@ -175,7 +175,6 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore imple
 		result.append(new NativeDirectTranslator());
 		result.append(new CoreTypesTranslator());
 		result.append(new EnumTranslator());
-
 		return result;
 	}
 

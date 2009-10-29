@@ -1,3 +1,7 @@
+/*
+ * Copied from Gentyref project http://code.google.com/p/gentyref/
+ * Reformatted and moved to fit package structure
+ */
 package com.vercer.engine.persist.util.generic;
 
 import java.lang.reflect.Type;
@@ -7,7 +11,7 @@ import java.lang.reflect.WildcardType;
  * CaptureType represents a wildcard that has gone through capture conversion.
  * It is a custom subinterface of Type, not part of the java builtin Type
  * hierarchy.
- * 
+ *
  * @author Wouter Coekaerts <wouter@coekaerts.be>
  */
 public interface CaptureType extends Type

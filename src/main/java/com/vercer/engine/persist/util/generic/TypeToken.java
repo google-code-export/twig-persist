@@ -1,3 +1,8 @@
+/*
+ * Copied from Gentyref project http://code.google.com/p/gentyref/
+ * Reformatted and moved to fit package structure
+ */
+
 package com.vercer.engine.persist.util.generic;
 
 import java.lang.reflect.ParameterizedType;
@@ -5,15 +10,15 @@ import java.lang.reflect.Type;
 
 /**
  * Wrapper around {@link Type}.
- * 
+ *
  * You can use this to create instances of Type for a type known at compile
  * time.
- * 
+ *
  * For example, to get the Type that represents List&lt;String&gt;:
  * <code>Type listOfString = new TypeToken&lt;List&lt;String&gt;&gt;(){}.getType();</code>
- * 
+ *
  * @author Wouter Coekaerts <wouter@coekaerts.be>
- * 
+ *
  * @param <T>
  *            The type represented by this TypeToken.
  */

@@ -11,9 +11,9 @@ import com.vercer.cache.CacheItem;
 
 public class MemcacheCache<K, V> implements Cache<K, V>
 {
-	private static final int CHECK_LOCK_INTERVAL_MILIS = 200;
 	private static final Object LOCK = "initialising";
 	private static final int LOCK_TIMEOUT_MILLIS = 60000;
+	private static final int CHECK_LOCK_INTERVAL_MILIS = 200;
 
 	private final MemcacheService memcache;
 

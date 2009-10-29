@@ -1,5 +1,6 @@
-/**
- * 
+/*
+ * Copied from Gentyref project http://code.google.com/p/gentyref/
+ * Reformatted and moved to fit package structure
  */
 package com.vercer.engine.persist.util.generic;
 
