@@ -93,7 +93,15 @@ public class ListTranslator extends DecoratingTranslator
 		List<Object> objects = new ArrayList<Object>();
 		while (propertySets.hasNext())
 		{
-			objects.add(chained.propertiesToTypesafe(propertySets.next(), path, componentType));
+			Object convertedChild = chained.propertiesToTypesafe(propertySets.next(), path, componentType);
+			
+			// if we cannot convert every member of the list we fail
+			if (convertedChild == null)
+			{
+				return null;
+			}
+			
+			objects.add(convertedChild);
 		}
 
 		// result will be converted to actual collection or array type
@@ -151,9 +159,10 @@ public class ListTranslator extends DecoratingTranslator
 						value.add(null);
 					}
 				}
+				count++;
 			}
 
-			// optimize for case of single properties
+			// optimise for case of single properties
 			if (lists.size() == 1)
 			{
 				Path childPath = lists.keySet().iterator().next();

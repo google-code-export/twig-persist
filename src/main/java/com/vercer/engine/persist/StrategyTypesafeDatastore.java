@@ -1,14 +1,23 @@
 package com.vercer.engine.persist;
 
+import java.io.NotSerializableException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
-import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.Query;
+import com.google.appengine.repackaged.com.google.common.base.Function;
+import com.google.appengine.repackaged.com.google.common.base.Predicate;
+import com.google.appengine.repackaged.com.google.common.collect.Iterators;
+import com.vercer.engine.persist.conversion.DefaultTypeConverter;
 import com.vercer.engine.persist.conversion.TypeConverter;
 import com.vercer.engine.persist.strategy.FieldTypeStrategy;
 import com.vercer.engine.persist.strategy.RelationshipStrategy;
@@ -26,7 +35,7 @@ import com.vercer.engine.persist.util.PropertySets;
 import com.vercer.engine.persist.util.SinglePropertySet;
 import com.vercer.util.reference.ReadOnlyObjectReference;
 
-public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore implements TypesafeDatastore
+public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 {
 	final FieldTypeStrategy naming;
 //	private static final Logger LOG = Logger.getLogger(StrategyTypesafeSession.class.getName());
@@ -41,7 +50,7 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore imple
 	protected final PropertyTranslator independantTranslator;
 	protected final PropertyTranslator keyFieldTranslator;
 	protected final PropertyTranslator childTranslator;
-	protected final PropertyTranslator valueTranslator;
+	protected final ChainedTranslator valueTranslator;
 	protected final PropertyTranslator defaultTranslator;
 	protected final KeyCache keyCache;
 
@@ -49,22 +58,30 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore imple
 	 * Flag that indicates we are associating instances with this session so do not store them
 	 */
 	private boolean associating;
+	private static final EntityToKey entityToKey = new EntityToKey();
+	private final InstanceToKey instanceToKey = new InstanceToKey();
+
+	private boolean batching;
+	private List<Entity> batched;
+
+	private int depth;
 
 	public StrategyTypesafeDatastore(
 			DatastoreService datastore,
 			final RelationshipStrategy relationships,
 			final StorageStrategy storage,
-			final FieldTypeStrategy fields,
-			final TypeConverter converters)
+			final FieldTypeStrategy fields)
 	{
 		// use the protected constructor so we can configure the translator
 		super(datastore);
 
 		this.naming = fields;
 
+		TypeConverter converter = createTypeConverter();
+		
 		// central translator that reads fields and delegates to the other
 		// translators
-		PropertyTranslator translator = new ObjectFieldTranslator(converters)
+		PropertyTranslator translator = new ObjectFieldTranslator(converter)
 		{
 			@Override
 			protected boolean indexed(Field field)
@@ -150,23 +167,26 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore imple
 
 		valueTranslator = createValueTranslator();
 
-		// the last option is to create a new entity and reference it by a key
-		keyCache = new KeyCache();
-
 		parentTranslator = new ParentEntityTranslator();
 		independantTranslator = new ListTranslator(new IndependantEntityTranslator());
-		keyFieldTranslator = new KeyFieldTranslator(valueTranslator, converters);
+		keyFieldTranslator = new KeyFieldTranslator(valueTranslator, converter);
 		childTranslator = new ListTranslator(new ChildEntityTranslator());
 		componentTranslator = new ListTranslator(translator);
 		polyMorphicComponentTranslator = new ListTranslator(new PolymorphicTranslator(translator));
 		defaultTranslator = createDefaultTranslator();
 
 		setPropertyTranslator(translator);
+		keyCache = new KeyCache();
+	}
+
+	protected TypeConverter createTypeConverter()
+	{
+		return new DefaultTypeConverter();
 	}
 
 	protected PropertyTranslator createDefaultTranslator()
 	{
-		return new ListTranslator(new ChainedTranslator(valueTranslator, independantTranslator));
+		return new ChainedTranslator(new ListTranslator(valueTranslator), independantTranslator);
 	}
 
 	protected ChainedTranslator createValueTranslator()
@@ -201,6 +221,7 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore imple
 	@Override
 	protected void onBeforeStore(Object instance)
 	{
+		depth++;
 		if (keyCache.getCachedKey(instance) != null)
 		{
 			throw new IllegalStateException("Cannot store same instance twice: " + instance);
@@ -222,13 +243,14 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore imple
 	@Override
 	protected void onAfterStore(Object instance, Entity entity)
 	{
+		depth--;
 		writeKeySpec = null;
 		keyCache.cache(entity.getKey(), instance);
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public <T> T toTypesafe(Entity entity)
+	public <T> T toTypesafe(Entity entity, Predicate<String> propertyPredicate)
 	{
 		// cast needed to avoid sun generics bug "no unique maximal instance exists..."
 		T typesafe = (T) keyCache.getCachedEntity(entity.getKey());
@@ -237,7 +259,7 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore imple
 			Key current = readKey;
 			readKey = entity.getKey();
 			// cast needed to avoid sun generics bug "no unique maximal instance exists..."
-			typesafe = (T) super.toTypesafe(entity);
+			typesafe = (T) super.toTypesafe(entity, propertyPredicate);
 			readKey = current;
 		}
 
@@ -246,13 +268,20 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore imple
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public <T> T load(Key key)
+	public <T> T load(Key key, Predicate<String> propertyPredicate)
 	{
-		T typesafe = (T) keyCache.getCachedEntity(key);
+		// only cache full instances
+		T typesafe = null;
+		if (propertyPredicate == null)
+		{
+			typesafe = (T) keyCache.getCachedEntity(key);
+		}
+		
 		if (typesafe == null)
 		{
-			typesafe = (T) super.load(key);
+			typesafe = (T) super.load(key, propertyPredicate);
 		}
+		
 		return typesafe;
 	}
 
@@ -281,7 +310,7 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore imple
 
 	public final void associate(Object instance)
 	{
-		// convert the instance so
+		// convert the instance so we can get its key and children
 		associating = true;
 		store(instance);
 		associating = false;
@@ -290,30 +319,71 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore imple
 	@Override
 	protected Key putEntityToDatstore(Entity entity)
 	{
-		if (associating == false)
-		{
-			// actually save the entity
-			return super.putEntityToDatstore(entity);
-		}
-		else
+		if (associating)
 		{
 			// do not save the entity because we just want the key
 			Key key = entity.getKey();
 			if (!key.isComplete())
 			{
 				// incomplete keys are no good to us
-				throw new IllegalArgumentException("Entity does not have complete key: " + entity);
+				throw new IllegalArgumentException("Associating entity does not have complete key: " + entity);
 			}
 			return key;
+		}
+		else if (batching)
+		{
+			if (batched == null)
+			{
+				batched = new ArrayList<Entity>();
+			}
+			batched.add(entity);
+
+			Key key = entity.getKey();
+			if (depth > 1 && !key.isComplete())
+			{
+				// incomplete keys are no good to us
+				throw new IllegalArgumentException("Batched child entity does not have complete key: " + entity);
+			}
+			
+			// we will get the key after put
+			return key;
+		}
+		else
+		{
+			// actually save the entity
+			return super.putEntityToDatstore(entity);
 		}
 	}
 
 	@Override
-	protected RuntimeException exceptionOnTranslateWrite(Exception e, Object instance)
+	protected RuntimeException newExceptionOnTranslateWrite(Exception e, Object instance)
 	{
-		String message = "There was a problem translating instance " + instance + "\n";
-		message += "Make sure instances are either Serializable or configured as components or entities.";
-		return new IllegalStateException(message, e);
+		if (e instanceof RuntimeException && e instanceof NotSerializableException == false)
+		{
+			return (RuntimeException) e;
+		}
+		else
+		{
+			String message = "There was a problem translating instance " + instance + "\n";
+			message += "Make sure instances are either Serializable or configured as components or entities.";
+			return new IllegalStateException(message, e);
+		}
+	}
+
+	private static final class EntityToKey implements Function<Entity, Key>
+	{
+		public Key apply(Entity arg0)
+		{
+			return arg0.getKey();
+		}
+	}
+
+	private final class InstanceToKey implements Function<Object, Key>
+	{
+		public Key apply(Object arg0)
+		{
+			return keyCache.getCachedKey(arg0);
+		}
 	}
 
 	private final class KeyFieldTranslator extends DecoratingTranslator
@@ -475,17 +545,17 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore imple
 		}
 	}
 
-	public final <T> T find(Class<T> type, Object parent, String name)
+	public final <T> T load(Class<T> type, Object parent, String name)
 	{
-		return find(type, keyCache.getCachedKey(parent), name);
+		return load(type, keyCache.getCachedKey(parent), name);
 	}
 
-	public final <T> Iterable<T> find(Class<T> type, Object parent)
+	public final <T> Iterator<T> find(Class<T> type, Object parent)
 	{
-		return find(type, parent, (FetchOptions) null);
+		return find(type, parent, (FindOptions) null);
 	}
 
-	public final <T> Iterable<T> find(Class<T> type, Object parent, FetchOptions options)
+	public final <T> Iterator<T> find(Class<T> type, Object parent, FindOptions options)
 	{
 		return find(type, keyCache.getCachedKey(parent), options);
 	}
@@ -500,12 +570,49 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore imple
 		update(instance, key);
 	}
 
+	public void storeOrUpdate(Object instance)
+	{
+		if (associatedKey(instance) != null)
+		{
+			update(instance);
+		}
+		else
+		{
+			store(instance);
+		}
+	}
+	
+	public void storeOrUpdate(Object instance, Object parent)
+	{
+		if (associatedKey(instance) != null)
+		{
+			update(instance);
+		}
+		else
+		{
+			store(instance, parent);
+		}
+	}
 
 	public final void delete(Object instance)
 	{
-		delete(keyCache.getCachedKey(instance));
+		deleteKeys(Iterators.singletonIterator(keyCache.getCachedKey(instance)));
+	}
+	
+	public void delete(Class<?> type)
+	{
+		Query query = query(type);
+		query.setKeysOnly();
+		Iterator<Entity> entities = getService().prepare(query).asIterator();
+		Iterator<Key> keys = Iterators.transform(entities, entityToKey);
+		deleteKeys(keys);
 	}
 
+	public void delete(Iterator<?> instances)
+	{
+		deleteKeys(Iterators.transform(instances, instanceToKey));
+	}
+	
 	private Object getInstanceFromCacheOrLoad(Key key)
 	{
 		Object instance = keyCache.getCachedEntity(key);
@@ -542,5 +649,29 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore imple
 	public final Key associatedKey(Object instance)
 	{
 		return keyCache.getCachedKey(instance);
+	}
+
+	public final List<Key> storeAll(Collection<?> instances)
+	{
+		return storeAll(instances, (Key) null);
+	}
+
+	public final List<Key> storeAll(Collection<?> instances, Object parent)
+	{
+		Key parentKey = null;
+		if (parent != null)
+		{
+			parentKey = keyCache.getCachedKey(parent);
+		}
+		batching = true;
+		for (Object object : instances)
+		{
+			store(object, parentKey);
+		}
+		batching = false;
+		
+		List<Key> put = getService().put(batched);
+		batched.clear();
+		return put;
 	}
 }

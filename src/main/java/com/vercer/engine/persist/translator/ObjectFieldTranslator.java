@@ -40,6 +40,8 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 		}
 	};
 	private final TypeConverter converters;
+	
+	// permanent cache of class fields to reduce reflection 
 	private static Map<Class<?>, List<Field>> classFields = new ConcurrentHashMap<Class<?>, List<Field>>();
 
 	public ObjectFieldTranslator(TypeConverter converters)
@@ -49,6 +51,11 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 
 	public final Object propertiesToTypesafe(Set<Property> properties, Path path, Type type)
 	{
+		if (properties.isEmpty())
+		{
+			return null;
+		}
+		
 		Class<?> clazz = GenericTypeReflector.erase(type);
 		Object instance = createInstance(clazz);
 		activate(properties, instance, path);
@@ -159,6 +166,11 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 
 	public final Set<Property> typesafeToProperties(Object object, Path path, boolean indexed)
 	{
+		if (object == null)
+		{
+			return Collections.emptySet();
+		}
+		
 		try
 		{
 			List<Field> fields = getSortedFields(object);
@@ -195,7 +207,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 
 			return merged;
 		}
-		catch (Exception e)
+		catch (IllegalAccessException e)
 		{
 			throw new IllegalStateException(e);
 		}

@@ -13,9 +13,8 @@ public final class NativeDirectTranslator extends DirectTranslator
 	@Override
 	protected boolean isDirectType(Type type)
 	{
-		// get the non-parameterized class
+		// get the non-parameterised class
 		Class<?> clazz = GenericTypeReflector.erase(type);
-
 		return clazz.isPrimitive() || DataTypeUtils.isSupportedType(clazz);
 	}
 }
