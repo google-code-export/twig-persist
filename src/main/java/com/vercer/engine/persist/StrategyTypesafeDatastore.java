@@ -670,6 +670,7 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 		}
 		batching = false;
 		
+		// TODO keys will also contain related entities - is this correct?
 		List<Key> put = getService().put(batched);
 		batched.clear();
 		return put;
