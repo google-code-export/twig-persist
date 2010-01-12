@@ -33,6 +33,13 @@
 			<version>${appengine.version}</version>
 			<scope>test</scope>
 		</dependency>
+		
+		<dependency>
+			<groupId>com.google.appengine</groupId>
+			<artifactId>appengine-api-labs</artifactId>
+			<version>${appengine.version}</version>
+			<scope>test</scope>
+		</dependency>
 
 		<dependency>
 			<groupId>joda-time</groupId>

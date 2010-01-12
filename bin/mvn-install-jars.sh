@@ -23,5 +23,12 @@ mvn install:install-file \
 	-Dversion=${VERSION} \
 	-Dpackaging=jar \
 	-DgeneratePom=true
+mvn install:install-file \
+	-Dfile="${LIB}/impl/appengine-api-labs.jar" \
+	-DgroupId=com.google.appengine \
+	-DartifactId=appengine-api-labs \
+	-Dversion=${VERSION} \
+	-Dpackaging=jar \
+	-DgeneratePom=true
 
  
