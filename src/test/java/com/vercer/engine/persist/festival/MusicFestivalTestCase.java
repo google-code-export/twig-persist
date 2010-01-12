@@ -14,7 +14,7 @@ import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Key;
 import com.vercer.engine.persist.LocalDatastoreTestCase;
-import com.vercer.engine.persist.annotation.AnnotationTypesafeSession;
+import com.vercer.engine.persist.annotation.AnnotationTypesafeDatastore;
 import com.vercer.engine.persist.festival.Band.HairStyle;
 
 public class MusicFestivalTestCase extends LocalDatastoreTestCase
@@ -146,11 +146,11 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 	{
 		Festival festival = createFestival();
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
-		AnnotationTypesafeSession typesafe = new AnnotationTypesafeSession(datastore);
+		AnnotationTypesafeDatastore typesafe = new AnnotationTypesafeDatastore(datastore);
 
 		Key key = typesafe.store(festival);
 
-		AnnotationTypesafeSession typesafe2 = new AnnotationTypesafeSession(datastore);
+		AnnotationTypesafeDatastore typesafe2 = new AnnotationTypesafeDatastore(datastore);
 
 		Object reloaded = typesafe2.load(key);
 
