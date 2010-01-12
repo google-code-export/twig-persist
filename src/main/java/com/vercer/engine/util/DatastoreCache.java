@@ -12,13 +12,10 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.inject.Inject;
-import com.google.inject.Provider;
 import com.vercer.cache.Cache;
 import com.vercer.cache.CacheItem;
 import com.vercer.engine.persist.util.io.NoDescriptorObjectInputStream;
 import com.vercer.engine.persist.util.io.NoDescriptorObjectOutputStream;
-import com.vercer.rooms.manage.Performance;
-import com.vercer.rooms.site.admin.PerformanceFilter;
 
 public class DatastoreCache<K, V> implements Cache<K, V>
 {
@@ -51,7 +48,6 @@ public class DatastoreCache<K, V> implements Cache<K, V>
 
 	public CacheItem<K, V> item(K key)
 	{
-		performance().start("DatastoreCache item");
 		try
 		{
 			Entity entity = datastore.get(createDatastoreKey(key));
@@ -61,20 +57,13 @@ public class DatastoreCache<K, V> implements Cache<K, V>
 			}
 			else
 			{
-				performance().finish("DatastoreCache item");
 				return deserialize((Blob) entity.getProperty(PROPERTY_NAME));
 			}
 		}
 		catch (EntityNotFoundException e)
 		{
-			performance().finish("DatastoreCache item");
 			return null;
 		}
-	}
-
-	private Performance performance()
-	{
-		return PerformanceFilter.performance.get();
 	}
 
 	public void put(K key, V value)
@@ -84,12 +73,10 @@ public class DatastoreCache<K, V> implements Cache<K, V>
 
 	public void put(CacheItem<K, V> item)
 	{
-		performance().start("DatastoreCache put");
 		Key key = createDatastoreKey(item.getKey());
  		Entity entity = new Entity(key);
 		entity.setProperty(PROPERTY_NAME, serialize(item));
 		datastore.put(entity);
-		performance().finish("DatastoreCache put");
 	}
 
 	protected Blob serialize(CacheItem<K, V> item)
@@ -150,15 +137,12 @@ public class DatastoreCache<K, V> implements Cache<K, V>
 
 	public V value(K key, Callable<CacheItem<K, V>> builder)
 	{
-		performance().start("DatastoreCache value builder");
 		Key dskey = createDatastoreKey(key);
 		try
 		{
 			for (int i = 0; i < RETRIES; i++)
 			{
-				performance().start("DatastoreCache datastore get");
 				Entity entity = datastore.get(dskey);
-				performance().finish("DatastoreCache datastore get");
 				
 				if (entity.hasProperty(LOCK_PROPERTY_NAME))
 				{
@@ -170,7 +154,6 @@ public class DatastoreCache<K, V> implements Cache<K, V>
 					CacheItem<K,V> item = deserialize(blob);
 					if (item.isValid())
 					{
-						performance().finish("DatastoreCache value builder");
 						return item.getValue();
 					}
 				}
@@ -204,7 +187,6 @@ public class DatastoreCache<K, V> implements Cache<K, V>
 			datastore.delete(dskey); // remove the lock entity
 			throw new IllegalStateException(e);
 		}
-		performance().finish("DatastoreCache value builder");
 		return item.getValue();
 	}
 
