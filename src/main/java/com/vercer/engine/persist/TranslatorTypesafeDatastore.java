@@ -239,7 +239,9 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 
 	public final <T> T toTypesafe(Entity entity)
 	{
-		return toTypesafe(entity, null);
+		@SuppressWarnings("unchecked") // needed for sun javac bug
+		T result = (T) toTypesafe(entity, null);
+		return result;
 	}
 	
 	public <T> T toTypesafe(Entity entity, Predicate<String> predicate)
@@ -301,7 +303,9 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 
 	public final <T> T load(Key key)
 	{
-		return load(key, null);
+		@SuppressWarnings("unchecked")
+		T result = (T) load(key, null);
+		return result;
 	}
 	
 	@SuppressWarnings("unchecked")
