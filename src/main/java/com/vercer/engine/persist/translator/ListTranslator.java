@@ -130,7 +130,8 @@ public class ListTranslator extends DecoratingTranslator
 
 					if (properties == null)
 					{
-						throw new IllegalStateException("Could not translate collection item: " + item);
+						// could not translate item or list
+						return null;
 					}
 
 					for (Property property : properties)
