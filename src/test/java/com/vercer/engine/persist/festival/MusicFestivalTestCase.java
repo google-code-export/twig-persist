@@ -6,14 +6,19 @@ import static org.junit.Assert.assertNotSame;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Iterator;
 import java.util.Locale;
 
 import org.junit.Test;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
+import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
+import com.google.appengine.repackaged.com.google.common.collect.Iterators;
+import com.google.common.base.Predicate;
 import com.vercer.engine.persist.LocalDatastoreTestCase;
+import com.vercer.engine.persist.TypesafeDatastore.FindOptions;
 import com.vercer.engine.persist.annotation.AnnotationTypesafeDatastore;
 import com.vercer.engine.persist.festival.Band.HairStyle;
 
@@ -142,21 +147,43 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 	}
 
 	@Test
-	public void holdFestival() throws ParseException
+	public void rock() throws ParseException
 	{
 		Festival festival = createFestival();
-		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
-		AnnotationTypesafeDatastore typesafe = new AnnotationTypesafeDatastore(datastore);
+		DatastoreService service = DatastoreServiceFactory.getDatastoreService();
+		AnnotationTypesafeDatastore typesafe = new AnnotationTypesafeDatastore(service);
 
 		Key key = typesafe.store(festival);
 
-		AnnotationTypesafeDatastore typesafe2 = new AnnotationTypesafeDatastore(datastore);
+		AnnotationTypesafeDatastore typesafe2 = new AnnotationTypesafeDatastore(service);
 
 		Object reloaded = typesafe2.load(key);
 
 		// they should be different instances from distinct sessions
 		assertNotSame(reloaded, festival);
+		
+		// they should have the same data
 		assertEquals(reloaded, festival);
-
 	}
+	
+	@Test
+	public void hair() throws ParseException
+	{
+		Festival festival = createFestival();
+		DatastoreService service = DatastoreServiceFactory.getDatastoreService();
+		AnnotationTypesafeDatastore typesafe = new AnnotationTypesafeDatastore(service);
+		typesafe.store(festival);
+		
+		FindOptions options = new FindOptions();
+		options.setEntityPredicate(new Predicate<Entity>()
+		{
+			public boolean apply(Entity input)
+			{
+				return input.getKey().getName().equals("Led Zeppelin");
+			}
+		});
+		Iterator<RockBand> results = typesafe.find(RockBand.class, options);
+		assertEquals(Iterators.size(results), 1);
+	}
+	
 }

@@ -4,7 +4,7 @@ import java.util.AbstractList;
 import java.util.Iterator;
 import java.util.List;
 
-import com.google.appengine.repackaged.com.google.common.collect.AbstractIterator;
+import com.google.common.collect.AbstractIterator;
 import com.vercer.util.Strings;
 
 public class Path implements Comparable<Path>

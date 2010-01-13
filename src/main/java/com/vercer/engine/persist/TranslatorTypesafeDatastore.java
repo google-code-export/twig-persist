@@ -1,6 +1,7 @@
 package com.vercer.engine.persist;
 
 import java.lang.reflect.Type;
+import java.util.AbstractCollection;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -11,13 +12,15 @@ import java.util.TreeSet;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
+import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query;
-import com.google.appengine.repackaged.com.google.common.base.Function;
-import com.google.appengine.repackaged.com.google.common.base.Predicate;
-import com.google.appengine.repackaged.com.google.common.collect.Iterators;
-import com.google.appengine.repackaged.com.google.common.collect.Maps;
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Maps;
+import com.google.common.collect.UnmodifiableIterator;
 import com.vercer.engine.persist.util.PropertyMapToSet;
 import com.vercer.engine.persist.util.generic.GenericTypeReflector;
 import com.vercer.engine.util.Entities;
@@ -193,12 +196,12 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 		}
 	}
 
-	public final <T> T load(Class<T> type, String name)
+	public final <T> T load(Type type, String name)
 	{
 		return load(type, null, name);
 	}
 
-	protected final <T> T load(Class<T> type, Key parent, String name)
+	protected final <T> T load(Type type, Key parent, String name)
 	{
 		String kind = typeToKind(type);
 		
@@ -218,19 +221,19 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 		return result;
 	}
 
-	protected final <T> Iterator<T> find(Class<T> type, Key parent, FindOptions options)
+	protected final <T> Iterator<T> find(Type type, Key parent, FindOptions options)
 	{
 		String kind = typeToKind(type);
 		Query query = new Query(kind, parent);
 		return find(query, options);
 	}
 
-	public final <T> Iterator<T> find(Class<T> type)
+	public final <T> Iterator<T> find(Type type)
 	{
 		return find(type, (FindOptions) null);
 	}
 
-	public final <T> Iterator<T> find(Class<T> type, FindOptions options)
+	public final <T> Iterator<T> find(Type type, FindOptions options)
 	{
 		String kind = typeToKind(type);
 		Query query = new Query(kind);
@@ -282,10 +285,9 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 	{
 	}
 
-
-	public Query query(Class<?> clazz)
+	public Query query(Type type)
 	{
-		return new Query(typeToKind(clazz));
+		return new Query(typeToKind(type));
 	}
 
 	protected RuntimeException newExceptionOnTranslateWrite(Exception e, Object instance)
@@ -406,20 +408,37 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 	{
 	}
 
-	protected void deleteKeys(Iterator<Key> keys)
+	public final void deleteType(Type type)
 	{
-		// there is a maximum of 500 entities per delete
+		Query query = query(type);
+		query.setKeysOnly();
+		FetchOptions options = FetchOptions.Builder.withChunkSize(500);
+		Iterator<Entity> entities = service.prepare(query).asIterator(options);
+		Iterator<Key> keys = Iterators.transform(entities, entityToKeyFunction);
 		Iterator<List<Key>> partitioned = Iterators.partition(keys, 500);
 		while (partitioned.hasNext())
 		{
-			service.delete(partitioned.next());
+			deleteKeys(partitioned.next());
 		}
+	}
+	
+	protected final void deleteKeys(Collection<Key> keys)
+	{
+		service.delete(keys);
 		onAfterDelete(keys);
 	}
 
-	protected void onAfterDelete(Iterator<Key> keys)
+	protected void onAfterDelete(Collection<Key> keys)
 	{
 	}
+
+	private static final Function<Entity, Key> entityToKeyFunction = new Function<Entity, Key>()
+	{
+		public Key apply(Entity arg0)
+		{
+			return arg0.getKey();
+		}
+	};
 	
 	protected Iterator<Entity> queryToEntityIterator(Query query, FindOptions options)
 	{

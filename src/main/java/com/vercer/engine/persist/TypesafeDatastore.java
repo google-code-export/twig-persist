@@ -1,5 +1,6 @@
 package com.vercer.engine.persist;
 
+import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -9,7 +10,7 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.Query;
-import com.google.appengine.repackaged.com.google.common.base.Predicate;
+import com.google.common.base.Predicate;
 
 public interface TypesafeDatastore
 {
@@ -18,25 +19,25 @@ public interface TypesafeDatastore
 	Key store(Object instance, Object parent);
 	Key store(Object instance, Object parent, String name);
 
-	List<Key> storeAll(Collection<?> instances);
-	List<Key> storeAll(Collection<?> instances, Object parent);
+	List<Key> storeAll(Iterator<?> instances);
+	List<Key> storeAll(Iterator<?> instances, Object parent);
 	
 	void storeOrUpdate(Object instance);
 	void storeOrUpdate(Object instance, Object parent);
 	
-	<T> T load(Class<T> type, String name);
-	<T> T load(Class<T> type, Object parent, String name);
+	<T> T load(Type type, String name);
+	<T> T load(Type type, Object parent, String name);
 	<T> Iterator<T> find(Query query);
 	<T> Iterator<T> find(Query query, FindOptions options);
-	<T> Iterator<T> find(Class<T> type);
-	<T> Iterator<T> find(Class<T> type, FindOptions options);
-	<T> Iterator<T> find(Class<T> type, Object parent);
-	<T> Iterator<T> find(Class<T> type, Object parent, FindOptions options);
+	<T> Iterator<T> find(Type type);
+	<T> Iterator<T> find(Type type, FindOptions options);
+	<T> Iterator<T> find(Type type, Object parent);
+	<T> Iterator<T> find(Type type, Object parent, FindOptions options);
 
 	void update(Object instance);
 	void delete(Object instance);
-	void delete(Class<?> type);
-	void delete(Iterator<?> instances);
+	void deleteType(Type type);
+	void deleteAll(Collection<?> instances);
 
 	// cache access operations
 	void associate(Object instance);
@@ -45,7 +46,7 @@ public interface TypesafeDatastore
 	Key associatedKey(Object instance);
 
 	// bridge type-safe to low-level 
-	Query query(Class<?> clazz);
+	Query query(Type type);
 	DatastoreService getService();
 	<T> T toTypesafe(Entity entity);
 	<T> T load(Key key);

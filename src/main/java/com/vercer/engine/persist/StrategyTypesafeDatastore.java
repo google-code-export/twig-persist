@@ -3,6 +3,7 @@ package com.vercer.engine.persist;
 import java.io.NotSerializableException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
+import java.util.AbstractCollection;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -12,11 +13,13 @@ import java.util.Set;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.Query;
-import com.google.appengine.repackaged.com.google.common.base.Function;
-import com.google.appengine.repackaged.com.google.common.base.Predicate;
-import com.google.appengine.repackaged.com.google.common.collect.Iterators;
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
+import com.google.common.collect.Iterators;
 import com.vercer.engine.persist.conversion.DefaultTypeConverter;
 import com.vercer.engine.persist.conversion.TypeConverter;
 import com.vercer.engine.persist.strategy.FieldTypeStrategy;
@@ -58,9 +61,14 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 	 * Flag that indicates we are associating instances with this session so do not store them
 	 */
 	private boolean associating;
-	private static final EntityToKey entityToKey = new EntityToKey();
-	private final InstanceToKey instanceToKey = new InstanceToKey();
-
+	private final Function<Object, Key> instanceToKey = new Function<Object, Key>()
+	{
+		public Key apply(Object instance)
+		{
+			return keyCache.evictInstance(instance);
+		}
+	};
+	
 	private boolean batching;
 	private List<Entity> batched;
 
@@ -300,7 +308,7 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 
 	public final void disassociate(Object reference)
 	{
-		keyCache.evictEntity(reference);
+		keyCache.evictInstance(reference);
 	}
 
 	public final void associate(Object instance, Key key)
@@ -370,21 +378,6 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 		}
 	}
 
-	private static final class EntityToKey implements Function<Entity, Key>
-	{
-		public Key apply(Entity arg0)
-		{
-			return arg0.getKey();
-		}
-	}
-
-	private final class InstanceToKey implements Function<Object, Key>
-	{
-		public Key apply(Object arg0)
-		{
-			return keyCache.getCachedKey(arg0);
-		}
-	}
 
 	private final class KeyFieldTranslator extends DecoratingTranslator
 	{
@@ -545,17 +538,17 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 		}
 	}
 
-	public final <T> T load(Class<T> type, Object parent, String name)
+	public final <T> T load(Type type, Object parent, String name)
 	{
 		return load(type, keyCache.getCachedKey(parent), name);
 	}
 
-	public final <T> Iterator<T> find(Class<T> type, Object parent)
+	public final <T> Iterator<T> find(Type type, Object parent)
 	{
 		return find(type, parent, (FindOptions) null);
 	}
 
-	public final <T> Iterator<T> find(Class<T> type, Object parent, FindOptions options)
+	public final <T> Iterator<T> find(Type type, Object parent, FindOptions options)
 	{
 		return find(type, keyCache.getCachedKey(parent), options);
 	}
@@ -596,21 +589,17 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 
 	public final void delete(Object instance)
 	{
-		deleteKeys(Iterators.singletonIterator(keyCache.getCachedKey(instance)));
-	}
-	
-	public void delete(Class<?> type)
-	{
-		Query query = query(type);
-		query.setKeysOnly();
-		Iterator<Entity> entities = getService().prepare(query).asIterator();
-		Iterator<Key> keys = Iterators.transform(entities, entityToKey);
-		deleteKeys(keys);
+		Key evicted= keyCache.evictInstance(instance);
+		deleteKeys(Collections.singleton(evicted));
 	}
 
-	public void delete(Iterator<?> instances)
+	public final void deleteAll(Collection<?> instances)
 	{
-		deleteKeys(Iterators.transform(instances, instanceToKey));
+		for (Object instance : instances)
+		{
+			keyCache.evictInstance(instance);
+		}
+		deleteKeys(Collections2.transform(instances, instanceToKey));
 	}
 	
 	private Object getInstanceFromCacheOrLoad(Key key)
@@ -651,12 +640,12 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 		return keyCache.getCachedKey(instance);
 	}
 
-	public final List<Key> storeAll(Collection<?> instances)
+	public final List<Key> storeAll(Iterator<?> instances)
 	{
 		return storeAll(instances, (Key) null);
 	}
 
-	public final List<Key> storeAll(Collection<?> instances, Object parent)
+	public final List<Key> storeAll(Iterator<?> instances, Object parent)
 	{
 		Key parentKey = null;
 		if (parent != null)
@@ -664,9 +653,9 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 			parentKey = keyCache.getCachedKey(parent);
 		}
 		batching = true;
-		for (Object object : instances)
+		while (instances.hasNext())
 		{
-			store(object, parentKey);
+			store(instances.next(), parentKey);
 		}
 		batching = false;
 		

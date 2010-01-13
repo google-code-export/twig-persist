@@ -41,7 +41,7 @@ public class KeyCache
 		this.cacheByValue.clear();
 	}
 
-	public Key evictEntity(Object reference)
+	public Key evictInstance(Object reference)
 	{
 		ObjectReference<Key> keyReference = cacheByValue.remove(reference);
 		Key key = keyReference.get();
