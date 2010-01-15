@@ -1,5 +1,6 @@
 package com.vercer.engine.persist.translator;
 
+import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.AbstractSet;
@@ -14,16 +15,24 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
 
-import com.google.appengine.repackaged.com.google.common.collect.AbstractIterator;
+import com.google.appengine.api.datastore.Blob;
+import com.google.inject.internal.Lists;
 import com.vercer.engine.persist.Path;
 import com.vercer.engine.persist.Property;
 import com.vercer.engine.persist.PropertyTranslator;
+import com.vercer.engine.persist.Path.Part;
+import com.vercer.engine.persist.conversion.DefaultTypeConverter.BlobToSerializable;
+import com.vercer.engine.persist.conversion.DefaultTypeConverter.SerializableToBlob;
 import com.vercer.engine.persist.util.SimpleProperty;
 import com.vercer.engine.persist.util.SinglePropertySet;
 import com.vercer.engine.persist.util.generic.GenericTypeReflector;
 
 public class ListTranslator extends DecoratingTranslator
 {
+	private static final SerializableToBlob SERIALIZABLE_TO_BLOB = new SerializableToBlob();
+	private static final BlobToSerializable BLOB_TO_SERIALIZABLE = new BlobToSerializable();
+	private static final String LIST_SERIALIZED_META = "list";
+
 	public ListTranslator(PropertyTranslator chained)
 	{
 		super(chained);
@@ -32,58 +41,65 @@ public class ListTranslator extends DecoratingTranslator
 	public Object propertiesToTypesafe(final Set<Property> properties, final Path path, Type type)
 	{
 		// only handle lists
-		if (!List.class.isAssignableFrom(GenericTypeReflector.erase(type)))
+		if (!GenericTypeReflector.erase(type).isAssignableFrom(ArrayList.class))
 		{
 			// pass on all other types down the chain
 			return chained.propertiesToTypesafe(properties, path, type);
 		}
 
+		// TODO handle this in a more general place
 		if (properties.isEmpty())
 		{
 			return null;
 		}
-
+		
 		// need to adapt a set of property lists into a list of property sets
-		Iterator<Set<Property>> propertySets = new AbstractIterator<Set<Property>>()
+		List<Set<Property>> propertySets = Lists.newArrayList();
+		boolean complete = false;
+		for (int index = 0; !complete; index++)
 		{
-			int index;
-
-			@Override
-			protected Set<Property> computeNext()
+			complete = true;
+			Set<Property> result = new HashSet<Property>(properties.size());
+			for (Property property : properties)
 			{
-				boolean complete = true;
-				Set<Property> result = new HashSet<Property>(properties.size());
-				for (Property property : properties)
+				List<?> values;
+				Path itemPath = property.getPath();
+				Part nextPart = itemPath.firstPartAfterPrefix(path);
+				Object list = property.getValue();
+				if (list instanceof List<?>)
 				{
-					List<?> values = (List<?>) property.getValue();
-
-					if (values.size() > index)
-					{
-						Object value = values.get(index);
-
-						// null values are place holders for missing properties
-						if (value != null)
-						{
-							result.add(new SimpleProperty(path, value, true));
-						}
-
-						// at least one property has items so we are not done yet
-						complete = false;
-					}
+					values = (List<?>) list;
 				}
-
-				index++;
-
-				if (complete)
+				else if (nextPart != null && nextPart.isMeta() && nextPart.getName().equals(LIST_SERIALIZED_META))
 				{
-					return endOfData();
+					values = (List<?>) BLOB_TO_SERIALIZABLE.convert((Blob) list);
+					itemPath = itemPath.head();
 				}
 				else
 				{
-					return result;
+					// this is not a list
+					return null;
+				}
+
+				if (values.size() > index)
+				{
+					Object value = values.get(index);
+
+					// null values are place holders for missing properties
+					if (value != null)
+					{
+						result.add(new SimpleProperty(itemPath, value, true));
+					}
+					// at least one property has items so we are not done yet
+					complete = false;
 				}
 			}
-		};
+			
+			if (complete == false)
+			{
+				propertySets.add(result);
+			}
+		}
 
 		// handles the tricky task of finding what type of list we have
 		Type exact = GenericTypeReflector.getExactSuperType(type, List.class);
@@ -91,9 +107,9 @@ public class ListTranslator extends DecoratingTranslator
 
 		// decode each item of the list
 		List<Object> objects = new ArrayList<Object>();
-		while (propertySets.hasNext())
+		for (Set<Property> itemProperties : propertySets)
 		{
-			Object convertedChild = chained.propertiesToTypesafe(propertySets.next(), path, componentType);
+			Object convertedChild = chained.propertiesToTypesafe(itemProperties, path, componentType);
 			
 			// if we cannot convert every member of the list we fail
 			if (convertedChild == null)
@@ -118,7 +134,7 @@ public class ListTranslator extends DecoratingTranslator
 			{
 				return Collections.emptySet();
 			}
-
+			
 			final Map<Path, List<Object>> lists = new HashMap<Path, List<Object>>(8);
 
 			int count = 0;
@@ -136,12 +152,22 @@ public class ListTranslator extends DecoratingTranslator
 
 					for (Property property : properties)
 					{
-						List<Object> values = lists.get(property.getPath());
+						Object value = property.getValue();
+						Path itemPath = property.getPath();
+						
+						// we can encode only one level of collection
+						if (value instanceof List<?>)
+						{
+							itemPath = new Path.Builder(itemPath).meta(LIST_SERIALIZED_META).build();
+							value = SERIALIZABLE_TO_BLOB.convert((Serializable) value);
+						}
+						
+						List<Object> values = lists.get(itemPath);
 						if (values == null)
 						{
 							values = new ArrayList<Object>(4);
 
-							lists.put(property.getPath(), values);
+							lists.put(itemPath, values);
 						}
 
 						// need to pad the list with nulls if any values are missing
@@ -149,7 +175,7 @@ public class ListTranslator extends DecoratingTranslator
 						{
 							values.add(null);
 						}
-						values.add(property.getValue());
+						values.add(value);
 					}
 				}
 				else

@@ -1,6 +1,7 @@
 package com.vercer.engine.persist;
 
 import java.util.AbstractList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -10,8 +11,9 @@ import com.vercer.util.Strings;
 public class Path implements Comparable<Path>
 {
 	private final static char FIELD = '.';
+	private final static char INDEX = '#';
 	private final static char TYPE = '$';
-	private final static char[] SEPERATORS = { FIELD, TYPE };
+	private final static char[] SEPERATORS = { FIELD, TYPE, INDEX };
 
 	public static final Path EMPTY_PATH = new Path("");
 
@@ -36,6 +38,7 @@ public class Path implements Comparable<Path>
 
 		public Builder field(String name)
 		{
+			ensureValidPart(name);
 			if (builder.length() > 0)
 			{
 				builder.append(FIELD);
@@ -44,10 +47,32 @@ public class Path implements Comparable<Path>
 			return this;
 		}
 
+		private void ensureValidPart(String name)
+		{
+			if (Strings.firstIndexOf(name, SEPERATORS) >= 0)
+			{
+				throw new IllegalArgumentException("Path parts cannot contain " + Arrays.toString(SEPERATORS));
+			}
+		}
+
 		public Builder meta(String name)
 		{
 			builder.append(TYPE);
 			builder.append(name);
+			return this;
+		}
+		
+		public Builder index(int index)
+		{
+			builder.append(INDEX);
+			builder.append(index);
+			return this;
+		}
+
+		public Builder append(Path tail)
+		{
+			assert tail.isAbsolute() == false;
+			builder.append(tail.value);
 			return this;
 		}
 	}
@@ -66,9 +91,14 @@ public class Path implements Comparable<Path>
 			return text.charAt(0) == FIELD;
 		}
 
-		public boolean isType()
+		public boolean isMeta()
 		{
-			return text.charAt(0) == FIELD;
+			return text.charAt(0) == TYPE;
+		}
+		
+		public boolean isIndex()
+		{
+			return text.charAt(0) == INDEX;
 		}
 
 		public boolean isRoot()
@@ -95,7 +125,11 @@ public class Path implements Comparable<Path>
 				return text.substring(1);
 			}
 		}
-
+		
+		public int getIndex()
+		{
+			return Integer.parseInt(getName());
+		}
 	}
 
 	private final String value;
@@ -191,9 +225,22 @@ public class Path implements Comparable<Path>
 		};
 	}
 
-	public Path tail()
+	public Path tail(int start)
 	{
-		return new Path(value.substring(value.indexOf(FIELD) + 1));
+		int index = Strings.nthIndexOf(value, start, SEPERATORS);
+		return new Path(value.substring(index));
+	}
+	
+	public Path head()
+	{
+		int index = Strings.lastIndexOf(value, value.length() - 1, SEPERATORS);
+		return new Path(value.substring(0, index));
+	}
+	
+	public Path head(int end)
+	{
+		int index = Strings.nthIndexOf(value, end, SEPERATORS);
+		return new Path(value.substring(0, index));
 	}
 
 	public Part firstPart()
@@ -212,6 +259,19 @@ public class Path implements Comparable<Path>
 	public boolean isEmpty()
 	{
 		return value.length() == 0;
+	}
+	
+	public boolean isAbsolute()
+	{
+		char c = value.charAt(0);
+		for (char seperator : SEPERATORS)
+		{
+			if (c == seperator)
+			{
+				return false;
+			}
+		}
+		return true;
 	}
 
 	@Override

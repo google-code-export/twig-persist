@@ -47,15 +47,15 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 	private KeySpecification writeKeySpec;
 	private Key readKey;
 
-	protected final PropertyTranslator componentTranslator;
-	protected final PropertyTranslator polyMorphicComponentTranslator;
-	protected final PropertyTranslator parentTranslator;
-	protected final PropertyTranslator independantTranslator;
-	protected final PropertyTranslator keyFieldTranslator;
-	protected final PropertyTranslator childTranslator;
-	protected final ChainedTranslator valueTranslator;
-	protected final PropertyTranslator defaultTranslator;
-	protected final KeyCache keyCache;
+	private final PropertyTranslator componentTranslator;
+	private final PropertyTranslator polyMorphicComponentTranslator;
+	private final PropertyTranslator parentTranslator;
+	private final PropertyTranslator independantTranslator;
+	private final PropertyTranslator keyFieldTranslator;
+	private final PropertyTranslator childTranslator;
+	private final ChainedTranslator valueTranslator;
+	private final PropertyTranslator defaultTranslator;
+	private final KeyCache keyCache;
 
 	/**
 	 * Flag that indicates we are associating instances with this session so do not store them
@@ -87,8 +87,7 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 
 		TypeConverter converter = createTypeConverter();
 		
-		// central translator that reads fields and delegates to the other
-		// translators
+		// central translator that reads fields and delegates to the others
 		PropertyTranslator translator = new ObjectFieldTranslator(converter)
 		{
 			@Override
@@ -122,15 +121,15 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 				{
 					if (relationships.parent(field))
 					{
-						return parentTranslator;
+						return getParentTranslator();
 					}
 					else if (relationships.child(field))
 					{
-						return childTranslator;
+						return getChildTranslator();
 					}
 					else
 					{
-						return independantTranslator;
+						return getIndependantTranslator();
 					}
 				}
 				else if (relationships.key(field))
@@ -141,11 +140,11 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 				{
 					if (storage.polymorphic(field))
 					{
-						return polyMorphicComponentTranslator;
+						return getPolyMorphicComponentTranslator();
 					}
 					else
 					{
-						return componentTranslator;
+						return getComponentTranslator();
 					}
 				}
 				else
@@ -173,7 +172,7 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 
 		};
 
-		valueTranslator = createValueTranslator();
+		valueTranslator = createValueTranslatorChain();
 
 		parentTranslator = new ParentEntityTranslator();
 		independantTranslator = new ListTranslator(new IndependantEntityTranslator());
@@ -181,10 +180,18 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 		childTranslator = new ListTranslator(new ChildEntityTranslator());
 		componentTranslator = new ListTranslator(translator);
 		polyMorphicComponentTranslator = new ListTranslator(new PolymorphicTranslator(translator));
-		defaultTranslator = createDefaultTranslator();
+		defaultTranslator = new ChainedTranslator(new ListTranslator(valueTranslator), getFallbackTranslator());
 
 		setPropertyTranslator(translator);
 		keyCache = new KeyCache();
+	}
+
+	/**
+	 * @return The translator which is used if no others are configured
+	 */
+	protected PropertyTranslator getFallbackTranslator()
+	{
+		return independantTranslator;
 	}
 
 	protected TypeConverter createTypeConverter()
@@ -192,12 +199,10 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 		return new DefaultTypeConverter();
 	}
 
-	protected PropertyTranslator createDefaultTranslator()
-	{
-		return new ChainedTranslator(new ListTranslator(valueTranslator), independantTranslator);
-	}
-
-	protected ChainedTranslator createValueTranslator()
+	/**
+	 * @return The translator that is used for single items by default
+	 */
+	protected ChainedTranslator createValueTranslatorChain()
 	{
 		ChainedTranslator result = new ChainedTranslator();
 		result.append(new NativeDirectTranslator());
@@ -389,8 +394,10 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 			this.converters = converters;
 		}
 
-		public Set<Property> typesafeToProperties(Object instance, Path prefix, boolean indexed)
+		public Set<Property> typesafeToProperties(Object instance, Path path, boolean indexed)
 		{
+			assert path.getParts().size() == 1 : "Key field should be in root Entity";
+			
 			// key spec may be null if we are in an update as we already have the key
 			if (writeKeySpec != null)
 			{
@@ -663,5 +670,30 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 		List<Key> put = getService().put(batched);
 		batched.clear();
 		return put;
+	}
+
+	protected final PropertyTranslator getIndependantTranslator()
+	{
+		return independantTranslator;
+	}
+
+	protected final PropertyTranslator getChildTranslator()
+	{
+		return childTranslator;
+	}
+
+	protected final PropertyTranslator getParentTranslator()
+	{
+		return parentTranslator;
+	}
+
+	protected final PropertyTranslator getPolyMorphicComponentTranslator()
+	{
+		return polyMorphicComponentTranslator;
+	}
+
+	protected final PropertyTranslator getComponentTranslator()
+	{
+		return componentTranslator;
 	}
 }

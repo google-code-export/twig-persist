@@ -4,8 +4,8 @@ import java.lang.reflect.Type;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.google.appengine.repackaged.com.google.common.base.Predicates;
-import com.google.appengine.repackaged.com.google.common.collect.Sets;
+import com.google.common.base.Predicates;
+import com.google.common.collect.Sets;
 import com.vercer.engine.persist.Path;
 import com.vercer.engine.persist.Property;
 import com.vercer.engine.persist.PropertyTranslator;

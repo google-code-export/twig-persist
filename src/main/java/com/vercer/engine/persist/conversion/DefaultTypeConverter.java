@@ -15,6 +15,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.google.appengine.api.datastore.Blob;
 import com.google.appengine.api.datastore.Text;
 import com.vercer.engine.persist.util.generic.GenericTypeReflector;
+import com.vercer.engine.persist.util.io.NoDescriptorObjectInputStream;
+import com.vercer.engine.persist.util.io.NoDescriptorObjectOutputStream;
 import com.vercer.util.Pair;
 
 public class DefaultTypeConverter extends CombinedTypeConverter
@@ -88,7 +90,7 @@ public class DefaultTypeConverter extends CombinedTypeConverter
 			try
 			{
 				ByteArrayOutputStream baos = new ByteArrayOutputStream(256);
-				ObjectOutputStream stream = new ObjectOutputStream(baos);
+				ObjectOutputStream stream = new NoDescriptorObjectOutputStream(baos);
 				stream.writeObject(source);
 				return new Blob(baos.toByteArray());
 			}
@@ -106,7 +108,7 @@ public class DefaultTypeConverter extends CombinedTypeConverter
 			try
 			{
 				ByteArrayInputStream bais = new ByteArrayInputStream(blob.getBytes());
-				ObjectInputStream stream = new ObjectInputStream(bais);
+				ObjectInputStream stream = new NoDescriptorObjectInputStream(bais);
 				return (Serializable) stream.readObject();
 			}
 			catch (Exception e)

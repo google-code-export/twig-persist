@@ -6,9 +6,12 @@ package com.vercer.engine.persist.festival;
 import java.util.Arrays;
 import java.util.Date;
 
+import com.google.appengine.api.datastore.Blob;
 import com.vercer.engine.persist.ReflectiveObject;
+import com.vercer.engine.persist.annotation.Component;
 import com.vercer.engine.persist.annotation.Entity;
 import com.vercer.engine.persist.annotation.Key;
+import com.vercer.engine.persist.annotation.Type;
 import com.vercer.engine.persist.annotation.Entity.Relationship;
 
 public class Album
@@ -17,14 +20,14 @@ public class Album
 	String name;
 	String label;
 
-	@Entity(Relationship.PARENT)
-	Band band;
+//	@Entity(Relationship.PARENT)
+//	Band band;
 
 	Date released;
 	boolean rocksTheHouse;
 	long sold;
 
-	@Entity(Relationship.CHILD)
+	@Component
 	Track[] tracks;
 
 	public static class Track extends ReflectiveObject
@@ -43,7 +46,7 @@ public class Album
 	{
 		final int prime = 31;
 		int result = super.hashCode();
-		result = prime * result + ((band == null) ? 0 : band.hashCode());
+//		result = prime * result + ((band == null) ? 0 : band.hashCode());
 		result = prime * result + ((label == null) ? 0 : label.hashCode());
 		result = prime * result + ((name == null) ? 0 : name.hashCode());
 		result = prime * result + ((released == null) ? 0 : released.hashCode());
@@ -116,7 +119,7 @@ public class Album
 	@Override
 	public String toString()
 	{
-		return "Album [band=" + band + ", label=" + label + ", name=" + name + ", released="
+		return "Album [" /* band=" +  band + ", */ + "label=" + label + ", name=" + name + ", released="
 				+ released + ", rocksTheHouse=" + rocksTheHouse + ", sold=" + sold + ", tracks="
 				+ Arrays.toString(tracks) + "]";
 	}

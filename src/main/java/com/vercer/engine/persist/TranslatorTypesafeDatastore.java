@@ -412,10 +412,10 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 	{
 		Query query = query(type);
 		query.setKeysOnly();
-		FetchOptions options = FetchOptions.Builder.withChunkSize(500);
+		FetchOptions options = FetchOptions.Builder.withChunkSize(100);
 		Iterator<Entity> entities = service.prepare(query).asIterator(options);
 		Iterator<Key> keys = Iterators.transform(entities, entityToKeyFunction);
-		Iterator<List<Key>> partitioned = Iterators.partition(keys, 500);
+		Iterator<List<Key>> partitioned = Iterators.partition(keys, 100);
 		while (partitioned.hasNext())
 		{
 			deleteKeys(partitioned.next());

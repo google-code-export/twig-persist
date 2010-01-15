@@ -3,7 +3,7 @@
  */
 package com.vercer.engine.persist.util;
 
-import com.google.appengine.repackaged.com.google.common.base.Predicate;
+import com.google.common.base.Predicate;
 import com.vercer.engine.persist.Path;
 import com.vercer.engine.persist.Property;
 

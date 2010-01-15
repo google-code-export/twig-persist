@@ -102,7 +102,18 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 				Type type = typeFromField(field);
 
 				// create instance
-				Object value = translator.propertiesToTypesafe(childProperties, childPath, type);
+				Object value;
+				try
+				{
+					value = translator.propertiesToTypesafe(childProperties, childPath, type);
+				}
+				catch (Exception e)
+				{
+					// add a bit of context to the trace
+					throw new IllegalStateException("Problem translating field " + field, e);
+				}
+				
+				// TODO not known if a null was not translatable or just null - solve using ObjRef
 				if (value != null)
 				{
 					// if the value was converted to another type we may need to convert it back
@@ -200,7 +211,10 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 
 					PropertyTranslator translator = translator(field);
 					Set<Property> properties = translator.typesafeToProperties(value, childPath, indexed(field));
-
+					if (properties == null)
+					{
+						throw new IllegalStateException("Could not translate value to properties: " + value);
+					}
 					merged.addAll(properties);
 				}
 			}

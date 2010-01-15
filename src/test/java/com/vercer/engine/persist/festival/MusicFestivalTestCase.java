@@ -75,7 +75,7 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		houses.tracks[2] = new Album.Track();
 		houses.tracks[2].title = "Over the Hills and Far Away";
 		houses.tracks[2].length = 4.50f;
-		houses.band = ledzep;
+//		houses.band = ledzep;
 
 		Album iv = new Album();
 		iv.name = "Led Zeppelin IV";
@@ -83,7 +83,7 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		iv.label = "Atlantic";
 		iv.rocksTheHouse = true;
 		iv.sold = 22000000;
-		iv.band = ledzep;
+//		iv.band = ledzep;
 
 		ledzep.albums.add(iv);
 
@@ -117,7 +117,7 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		swradio.released = dateFormat.parse("17 February 2003");
 		swradio.rocksTheHouse = true;
 		swradio.sold = 500000;
-		swradio.band = soulwax;
+//		swradio.band = soulwax;
 
 		swradio.tracks = new Album.Track[2];
 		swradio.tracks[0] = new Album.Track();
