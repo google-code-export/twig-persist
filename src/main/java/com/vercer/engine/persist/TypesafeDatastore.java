@@ -53,7 +53,10 @@ public interface TypesafeDatastore
 	
 	// TODO potential new methods
 	//
+	// <T> Iterator<T> find(Comparator<T>, Query...)
+	//
 	// void setDefaultRoot(Object root);
+	// void setDataVersion(String version);
     // void refresh(Object instance);
     // void disassociateAll();
     // Transaction beginNewOrGetCurrentTransaction();

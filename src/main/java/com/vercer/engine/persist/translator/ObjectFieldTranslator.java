@@ -76,6 +76,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 		List<Property> fieldProperties = new ArrayList<Property>();  // reusable instance
 		for (Field field : fields)
 		{
+			// handle changes to the class fields
 			alignPropertiesToField(field, peeking, path);
 
 			if (!Modifier.isTransient(field.getModifiers()) && stored(field))

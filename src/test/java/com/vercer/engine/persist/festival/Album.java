@@ -8,7 +8,7 @@ import java.util.Date;
 
 import com.google.appengine.api.datastore.Blob;
 import com.vercer.engine.persist.ReflectiveObject;
-import com.vercer.engine.persist.annotation.Component;
+import com.vercer.engine.persist.annotation.Embed;
 import com.vercer.engine.persist.annotation.Entity;
 import com.vercer.engine.persist.annotation.Key;
 import com.vercer.engine.persist.annotation.Type;
@@ -27,7 +27,7 @@ public class Album
 	boolean rocksTheHouse;
 	long sold;
 
-	@Component
+	@Embed
 	Track[] tracks;
 
 	public static class Track extends ReflectiveObject

@@ -1,4 +1,4 @@
-package com.vercer.engine.persist.util;
+package com.vercer.engine.util;
 
 import java.io.Serializable;
 import java.util.concurrent.Callable;

@@ -54,10 +54,10 @@ public class AnnotationStrategy extends DefaultFieldTypeStrategy implements Rela
 
 	public boolean component(Field field)
 	{
-		Component annotation = field.getAnnotation(Component.class);
+		Embed annotation = field.getAnnotation(Embed.class);
 		if (annotation == null)
 		{
-			annotation = field.getType().getAnnotation(Component.class);
+			annotation = field.getType().getAnnotation(Embed.class);
 		}
 
 		if (annotation != null)
@@ -117,7 +117,7 @@ public class AnnotationStrategy extends DefaultFieldTypeStrategy implements Rela
 
 	public boolean polymorphic(Field field)
 	{
-		Component annotation = field.getAnnotation(Component.class);
+		Embed annotation = field.getAnnotation(Embed.class);
 		if (annotation != null)
 		{
 			return annotation.polymorphic();

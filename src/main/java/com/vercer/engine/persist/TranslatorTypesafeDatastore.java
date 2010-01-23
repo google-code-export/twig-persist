@@ -1,7 +1,6 @@
 package com.vercer.engine.persist;
 
 import java.lang.reflect.Type;
-import java.util.AbstractCollection;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -20,14 +19,16 @@ import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
-import com.google.common.collect.UnmodifiableIterator;
 import com.vercer.engine.persist.util.PropertyMapToSet;
 import com.vercer.engine.persist.util.generic.GenericTypeReflector;
 import com.vercer.engine.util.Entities;
 import com.vercer.util.reference.ObjectReference;
 
 /**
- *
+ * Stateless base responsible for core datastore functionality that does not
+ * depend on an instances identity. Encoding and decoding instances and entities 
+ * is performed by the PropertyTranslator.
+ *  
  * @author John Patterson <john@vercer.com>
  */
 public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore

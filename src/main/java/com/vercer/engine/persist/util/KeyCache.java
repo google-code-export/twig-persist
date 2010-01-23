@@ -3,7 +3,7 @@ package com.vercer.engine.persist.util;
 import java.util.Map;
 
 import com.google.appengine.api.datastore.Key;
-import com.google.appengine.repackaged.com.google.common.collect.MapMaker;
+import com.google.common.collect.MapMaker;
 import com.vercer.util.reference.ObjectReference;
 import com.vercer.util.reference.SimpleObjectReference;
 

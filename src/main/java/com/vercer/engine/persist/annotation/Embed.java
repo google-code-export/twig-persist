@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 @Target({ElementType.FIELD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Component
+public @interface Embed
 {
 	boolean value() default true;
 	boolean polymorphic() default false;

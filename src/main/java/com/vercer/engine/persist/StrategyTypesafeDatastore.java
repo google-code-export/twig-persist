@@ -3,23 +3,20 @@ package com.vercer.engine.persist;
 import java.io.NotSerializableException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
-import java.util.AbstractCollection;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
-import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
-import com.google.appengine.api.datastore.Query;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
-import com.google.common.collect.Iterators;
 import com.vercer.engine.persist.conversion.DefaultTypeConverter;
 import com.vercer.engine.persist.conversion.TypeConverter;
 import com.vercer.engine.persist.strategy.FieldTypeStrategy;
@@ -38,10 +35,17 @@ import com.vercer.engine.persist.util.PropertySets;
 import com.vercer.engine.persist.util.SinglePropertySet;
 import com.vercer.util.reference.ReadOnlyObjectReference;
 
+/**
+ * Stateful layer responsible for caching key-object references and 
+ * creating a PropertyTranslator that can be configured using Strategy 
+ * instances 
+ * 
+ * @author John Patterson <john@vercer.com>
+ */
 public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 {
-	final FieldTypeStrategy naming;
-//	private static final Logger LOG = Logger.getLogger(StrategyTypesafeSession.class.getName());
+	final FieldTypeStrategy fields;
+	private static final Logger logger = Logger.getLogger(StrategyTypesafeDatastore.class.getName());
 
 	// state fields
 	private KeySpecification writeKeySpec;
@@ -83,7 +87,7 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 		// use the protected constructor so we can configure the translator
 		super(datastore);
 
-		this.naming = fields;
+		this.fields = fields;
 
 		TypeConverter converter = createTypeConverter();
 		
@@ -121,30 +125,30 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 				{
 					if (relationships.parent(field))
 					{
-						return getParentTranslator();
+						return parentTranslator;
 					}
 					else if (relationships.child(field))
 					{
-						return getChildTranslator();
+						return childTranslator;
 					}
 					else
 					{
-						return getIndependantTranslator();
+						return independantTranslator;
 					}
 				}
 				else if (relationships.key(field))
 				{
-					return keyFieldTranslator;
+					return getKeyFieldTranslator();
 				}
 				else if (storage.component(field))
 				{
 					if (storage.polymorphic(field))
 					{
-						return getPolyMorphicComponentTranslator();
+						return polyMorphicComponentTranslator;
 					}
 					else
 					{
-						return getComponentTranslator();
+						return componentTranslator;
 					}
 				}
 				else
@@ -215,20 +219,20 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 	public final Object encode(Object object)
 	{
 		// the main translator will always try to read fields first so must use value translator
-		Set<Property> properties = defaultTranslator.typesafeToProperties(object, Path.EMPTY_PATH, true);
+		Set<Property> properties = getDefaultTranslator().typesafeToProperties(object, Path.EMPTY_PATH, true);
 		return properties.iterator().next().getValue();
 	}
 
 	@Override
 	public String typeToKind(Type type)
 	{
-		return naming.typeToKind(type);
+		return fields.typeToKind(type);
 	}
 
 	@Override
 	protected Type kindToType(String kind)
 	{
-		return naming.kindToType(kind);
+		return fields.kindToType(kind);
 	}
 
 	@Override
@@ -695,5 +699,15 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 	protected final PropertyTranslator getComponentTranslator()
 	{
 		return componentTranslator;
+	}
+
+	public final PropertyTranslator getKeyFieldTranslator()
+	{
+		return keyFieldTranslator;
+	}
+
+	public final PropertyTranslator getDefaultTranslator()
+	{
+		return defaultTranslator;
 	}
 }
