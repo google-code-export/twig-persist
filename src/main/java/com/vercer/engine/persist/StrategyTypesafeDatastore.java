@@ -38,7 +38,7 @@ import com.vercer.util.reference.ReadOnlyObjectReference;
 /**
  * Stateful layer responsible for caching key-object references and 
  * creating a PropertyTranslator that can be configured using Strategy 
- * instances 
+ * instances.
  * 
  * @author John Patterson <john@vercer.com>
  */
@@ -77,6 +77,8 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 	private List<Entity> batched;
 
 	private int depth;
+	private TypeConverter converter;
+	private Object refreshing;
 
 	public StrategyTypesafeDatastore(
 			DatastoreService datastore,
@@ -89,7 +91,7 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 
 		this.fields = fields;
 
-		TypeConverter converter = createTypeConverter();
+		converter = createTypeConverter();
 		
 		// central translator that reads fields and delegates to the others
 		PropertyTranslator translator = new ObjectFieldTranslator(converter)
@@ -138,7 +140,7 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 				}
 				else if (relationships.key(field))
 				{
-					return getKeyFieldTranslator();
+					return keyFieldTranslator;
 				}
 				else if (storage.component(field))
 				{
@@ -157,12 +159,21 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 				}
 			}
 
-
 			@Override
 			// TODO remove this when using ObjectRefernece<Object> instead
 			protected Object createInstance(Class<?> clazz)
 			{
-				Object instance = super.createInstance(clazz);
+				Object instance;
+				if (refreshing == null)
+				{
+					instance = super.createInstance(clazz);
+				}
+				else
+				{
+					// replace fields with new ones
+					instance = refreshing;
+					refreshing = null;
+				}
 
 				// need to cache the instance immediately so children can ref it
 				if (keyCache.getCachedEntity(readKey) == null)
@@ -285,7 +296,7 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public <T> T load(Key key, Predicate<String> propertyPredicate)
+	protected final <T> T keyToInstance(Key key, Predicate<String> propertyPredicate)
 	{
 		// only cache full instances
 		T typesafe = null;
@@ -296,7 +307,7 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 		
 		if (typesafe == null)
 		{
-			typesafe = (T) super.load(key, propertyPredicate);
+			typesafe = (T) super.keyToInstance(key, propertyPredicate);
 		}
 		
 		return typesafe;
@@ -549,17 +560,23 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 		}
 	}
 
-	public final <T> T load(Type type, Object parent, String name)
+	public final <T> T load(Class<T> type, Object key, Object parent)
 	{
-		return load(type, keyCache.getCachedKey(parent), name);
+		String converted = converter.convert(key, String.class);
+		Key parentKey = null;
+		if (parent != null)
+		{
+			parentKey = keyCache.getCachedKey(parent);
+		}
+		return internalLoad(type, converted, parentKey);
 	}
 
-	public final <T> Iterator<T> find(Type type, Object parent)
+	public final <T> Iterator<T> find(Class<T> type, Object parent)
 	{
 		return find(type, parent, (FindOptions) null);
 	}
 
-	public final <T> Iterator<T> find(Type type, Object parent, FindOptions options)
+	public final <T> Iterator<T> find(Class<T> type, Object parent, FindOptions options)
 	{
 		return find(type, keyCache.getCachedKey(parent), options);
 	}
@@ -618,7 +635,7 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 		Object instance = keyCache.getCachedEntity(key);
 		if (instance == null)
 		{
-			instance = load(key);
+			instance = keyToInstance(key);
 			assert instance != null;
 		}
 		return instance;
@@ -640,7 +657,7 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 		return store(instance, parentKey);
 	}
 
-	public final Key store(Object instance, Object parent, String name)
+	public final Key store(Object instance, String name, Object parent)
 	{
 		Key parentKey = keyCache.getCachedKey(parent);
 		return store(instance, parentKey, name);
@@ -674,6 +691,30 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 		List<Key> put = getService().put(batched);
 		batched.clear();
 		return put;
+	}
+	
+	public void refresh(Object instance)
+	{
+		Key key = associatedKey(instance);
+
+		if (key == null)
+		{
+			throw new IllegalStateException("Instance not associated with session");
+		}
+		
+		// so it is not loaded from the cache
+		disassociate(instance);
+		
+		// instance will be reused instead of creating new
+		refreshing = instance;
+		
+		// load from datastore into the instance
+		Object loaded = keyToInstance(key);
+		
+		if (loaded == null)
+		{
+			throw new IllegalStateException("Instance to be refreshed could not be loaded");
+		}
 	}
 
 	protected final PropertyTranslator getIndependantTranslator()

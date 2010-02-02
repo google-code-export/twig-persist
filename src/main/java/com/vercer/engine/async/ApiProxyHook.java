@@ -1,6 +1,7 @@
 package com.vercer.engine.async;
 
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
 
@@ -9,7 +10,6 @@ import com.google.apphosting.api.ApiProxy.ApiProxyException;
 import com.google.apphosting.api.ApiProxy.Delegate;
 import com.google.apphosting.api.ApiProxy.Environment;
 import com.google.apphosting.api.ApiProxy.LogRecord;
-import com.google.gwt.dev.util.collect.HashMap;
 
 public class ApiProxyHook<E extends Environment> implements Delegate<E>
 {

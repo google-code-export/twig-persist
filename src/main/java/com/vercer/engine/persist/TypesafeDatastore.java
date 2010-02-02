@@ -1,6 +1,5 @@
 package com.vercer.engine.persist;
 
-import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -16,8 +15,8 @@ public interface TypesafeDatastore
 {
 	Key store(Object instance);
 	Key store(Object instance, String name);
+	Key store(Object instance, String name, Object parent);
 	Key store(Object instance, Object parent);
-	Key store(Object instance, Object parent, String name);
 
 	List<Key> storeAll(Iterator<?> instances);
 	List<Key> storeAll(Iterator<?> instances, Object parent);
@@ -25,18 +24,19 @@ public interface TypesafeDatastore
 	void storeOrUpdate(Object instance);
 	void storeOrUpdate(Object instance, Object parent);
 	
-	<T> T load(Type type, String name);
-	<T> T load(Type type, Object parent, String name);
+	<T> T load(Class<T> type, Object key);
+	<T> T load(Class<T> type, Object key, Object parent);
+	
 	<T> Iterator<T> find(Query query);
 	<T> Iterator<T> find(Query query, FindOptions options);
-	<T> Iterator<T> find(Type type);
-	<T> Iterator<T> find(Type type, FindOptions options);
-	<T> Iterator<T> find(Type type, Object parent);
-	<T> Iterator<T> find(Type type, Object parent, FindOptions options);
+	<T> Iterator<T> find(Class<T> type);
+	<T> Iterator<T> find(Class<T> type, FindOptions options);
+	<T> Iterator<T> find(Class<T> type, Object parent);
+	<T> Iterator<T> find(Class<T> type, Object parent, FindOptions options);
 
 	void update(Object instance);
 	void delete(Object instance);
-	void deleteType(Type type);
+	void deleteAll(Class<?> type);
 	void deleteAll(Collection<?> instances);
 
 	// cache access operations
@@ -46,18 +46,19 @@ public interface TypesafeDatastore
 	Key associatedKey(Object instance);
 
 	// bridge type-safe to low-level 
-	Query query(Type type);
+	Query query(Class<?> type);
 	DatastoreService getService();
 	<T> T toTypesafe(Entity entity);
-	<T> T load(Key key);
+	<T> T keyToInstance(Key key);
 	
+	 void refresh(Object instance);
+	 
 	// TODO potential new methods
 	//
 	// <T> Iterator<T> find(Comparator<T>, Query...)
 	//
 	// void setDefaultRoot(Object root);
 	// void setDataVersion(String version);
-    // void refresh(Object instance);
     // void disassociateAll();
     // Transaction beginNewOrGetCurrentTransaction();
 	

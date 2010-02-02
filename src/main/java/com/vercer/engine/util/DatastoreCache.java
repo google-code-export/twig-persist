@@ -19,25 +19,22 @@ import com.vercer.engine.persist.util.io.NoDescriptorObjectOutputStream;
 
 public class DatastoreCache<K, V> implements Cache<K, V>
 {
-	private final String namespace;
-	private final DatastoreService datastore;
 	private final static String PREFIX = "_cache_";
 	private static final String PROPERTY_NAME = "data";
 	private static final int BUFFER_SIZE = 10 * 1024;
 	private static final String LOCK_PROPERTY_NAME = "lock";
 	private static final int RETRIES = 10;
 	private static final long RETRY_MILLIS = 5000;
+	
+	private final String namespace;
+	private final DatastoreService datastore;
+	private final int version;
 
-	@Inject
-	public DatastoreCache(DatastoreService datastore)
-	{
-		this(datastore, "default");
-	}
-
-	public DatastoreCache(DatastoreService datastore, String namespace)
+	public DatastoreCache(DatastoreService datastore, String namespace, int version)
 	{
 		this.datastore = datastore;
 		this.namespace = namespace;
+		this.version = version;
 		
 	}
 
@@ -192,7 +189,7 @@ public class DatastoreCache<K, V> implements Cache<K, V>
 
 	private Key createDatastoreKey(K value)
 	{
-		return KeyFactory.createKey(PREFIX + namespace, keyName(value));
+		return KeyFactory.createKey((version > 0 ? "v" + version : "") + PREFIX + namespace, keyName(value));
 	}
 
 	protected String keyName(K value)

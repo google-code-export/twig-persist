@@ -61,7 +61,7 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 		this.indexed = indexed;
 	}
 
-	public final Key store(Object instance, Key parentKey, String name)
+	protected final Key store(Object instance, Key parentKey, String name)
 	{
 		onBeforeStore(instance);
 
@@ -145,7 +145,7 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 
 	public final Key store(Object instance, String name)
 	{
-		return store(instance, null, name);
+		return store(instance, name, null);
 	}
 
 	protected final Key store(Object value, Key parentKey)
@@ -155,7 +155,7 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 
 	public final Key store(Object instance)
 	{
-		return store(instance, null, null);
+		return store(instance, (Key) null, null);
 	}
 
 	public Object encode(Object object)
@@ -197,12 +197,12 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 		}
 	}
 
-	public final <T> T load(Type type, String name)
+	public final <T> T load(Class<T> type, Object key)
 	{
-		return load(type, null, name);
+		return load(type, key, null);
 	}
 
-	protected final <T> T load(Type type, Key parent, String name)
+	protected final <T> T internalLoad(Class<T> type, String name, Key parent)
 	{
 		String kind = typeToKind(type);
 		
@@ -218,23 +218,23 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 
 		// needed to avoid sun generics bug "no unique maximal instance exists..."
 		@SuppressWarnings("unchecked")
-		T result = (T) load(key);
+		T result = (T) keyToInstance(key);
 		return result;
 	}
 
-	protected final <T> Iterator<T> find(Type type, Key parent, FindOptions options)
+	protected final <T> Iterator<T> find(Class<T> type, Key parent, FindOptions options)
 	{
 		String kind = typeToKind(type);
 		Query query = new Query(kind, parent);
 		return find(query, options);
 	}
 
-	public final <T> Iterator<T> find(Type type)
+	public final <T> Iterator<T> find(Class<T> type)
 	{
 		return find(type, (FindOptions) null);
 	}
 
-	public final <T> Iterator<T> find(Type type, FindOptions options)
+	public final <T> Iterator<T> find(Class<T> type, FindOptions options)
 	{
 		String kind = typeToKind(type);
 		Query query = new Query(kind);
@@ -286,7 +286,7 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 	{
 	}
 
-	public Query query(Type type)
+	public Query query(Class<?> type)
 	{
 		return new Query(typeToKind(type));
 	}
@@ -304,15 +304,15 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 	{
 	}
 
-	public final <T> T load(Key key)
+	public final <T> T keyToInstance(Key key)
 	{
 		@SuppressWarnings("unchecked")
-		T result = (T) load(key, null);
+		T result = (T) keyToInstance(key, null);
 		return result;
 	}
 	
 	@SuppressWarnings("unchecked")
-	protected <T> T load(Key key, Predicate<String> propertyPredicate)
+	protected <T> T keyToInstance(Key key, Predicate<String> propertyPredicate)
 	{
 		Entity entity = keyToEntity(key);
 		if (entity == null)
@@ -409,7 +409,7 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 	{
 	}
 
-	public final void deleteType(Type type)
+	public final void deleteAll(Class<?> type)
 	{
 		Query query = query(type);
 		query.setKeysOnly();
@@ -500,7 +500,7 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 		{
 			// needed to avoid sun generics bug "no unique maximal instance exists..."
 			@SuppressWarnings("unchecked")
-			T result = (T) load(entity.getKey(), propertyPredicate);
+			T result = (T) keyToInstance(entity.getKey(), propertyPredicate);
 			return result;
 		}
 	}
