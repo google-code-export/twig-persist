@@ -24,8 +24,11 @@ public interface TypesafeDatastore
 	void storeOrUpdate(Object instance);
 	void storeOrUpdate(Object instance, Object parent);
 	
+	<T> T load(Key key);
 	<T> T load(Class<T> type, Object key);
 	<T> T load(Class<T> type, Object key, Object parent);
+	
+	void refresh(Object instance);
 	
 	<T> Iterator<T> find(Query query);
 	<T> Iterator<T> find(Query query, FindOptions options);
@@ -49,10 +52,7 @@ public interface TypesafeDatastore
 	Query query(Class<?> type);
 	DatastoreService getService();
 	<T> T toTypesafe(Entity entity);
-	<T> T keyToInstance(Key key);
 	
-	 void refresh(Object instance);
-	 
 	// TODO potential new methods
 	//
 	// <T> Iterator<T> find(Comparator<T>, Query...)

@@ -635,7 +635,7 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 		Object instance = keyCache.getCachedEntity(key);
 		if (instance == null)
 		{
-			instance = keyToInstance(key);
+			instance = load(key);
 			assert instance != null;
 		}
 		return instance;
@@ -709,7 +709,7 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 		refreshing = instance;
 		
 		// load from datastore into the instance
-		Object loaded = keyToInstance(key);
+		Object loaded = load(key);
 		
 		if (loaded == null)
 		{

@@ -218,7 +218,7 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 
 		// needed to avoid sun generics bug "no unique maximal instance exists..."
 		@SuppressWarnings("unchecked")
-		T result = (T) keyToInstance(key);
+		T result = (T) load(key);
 		return result;
 	}
 
@@ -304,7 +304,7 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 	{
 	}
 
-	public final <T> T keyToInstance(Key key)
+	public final <T> T load(Key key)
 	{
 		@SuppressWarnings("unchecked")
 		T result = (T) keyToInstance(key, null);

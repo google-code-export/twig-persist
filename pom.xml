@@ -13,6 +13,12 @@
 
 	<dependencies>
 
+ 		<dependency>
+            <groupId>com.google.collections</groupId>
+            <artifactId>google-collections</artifactId>
+            <version>1.0</version>
+        </dependency>
+        
 		<dependency>
 			<groupId>com.google.appengine</groupId>
 			<artifactId>appengine-api-1.0-sdk</artifactId>
@@ -118,6 +124,10 @@
 			<id>twig</id>
 			<url>http://mvn.twig-persist.googlecode.com/hg</url>
 		</repository>
+        <repository>
+            <id>google-maven-repository</id>
+            <url>http://google-maven-repository.googlecode.com/svn/repository</url>
+        </repository>
 	</repositories>
 
 </project>
