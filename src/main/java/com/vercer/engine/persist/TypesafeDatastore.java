@@ -46,28 +46,13 @@ public interface TypesafeDatastore
 	void associate(Object instance);
 	void associate(Object instance, Key key);
 	void disassociate(Object instance);
+	void disassociateAll();
 	Key associatedKey(Object instance);
 
 	// bridge type-safe to low-level 
-	Query query(Class<?> type);
 	DatastoreService getService();
+	Query query(Class<?> type);
 	<T> T toTypesafe(Entity entity);
-	
-	// TODO potential new methods
-	//
-	// <T> Iterator<T> find(Comparator<T>, Query...)
-	//
-	// void setDefaultRoot(Object root);
-	// void setDataVersion(String version);
-    // void disassociateAll();
-    // Transaction beginNewOrGetCurrentTransaction();
-	
-	// TODO not well defined how this works - some values are encoded as multiple 
-	// properties so may need to have function that adds required query filters
-	// for a particular field of an instance e.g. 
-	// void filter("location", new Location(0, 0);
-	//
-	//	Object encode(Object object);
 
 	public final static class FindOptions
 	{

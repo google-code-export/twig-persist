@@ -330,6 +330,11 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 	{
 		keyCache.evictInstance(reference);
 	}
+	
+	public void disassociateAll()
+	{
+		keyCache.clearKeyCache();
+	}
 
 	public final void associate(Object instance, Key key)
 	{
