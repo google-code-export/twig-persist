@@ -7,9 +7,12 @@ import java.util.AbstractSet;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.SortedSet;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.UnmodifiableIterator;
 
 public class ArraySortedSet<T extends Comparable<T>> extends AbstractSet<T> implements SortedSet<T>
 {
@@ -39,7 +42,27 @@ public class ArraySortedSet<T extends Comparable<T>> extends AbstractSet<T> impl
 	@Override
 	public Iterator<T> iterator()
 	{
-		return Iterators.forArray(elements, offset, length);
+		// copied from non-visible Google Collections Iterators
+		final int end = offset + length;
+		Preconditions.checkPositionIndexes(offset, end, elements.length);
+		return new UnmodifiableIterator<T>()
+		{
+			int i = offset;
+
+			public boolean hasNext()
+			{
+				return i < end;
+			}
+
+			public T next()
+			{
+				if (!hasNext())
+				{
+					throw new NoSuchElementException();
+				}
+				return elements[i++];
+			}
+		};
 	}
 
 	@Override
