@@ -9,7 +9,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.SortedSet;
 
-import com.google.appengine.repackaged.com.google.common.collect.Iterators;
+import com.google.common.collect.Iterators;
 
 public class ArraySortedSet<T extends Comparable<T>> extends AbstractSet<T> implements SortedSet<T>
 {
