@@ -14,8 +14,8 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.google.appengine.repackaged.com.google.common.collect.Iterators;
-import com.google.appengine.repackaged.com.google.common.collect.PeekingIterator;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.PeekingIterator;
 import com.vercer.engine.persist.Path;
 import com.vercer.engine.persist.Property;
 import com.vercer.engine.persist.PropertyTranslator;

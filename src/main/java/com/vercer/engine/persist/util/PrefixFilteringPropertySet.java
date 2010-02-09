@@ -4,8 +4,8 @@ import java.util.AbstractSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import com.google.appengine.repackaged.com.google.common.base.Predicate;
-import com.google.appengine.repackaged.com.google.common.collect.Iterators;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterators;
 import com.vercer.engine.persist.Path;
 import com.vercer.engine.persist.Property;
 

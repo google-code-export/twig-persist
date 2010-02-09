@@ -7,8 +7,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import com.google.appengine.repackaged.com.google.common.collect.Iterators;
-
 public class MergeSet<T> extends AbstractSet<T>
 {
 	private int size;
