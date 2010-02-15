@@ -18,8 +18,8 @@ public interface TypesafeDatastore
 	Key store(Object instance, String name, Object parent);
 	Key store(Object instance, Object parent);
 
-	List<Key> storeAll(Iterator<?> instances);
-	List<Key> storeAll(Iterator<?> instances, Object parent);
+	List<Key> storeAll(Collection<?> instances);
+	List<Key> storeAll(Collection<?> instances, Object parent);
 	
 	void storeOrUpdate(Object instance);
 	void storeOrUpdate(Object instance, Object parent);

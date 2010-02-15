@@ -11,4 +11,5 @@ public @interface Embed
 {
 	boolean value() default true;
 	boolean polymorphic() default false;
+	boolean declared() default true;
 }

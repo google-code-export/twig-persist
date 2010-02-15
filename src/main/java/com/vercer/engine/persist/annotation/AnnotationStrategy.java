@@ -85,7 +85,11 @@ public class AnnotationStrategy extends DefaultFieldTypeStrategy implements Rela
 
 	public boolean indexed(Field field)
 	{
-		Indexed annotation = field.getAnnotation(Indexed.class);
+		Indexed annotation = field.getDeclaringClass().getAnnotation(Indexed.class);
+		if (field.getAnnotation(Indexed.class) != null)
+		{
+			annotation = field.getAnnotation(Indexed.class);
+		}
 		if (annotation != null)
 		{
 			return annotation.value();

@@ -673,12 +673,12 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 		return keyCache.getCachedKey(instance);
 	}
 
-	public final List<Key> storeAll(Iterator<?> instances)
+	public final List<Key> storeAll(Collection<?> instances)
 	{
 		return storeAll(instances, (Key) null);
 	}
 
-	public final List<Key> storeAll(Iterator<?> instances, Object parent)
+	public final List<Key> storeAll(Collection<?> instances, Object parent)
 	{
 		Key parentKey = null;
 		if (parent != null)
@@ -686,9 +686,9 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 			parentKey = keyCache.getCachedKey(parent);
 		}
 		batching = true;
-		while (instances.hasNext())
+		for (Object instance : instances)
 		{
-			store(instances.next(), parentKey);
+			store(instance, parentKey);
 		}
 		batching = false;
 		
