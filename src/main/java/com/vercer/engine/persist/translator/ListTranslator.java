@@ -16,7 +16,7 @@ import java.util.Set;
 import java.util.Map.Entry;
 
 import com.google.appengine.api.datastore.Blob;
-import com.google.inject.internal.Lists;
+import com.google.common.collect.Lists;
 import com.vercer.engine.persist.Path;
 import com.vercer.engine.persist.Property;
 import com.vercer.engine.persist.PropertyTranslator;

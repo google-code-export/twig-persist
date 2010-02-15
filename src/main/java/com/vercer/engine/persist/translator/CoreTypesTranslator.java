@@ -1,8 +1,10 @@
 package com.vercer.engine.persist.translator;
 
 import java.lang.reflect.Type;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Currency;
 import java.util.Locale;
 import java.util.Set;
@@ -54,6 +56,18 @@ public class CoreTypesTranslator implements PropertyTranslator
 				throw new IllegalStateException(e);
 			}
 		}
+		else if (URL.class == erased)
+		{
+			String name = PropertySets.firstValue(properties);
+			try
+			{
+				return new URL(name);
+			}
+			catch (MalformedURLException e)
+			{
+				throw new IllegalStateException(e);
+			}
+		}
 		return null;
 	}
 
@@ -78,6 +92,11 @@ public class CoreTypesTranslator implements PropertyTranslator
 		else if (instance instanceof URI)
 		{
 			String name = ((URI) instance).toString();
+			return new SinglePropertySet(path, name, indexed);
+		}
+		else if (instance instanceof URL)
+		{
+			String name = ((URL) instance).toString();
 			return new SinglePropertySet(path, name, indexed);
 		}
 		return null;
