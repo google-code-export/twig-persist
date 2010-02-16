@@ -65,11 +65,12 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 	 * Flag that indicates we are associating instances with this session so do not store them
 	 */
 	private boolean associating;
+	
 	private final Function<Object, Key> instanceToKey = new Function<Object, Key>()
 	{
 		public Key apply(Object instance)
 		{
-			return keyCache.evictInstance(instance);
+			return keyCache.getCachedKey(instance);
 		}
 	};
 	
