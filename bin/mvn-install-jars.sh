@@ -1,4 +1,4 @@
-export VERSION="1.3.0"
+export VERSION="1.3.1"
 export SDK=$1
 export LIB="${SDK}/lib"
 
@@ -19,9 +19,9 @@ mvn install:install-file \
 	-DgeneratePom=true \
 	-DcreateChecksum=true
 mvn install:install-file \
-	-Dfile="${LIB}/impl/appengine-local-runtime.jar" \
+	-Dfile="${LIB}/impl/appengine-api.jar" \
 	-DgroupId=com.google.appengine \
-	-DartifactId=appengine-local-runtime \
+	-DartifactId=appengine-api \
 	-Dversion=${VERSION} \
 	-Dpackaging=jar \
 	-DgeneratePom=true \

@@ -66,14 +66,6 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 	 */
 	private boolean associating;
 	
-	private final Function<Object, Key> instanceToKey = new Function<Object, Key>()
-	{
-		public Key apply(Object instance)
-		{
-			return keyCache.getCachedKey(instance);
-		}
-	};
-	
 	private boolean batching;
 	private List<Entity> batched;
 
@@ -405,6 +397,207 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 	}
 
 
+	public final <T> T load(Class<T> type, Object key, Object parent)
+	{
+		String converted = converter.convert(key, String.class);
+		Key parentKey = null;
+		if (parent != null)
+		{
+			parentKey = keyCache.getCachedKey(parent);
+		}
+		return internalLoad(type, converted, parentKey);
+	}
+
+	public final <T> Iterator<T> find(Class<T> type, Object parent)
+	{
+		return find(type, parent, (FindOptions) null);
+	}
+
+	public final <T> Iterator<T> find(Class<T> type, Object parent, FindOptions options)
+	{
+		return find(type, keyCache.getCachedKey(parent), options);
+	}
+
+	public final void update(Object instance)
+	{
+		Key key = keyCache.getCachedKey(instance);
+		if (key == null)
+		{
+			throw new IllegalArgumentException("Can only update instances loaded from this session");
+		}
+		update(instance, key);
+	}
+
+	public void storeOrUpdate(Object instance)
+	{
+		if (associatedKey(instance) != null)
+		{
+			update(instance);
+		}
+		else
+		{
+			store(instance);
+		}
+	}
+	
+	public void storeOrUpdate(Object instance, Object parent)
+	{
+		if (associatedKey(instance) != null)
+		{
+			update(instance);
+		}
+		else
+		{
+			store(instance, parent);
+		}
+	}
+
+	public final void delete(Object instance)
+	{
+		Key evicted= keyCache.evictInstance(instance);
+		deleteKeys(Collections.singleton(evicted));
+	}
+
+	public final void deleteAll(Collection<?> instances)
+	{
+		deleteKeys(Collections2.transform(instances, instanceToKey));
+		for (Object instance : instances)
+		{
+			keyCache.evictInstance(instance);
+		}
+	}
+	
+	private Object getInstanceFromCacheOrLoad(Key key)
+	{
+		Object instance = keyCache.getCachedEntity(key);
+		if (instance == null)
+		{
+			instance = load(key);
+			assert instance != null;
+		}
+		return instance;
+	}
+
+	private Key getKeyFromCacheOrStore(final Object instance)
+	{
+		Key key = keyCache.getCachedKey(instance);
+		if (key == null)
+		{
+			key = store(instance);
+		}
+		return key;
+	}
+
+	public final Key store(Object instance, Object parent)
+	{
+		Key parentKey = keyCache.getCachedKey(parent);
+		return store(instance, parentKey);
+	}
+
+	public final Key store(Object instance, String name, Object parent)
+	{
+		Key parentKey = keyCache.getCachedKey(parent);
+		return store(instance, parentKey, name);
+	}
+
+	public final Key associatedKey(Object instance)
+	{
+		return keyCache.getCachedKey(instance);
+	}
+
+	public final List<Key> storeAll(Collection<?> instances)
+	{
+		return storeAll(instances, (Key) null);
+	}
+
+	public final List<Key> storeAll(Collection<?> instances, Object parent)
+	{
+		Key parentKey = null;
+		if (parent != null)
+		{
+			parentKey = keyCache.getCachedKey(parent);
+		}
+		batching = true;
+		for (Object instance : instances)
+		{
+			store(instance, parentKey);
+		}
+		batching = false;
+		
+		// TODO keys will also contain related entities - is this correct?
+		List<Key> put = getService().put(batched);
+		batched.clear();
+		return put;
+	}
+	
+	public void refresh(Object instance)
+	{
+		Key key = associatedKey(instance);
+
+		if (key == null)
+		{
+			throw new IllegalStateException("Instance not associated with session");
+		}
+		
+		// so it is not loaded from the cache
+		disassociate(instance);
+		
+		// instance will be reused instead of creating new
+		refreshing = instance;
+		
+		// load from datastore into the instance
+		Object loaded = load(key);
+		
+		if (loaded == null)
+		{
+			throw new IllegalStateException("Instance to be refreshed could not be loaded");
+		}
+	}
+
+	protected final PropertyTranslator getIndependantTranslator()
+	{
+		return independantTranslator;
+	}
+
+	protected final PropertyTranslator getChildTranslator()
+	{
+		return childTranslator;
+	}
+
+	protected final PropertyTranslator getParentTranslator()
+	{
+		return parentTranslator;
+	}
+
+	protected final PropertyTranslator getPolyMorphicComponentTranslator()
+	{
+		return polyMorphicComponentTranslator;
+	}
+
+	protected final PropertyTranslator getComponentTranslator()
+	{
+		return componentTranslator;
+	}
+
+	public final PropertyTranslator getKeyFieldTranslator()
+	{
+		return keyFieldTranslator;
+	}
+
+	public final PropertyTranslator getDefaultTranslator()
+	{
+		return defaultTranslator;
+	}
+	
+
+	private final Function<Object, Key> instanceToKey = new Function<Object, Key>()
+	{
+		public Key apply(Object instance)
+		{
+			return keyCache.getCachedKey(instance);
+		}
+	};
+
 	private final class KeyFieldTranslator extends DecoratingTranslator
 	{
 		private final TypeConverter converters;
@@ -566,195 +759,4 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 		}
 	}
 
-	public final <T> T load(Class<T> type, Object key, Object parent)
-	{
-		String converted = converter.convert(key, String.class);
-		Key parentKey = null;
-		if (parent != null)
-		{
-			parentKey = keyCache.getCachedKey(parent);
-		}
-		return internalLoad(type, converted, parentKey);
-	}
-
-	public final <T> Iterator<T> find(Class<T> type, Object parent)
-	{
-		return find(type, parent, (FindOptions) null);
-	}
-
-	public final <T> Iterator<T> find(Class<T> type, Object parent, FindOptions options)
-	{
-		return find(type, keyCache.getCachedKey(parent), options);
-	}
-
-	public final void update(Object instance)
-	{
-		Key key = keyCache.getCachedKey(instance);
-		if (key == null)
-		{
-			throw new IllegalArgumentException("Can only update instances loaded from this session");
-		}
-		update(instance, key);
-	}
-
-	public void storeOrUpdate(Object instance)
-	{
-		if (associatedKey(instance) != null)
-		{
-			update(instance);
-		}
-		else
-		{
-			store(instance);
-		}
-	}
-	
-	public void storeOrUpdate(Object instance, Object parent)
-	{
-		if (associatedKey(instance) != null)
-		{
-			update(instance);
-		}
-		else
-		{
-			store(instance, parent);
-		}
-	}
-
-	public final void delete(Object instance)
-	{
-		Key evicted= keyCache.evictInstance(instance);
-		deleteKeys(Collections.singleton(evicted));
-	}
-
-	public final void deleteAll(Collection<?> instances)
-	{
-		for (Object instance : instances)
-		{
-			keyCache.evictInstance(instance);
-		}
-		deleteKeys(Collections2.transform(instances, instanceToKey));
-	}
-	
-	private Object getInstanceFromCacheOrLoad(Key key)
-	{
-		Object instance = keyCache.getCachedEntity(key);
-		if (instance == null)
-		{
-			instance = load(key);
-			assert instance != null;
-		}
-		return instance;
-	}
-
-	private Key getKeyFromCacheOrStore(final Object instance)
-	{
-		Key key = keyCache.getCachedKey(instance);
-		if (key == null)
-		{
-			key = store(instance);
-		}
-		return key;
-	}
-
-	public final Key store(Object instance, Object parent)
-	{
-		Key parentKey = keyCache.getCachedKey(parent);
-		return store(instance, parentKey);
-	}
-
-	public final Key store(Object instance, String name, Object parent)
-	{
-		Key parentKey = keyCache.getCachedKey(parent);
-		return store(instance, parentKey, name);
-	}
-
-	public final Key associatedKey(Object instance)
-	{
-		return keyCache.getCachedKey(instance);
-	}
-
-	public final List<Key> storeAll(Collection<?> instances)
-	{
-		return storeAll(instances, (Key) null);
-	}
-
-	public final List<Key> storeAll(Collection<?> instances, Object parent)
-	{
-		Key parentKey = null;
-		if (parent != null)
-		{
-			parentKey = keyCache.getCachedKey(parent);
-		}
-		batching = true;
-		for (Object instance : instances)
-		{
-			store(instance, parentKey);
-		}
-		batching = false;
-		
-		// TODO keys will also contain related entities - is this correct?
-		List<Key> put = getService().put(batched);
-		batched.clear();
-		return put;
-	}
-	
-	public void refresh(Object instance)
-	{
-		Key key = associatedKey(instance);
-
-		if (key == null)
-		{
-			throw new IllegalStateException("Instance not associated with session");
-		}
-		
-		// so it is not loaded from the cache
-		disassociate(instance);
-		
-		// instance will be reused instead of creating new
-		refreshing = instance;
-		
-		// load from datastore into the instance
-		Object loaded = load(key);
-		
-		if (loaded == null)
-		{
-			throw new IllegalStateException("Instance to be refreshed could not be loaded");
-		}
-	}
-
-	protected final PropertyTranslator getIndependantTranslator()
-	{
-		return independantTranslator;
-	}
-
-	protected final PropertyTranslator getChildTranslator()
-	{
-		return childTranslator;
-	}
-
-	protected final PropertyTranslator getParentTranslator()
-	{
-		return parentTranslator;
-	}
-
-	protected final PropertyTranslator getPolyMorphicComponentTranslator()
-	{
-		return polyMorphicComponentTranslator;
-	}
-
-	protected final PropertyTranslator getComponentTranslator()
-	{
-		return componentTranslator;
-	}
-
-	public final PropertyTranslator getKeyFieldTranslator()
-	{
-		return keyFieldTranslator;
-	}
-
-	public final PropertyTranslator getDefaultTranslator()
-	{
-		return defaultTranslator;
-	}
 }

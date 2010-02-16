@@ -1,7 +1,6 @@
 package com.vercer.engine.persist.festival;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.*;
 
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -16,7 +15,9 @@ import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 import com.vercer.engine.persist.LocalDatastoreTestCase;
 import com.vercer.engine.persist.TypesafeDatastore.FindOptions;
 import com.vercer.engine.persist.annotation.AnnotationTypesafeDatastore;
@@ -147,13 +148,13 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 	}
 
 	@Test
-	public void rock() throws ParseException
+	public void testLoadDifferentEqualInstances() throws ParseException
 	{
 		Festival festival = createFestival();
 		DatastoreService service = DatastoreServiceFactory.getDatastoreService();
-		AnnotationTypesafeDatastore typesafe = new AnnotationTypesafeDatastore(service);
+		AnnotationTypesafeDatastore datastore = new AnnotationTypesafeDatastore(service);
 
-		Key key = typesafe.store(festival);
+		Key key = datastore.store(festival);
 
 		AnnotationTypesafeDatastore typesafe2 = new AnnotationTypesafeDatastore(service);
 
@@ -167,12 +168,12 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 	}
 	
 	@Test
-	public void hair() throws ParseException
+	public void testEntityFilter() throws ParseException
 	{
 		Festival festival = createFestival();
 		DatastoreService service = DatastoreServiceFactory.getDatastoreService();
-		AnnotationTypesafeDatastore typesafe = new AnnotationTypesafeDatastore(service);
-		typesafe.store(festival);
+		AnnotationTypesafeDatastore datastore = new AnnotationTypesafeDatastore(service);
+		datastore.store(festival);
 		
 		FindOptions options = new FindOptions();
 		options.setEntityPredicate(new Predicate<Entity>()
@@ -182,8 +183,28 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 				return input.getKey().getName().equals("Led Zeppelin");
 			}
 		});
-		Iterator<RockBand> results = typesafe.find(RockBand.class, options);
+		Iterator<RockBand> results = datastore.find(RockBand.class, options);
 		assertEquals(Iterators.size(results), 1);
+	}
+
+	
+	@Test
+	public void testDeleteAll() throws ParseException
+	{
+		Festival festival = createFestival();
+		DatastoreService service = DatastoreServiceFactory.getDatastoreService();
+		AnnotationTypesafeDatastore datastore = new AnnotationTypesafeDatastore(service);
+		datastore.store(festival);
+		
+		Iterator<Album> albums = datastore.find(Album.class);
+		
+		assertTrue(albums.hasNext());
+
+		datastore.deleteAll(ImmutableList.copyOf(albums));
+		
+		albums = datastore.find(Album.class);
+		
+		assertFalse(albums.hasNext());
 	}
 	
 }
