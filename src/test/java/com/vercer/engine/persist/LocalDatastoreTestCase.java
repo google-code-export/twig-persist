@@ -6,7 +6,7 @@ import org.junit.Before;
 import com.google.appengine.tools.development.testing.LocalDatastoreServiceTestConfig;
 import com.google.appengine.tools.development.testing.LocalServiceTestHelper;
 
-public class LocalDatastoreTestCase {
+public abstract class LocalDatastoreTestCase {
 
     private final LocalServiceTestHelper helper =
         new LocalServiceTestHelper(new LocalDatastoreServiceTestConfig());

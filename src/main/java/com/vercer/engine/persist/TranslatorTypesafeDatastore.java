@@ -1,6 +1,7 @@
 package com.vercer.engine.persist;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -15,11 +16,16 @@ import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query;
+import com.google.appengine.repackaged.com.google.common.collect.Iterables;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
+import com.google.common.collect.AbstractIterator;
+import com.google.common.collect.ForwardingIterator;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
+import com.vercer.engine.persist.TypesafeDatastore.FindOptions;
 import com.vercer.engine.persist.util.PropertyMapToSet;
+import com.vercer.engine.persist.util.SortedMergeIterator;
 import com.vercer.engine.persist.util.generic.GenericTypeReflector;
 import com.vercer.engine.util.Entities;
 import com.vercer.util.reference.ObjectReference;
@@ -36,8 +42,10 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 	private final DatastoreService service;
 	private PropertyTranslator translator;
 	private boolean indexed;
-	private EntityToInstanceFunction<Object> defaultEntityToInstanceFunction = new EntityToInstanceFunction<Object>();
-	private KeyToInstanceFunction<Object> defaultKeyToInstanceFunction = new KeyToInstanceFunction<Object>();
+	
+	private Function<Entity, Object> defaultEntityToInstanceFunction = new EntityToInstanceFunction<Object>(null);
+	private Function<Entity, Object> defaultKeyToInstanceFunction = new KeyToInstanceFunction<Object>(null);
+	private Function<Entity, Object> defaultParentKeyToInstanceFunction = new ParentKeyToInstanceFunction<Object>(null);
 
 	public TranslatorTypesafeDatastore(DatastoreService service, PropertyTranslator translator, boolean indexed)
 	{
@@ -347,30 +355,73 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 		return find(query, null);
 	}
 
-	@SuppressWarnings("unchecked")
 	public final <T> Iterator<T> find(Query query, FindOptions options)
 	{
-		if (query.isKeysOnly())
-		{
-			Iterator<Entity> iterator = queryToEntityIterator(query, options);
-			Function<Entity, T> function = (Function<Entity, T>) defaultKeyToInstanceFunction;
-			if (options != null && options.getPropertyPredicate() != null)
-			{
-				function = new KeyToInstanceFunction<T>(options.getPropertyPredicate());
-			}
-			return (Iterator<T>) Iterators.transform(iterator, function);
-		}
-		else
-		{
-			Iterator<Entity> iterator = queryToEntityIterator(query, options);
+		Iterator<Entity> iterator = queryToEntityIterator(query, options);
+		Function<Entity, T> function = entityToInstanceFunction(query, options);
+		return (Iterator<T>) Iterators.transform(iterator, function);
+	}
 
-			Function<Entity, T> function = (Function<Entity, T>) defaultEntityToInstanceFunction;
+	@SuppressWarnings("unchecked")
+	private <T> Function<Entity, T> entityToInstanceFunction(Query query, FindOptions options)
+	{
+		Function<Entity, T> function;
+//		if (query.isKeysOnly())
+//		{
+//			if (options.isReturnParent())
+//			{
+//				function = (Function<Entity, T>) defaultParentKeyToInstanceFunction;
+//				if (options != null && options.getPropertyPredicate() != null)
+//				{
+//					function = new ParentKeyToInstanceFunction<T>(options.getPropertyPredicate());
+//				}
+//			}
+//			else
+//			{
+//				function = (Function<Entity, T>) defaultKeyToInstanceFunction;
+//				if (options != null && options.getPropertyPredicate() != null)
+//				{
+//					function = new KeyToInstanceFunction<T>(options.getPropertyPredicate());
+//				}
+//			}
+//		}
+//		else
+//		{
+			function = (Function<Entity, T>) defaultEntityToInstanceFunction;
 			if (options != null && options.getPropertyPredicate() != null)
 			{
 				function = new EntityToInstanceFunction<T>(options.getPropertyPredicate());
 			}
-			return (Iterator<T>) Iterators.transform(iterator, function);
+//		}
+		return function;
+	}
+	
+	public <T> Iterator<T> find(Collection<Query> queries, MergeFindOptions options)
+	{
+		if (options.getInstanceComparator() != null || options.getEntityComparator() == null)
+		{
+			throw new UnsupportedOperationException("Not implemented yet");
 		}
+		
+		List<Iterator<Entity>> iterators = new ArrayList<Iterator<Entity>>();
+		for (Query query : queries)
+		{
+			Iterator<Entity> iterator = queryToEntityIterator(query, options);
+			iterators.add(iterator);
+		}
+		
+		// use the first query to decide what function to create
+		Function<Entity, T> function = entityToInstanceFunction(queries.iterator().next(), options);
+		
+		// merge all entities into a single stream
+		SortedMergeIterator<Entity> merged = 
+			new SortedMergeIterator<Entity>(
+					options.getEntityComparator(), 
+					iterators, 
+					options.isFilterDuplicates());
+		
+		// convert the entity stream into an instance stream
+		return (Iterator<T>) Iterators.transform(merged, function);
 	}
 
 	public final void update(Object instance, Key key)
@@ -441,7 +492,7 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 		}
 	};
 	
-	protected Iterator<Entity> queryToEntityIterator(Query query, FindOptions options)
+	protected Iterator<Entity> queryToEntityIterator(Query query, final FindOptions options)
 	{
 		Iterator<Entity> result;
 		if (options != null && options.getFetchOptions() != null)
@@ -452,7 +503,12 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 		{
 			result = service.prepare(query).asIterator();
 		}
-			
+		
+		if (options != null && options.isReturnParent())
+		{
+			result = new PreFetchParentIterator(options, result);
+		}
+		
 		if (options != null && options.getEntityPredicate() != null)
 		{
 			result = Iterators.filter(result, options.getEntityPredicate());
@@ -461,14 +517,59 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 		return result;
 	}
 
+	private final class PreFetchParentIterator extends AbstractIterator<Entity>
+	{
+		private final FindOptions options;
+		private final Iterator<Entity> result;
+		private Iterator<Entity> parents;
+
+		private PreFetchParentIterator(FindOptions options, Iterator<Entity> result)
+		{
+			this.options = options;
+			this.result = result;
+		}
+
+		@Override
+		protected Entity computeNext()
+		{
+			if (parents == null)
+			{
+				if (!result.hasNext())
+				{
+					return endOfData();
+				}
+				
+				// match the key iterator chunk size
+				List<Key> keys = new ArrayList<Key>(options.getFetchOptions().getChunkSize());
+				for (int i = 0; result.hasNext() && i < options.getFetchOptions().getChunkSize(); i++)
+				{
+					keys.add(result.next().getKey().getParent());
+				}
+				
+				Map<Key, Entity> map = service.get(keys);
+				
+				parents = map.values().iterator();
+				if (parents.hasNext() == false)
+				{
+					return endOfData();
+				}
+			}
+
+			if (parents.hasNext())
+			{
+				return parents.next();
+			}
+			else
+			{
+				parents = null;
+				return computeNext();
+			}
+		}
+	}
+
 	private final class EntityToInstanceFunction<T> implements Function<Entity, T>
 	{
 		private final Predicate<String> predicate;
-
-		public EntityToInstanceFunction()
-		{
-			this(null);
-		}
 
 		public EntityToInstanceFunction(Predicate<String> predicate)
 		{
@@ -486,11 +587,6 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 	{
 		private final Predicate<String> propertyPredicate;
 		
-		public KeyToInstanceFunction()
-		{
-			this(null);
-		}
-		
 		public KeyToInstanceFunction(Predicate<String> propertyPredicate)
 		{
 			this.propertyPredicate = propertyPredicate;
@@ -498,9 +594,25 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 
 		public T apply(Entity entity)
 		{
-			// needed to avoid sun generics bug "no unique maximal instance exists..."
 			@SuppressWarnings("unchecked")
 			T result = (T) keyToInstance(entity.getKey(), propertyPredicate);
+			return result;
+		}
+	}
+	
+	private final class ParentKeyToInstanceFunction<T> implements Function<Entity, T>
+	{
+		private final Predicate<String> propertyPredicate;
+		
+		public ParentKeyToInstanceFunction(Predicate<String> propertyPredicate)
+		{
+			this.propertyPredicate = propertyPredicate;
+		}
+
+		public T apply(Entity entity)
+		{
+			@SuppressWarnings("unchecked")
+			T result = (T) keyToInstance(entity.getKey().getParent(), propertyPredicate);
 			return result;
 		}
 	}

@@ -454,16 +454,21 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 
 	public final void delete(Object instance)
 	{
-		Key evicted= keyCache.evictInstance(instance);
-		deleteKeys(Collections.singleton(evicted));
+		Key key= keyCache.getCachedKey(instance);
+		deleteKeys(Collections.singleton(key));
 	}
 
 	public final void deleteAll(Collection<?> instances)
 	{
 		deleteKeys(Collections2.transform(instances, instanceToKey));
-		for (Object instance : instances)
+	}
+	
+	@Override
+	protected void onAfterDelete(Collection<Key> keys)
+	{
+		for (Key key : keys)
 		{
-			keyCache.evictInstance(instance);
+			keyCache.evictKey(key);
 		}
 	}
 	

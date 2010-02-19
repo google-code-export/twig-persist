@@ -34,3 +34,11 @@ mvn install:install-file \
 	-Dpackaging=jar \
 	-DgeneratePom=true \
 	-DcreateChecksum=true
+mvn install:install-file \
+	-Dfile="${LIB}/testing/appengine-testing.jar" \
+	-DgroupId=com.google.appengine \
+	-DartifactId=appengine-testing \
+	-Dversion=${VERSION} \
+	-Dpackaging=jar \
+	-DgeneratePom=true \
+	-DcreateChecksum=true
