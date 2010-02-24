@@ -3,8 +3,6 @@ package com.vercer.engine.persist.annotation;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.vercer.engine.persist.StrategyTypesafeDatastore;
-import com.vercer.engine.persist.conversion.DefaultTypeConverter;
-import com.vercer.engine.persist.conversion.TypeConverter;
 import com.vercer.engine.persist.strategy.FieldTypeStrategy;
 
 public class AnnotationTypesafeDatastore extends StrategyTypesafeDatastore

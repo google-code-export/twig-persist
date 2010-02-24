@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import com.google.appengine.api.datastore.Cursor;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
@@ -16,14 +17,12 @@ import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query;
-import com.google.appengine.repackaged.com.google.common.collect.Iterables;
+import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.ForwardingIterator;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
-import com.vercer.engine.persist.TypesafeDatastore.FindOptions;
 import com.vercer.engine.persist.util.PropertyMapToSet;
 import com.vercer.engine.persist.util.SortedMergeIterator;
 import com.vercer.engine.persist.util.generic.GenericTypeReflector;
@@ -230,19 +229,19 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 		return result;
 	}
 
-	protected final <T> Iterator<T> find(Class<T> type, Key parent, FindOptions options)
+	protected final <T> QueryResultIterator<T> find(Class<T> type, Key parent, FindOptions options)
 	{
 		String kind = typeToKind(type);
 		Query query = new Query(kind, parent);
 		return find(query, options);
 	}
 
-	public final <T> Iterator<T> find(Class<T> type)
+	public final <T> QueryResultIterator<T> find(Class<T> type)
 	{
 		return find(type, (FindOptions) null);
 	}
 
-	public final <T> Iterator<T> find(Class<T> type, FindOptions options)
+	public final <T> QueryResultIterator<T> find(Class<T> type, FindOptions options)
 	{
 		String kind = typeToKind(type);
 		Query query = new Query(kind);
@@ -350,16 +349,37 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 		return service;
 	}
 
-	public final <T> Iterator<T> find(Query query)
+	public final <T> QueryResultIterator<T> find(Query query)
 	{
 		return find(query, null);
 	}
 
-	public final <T> Iterator<T> find(Query query, FindOptions options)
+	public final <T> QueryResultIterator<T> find(Query query, FindOptions options)
 	{
-		Iterator<Entity> iterator = queryToEntityIterator(query, options);
-		Function<Entity, T> function = entityToInstanceFunction(query, options);
-		return (Iterator<T>) Iterators.transform(iterator, function);
+		final QueryResultIterator<Entity> iterator = queryToEntityIterator(query, options);
+		final Function<Entity, T> function = entityToInstanceFunction(query, options);
+		return new QueryResultIterator<T>()
+		{
+			public Cursor getCursor()
+			{
+				return iterator.getCursor();
+			}
+
+			public boolean hasNext()
+			{
+				return iterator.hasNext();
+			}
+
+			public T next()
+			{
+				return function.apply(iterator.next());
+			}
+
+			public void remove()
+			{
+				throw new UnsupportedOperationException();
+			}
+		};
 	}
 
 	@SuppressWarnings("unchecked")
@@ -492,16 +512,16 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 		}
 	};
 	
-	protected Iterator<Entity> queryToEntityIterator(Query query, final FindOptions options)
+	protected QueryResultIterator<Entity> queryToEntityIterator(Query query, final FindOptions options)
 	{
-		Iterator<Entity> result;
+		QueryResultIterator<Entity> result;
 		if (options != null && options.getFetchOptions() != null)
 		{
-			result = service.prepare(query).asIterator(options.getFetchOptions());
+			result = service.prepare(query).asQueryResultIterator(options.getFetchOptions());
 		}
 		else 
 		{
-			result = service.prepare(query).asIterator();
+			result = service.prepare(query).asQueryResultIterator();
 		}
 		
 		if (options != null && options.isReturnParent())
@@ -511,22 +531,22 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 		
 		if (options != null && options.getEntityPredicate() != null)
 		{
-			result = Iterators.filter(result, options.getEntityPredicate());
+			result = new FilteredQueryResultIterator<Entity>(result, options.getEntityPredicate());
 		}
 		
 		return result;
 	}
 
-	private final class PreFetchParentIterator extends AbstractIterator<Entity>
+	private final class PreFetchParentIterator extends AbstractIterator<Entity> implements QueryResultIterator<Entity>
 	{
 		private final FindOptions options;
-		private final Iterator<Entity> result;
+		private final QueryResultIterator<Entity> children;
 		private Iterator<Entity> parents;
 
-		private PreFetchParentIterator(FindOptions options, Iterator<Entity> result)
+		private PreFetchParentIterator(FindOptions options, QueryResultIterator<Entity> children)
 		{
 			this.options = options;
-			this.result = result;
+			this.children = children;
 		}
 
 		@Override
@@ -534,16 +554,16 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 		{
 			if (parents == null)
 			{
-				if (!result.hasNext())
+				if (!children.hasNext())
 				{
 					return endOfData();
 				}
 				
 				// match the key iterator chunk size
 				List<Key> keys = new ArrayList<Key>(options.getFetchOptions().getChunkSize());
-				for (int i = 0; result.hasNext() && i < options.getFetchOptions().getChunkSize(); i++)
+				for (int i = 0; children.hasNext() && i < options.getFetchOptions().getChunkSize(); i++)
 				{
-					keys.add(result.next().getKey().getParent());
+					keys.add(children.next().getKey().getParent());
 				}
 				
 				Map<Key, Entity> map = service.get(keys);
@@ -564,6 +584,11 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 				parents = null;
 				return computeNext();
 			}
+		}
+
+		public Cursor getCursor()
+		{
+			return children.getCursor();
 		}
 	}
 
@@ -616,4 +641,35 @@ public abstract class TranslatorTypesafeDatastore implements TypesafeDatastore
 			return result;
 		}
 	}
+	public class FilteredQueryResultIterator<T> extends AbstractIterator<T> implements QueryResultIterator<T>
+	{
+		private final QueryResultIterator<T> unfiltered;
+		private final Predicate<T> predicate;
+
+		public FilteredQueryResultIterator(QueryResultIterator<T> unfiltered, Predicate<T> predicate)
+		{
+			this.unfiltered = unfiltered;
+			this.predicate = predicate;
+		}
+
+		@Override
+		protected T computeNext()
+		{
+			while (unfiltered.hasNext())
+			{
+				T next = unfiltered.next();
+				if (predicate.apply(next))
+				{
+					return next;
+				}
+			}
+			return endOfData();
+		}
+
+		public Cursor getCursor()
+		{
+			return unfiltered.getCursor();
+		}
+	}
+
 }

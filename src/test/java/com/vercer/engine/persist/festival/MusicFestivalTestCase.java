@@ -21,6 +21,7 @@ import com.google.common.collect.Lists;
 import com.vercer.engine.persist.LocalDatastoreTestCase;
 import com.vercer.engine.persist.TypesafeDatastore.FindOptions;
 import com.vercer.engine.persist.annotation.AnnotationTypesafeDatastore;
+import com.vercer.engine.persist.festival.Album.Track;
 import com.vercer.engine.persist.festival.Band.HairStyle;
 
 public class MusicFestivalTestCase extends LocalDatastoreTestCase
@@ -206,5 +207,29 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		
 		assertFalse(albums.hasNext());
 	}
+	
+	@Test
+	public void testLists()
+	{
+		DatastoreService service = DatastoreServiceFactory.getDatastoreService();
+		AnnotationTypesafeDatastore datastore = new AnnotationTypesafeDatastore(service);
+	
+		Album album = new Album();
+		album.name = "Greatest Hits";
+		album.tracks = new Track[1];
+		album.tracks[0] = new Track();
+		album.tracks[0].title = "Friday I'm in Love";
+		
+		datastore.store(album);
+		
+		datastore.disassociateAll();
+		
+		Album load = datastore.load(Album.class, album.name);
+		
+		assertEquals(album, load);
+		
+	}
+	
+	
 	
 }

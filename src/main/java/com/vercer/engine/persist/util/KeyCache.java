@@ -1,6 +1,7 @@
 package com.vercer.engine.persist.util;
 
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import com.google.appengine.api.datastore.Key;
 import com.google.common.collect.MapMaker;
@@ -53,6 +54,10 @@ public class KeyCache
 	public Object evictKey(Key key)
 	{
 		Object object = cacheByKey.remove(key);
+		if (object == null)
+		{
+			throw new NoSuchElementException("Key " + key + " was not cached");
+		}
 		ObjectReference<Key> removed = cacheByValue.remove(object);
 		assert removed.get() == key;
 		return object;
@@ -75,6 +80,11 @@ public class KeyCache
 		{
 			return null;
 		}
+	}
+
+	public boolean containsKey(Key key)
+	{
+		return cacheByKey.containsKey(key);
 	}
 
 }

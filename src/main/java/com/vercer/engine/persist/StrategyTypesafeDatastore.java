@@ -14,6 +14,7 @@ import java.util.logging.Logger;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
@@ -408,12 +409,12 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 		return internalLoad(type, converted, parentKey);
 	}
 
-	public final <T> Iterator<T> find(Class<T> type, Object parent)
+	public final <T> QueryResultIterator<T> find(Class<T> type, Object parent)
 	{
 		return find(type, parent, (FindOptions) null);
 	}
 
-	public final <T> Iterator<T> find(Class<T> type, Object parent, FindOptions options)
+	public final <T> QueryResultIterator<T> find(Class<T> type, Object parent, FindOptions options)
 	{
 		return find(type, keyCache.getCachedKey(parent), options);
 	}
@@ -468,7 +469,10 @@ public class StrategyTypesafeDatastore extends TranslatorTypesafeDatastore
 	{
 		for (Key key : keys)
 		{
-			keyCache.evictKey(key);
+			if (keyCache.containsKey(key))
+			{
+				keyCache.evictKey(key);
+			}
 		}
 	}
 	

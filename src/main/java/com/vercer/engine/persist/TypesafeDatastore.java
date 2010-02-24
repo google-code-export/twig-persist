@@ -10,6 +10,7 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.common.base.Predicate;
 
 public interface TypesafeDatastore
@@ -31,12 +32,12 @@ public interface TypesafeDatastore
 	
 	void refresh(Object instance);
 	
-	<T> Iterator<T> find(Query query);
-	<T> Iterator<T> find(Query query, FindOptions options);
-	<T> Iterator<T> find(Class<T> type);
-	<T> Iterator<T> find(Class<T> type, FindOptions options);
-	<T> Iterator<T> find(Class<T> type, Object parent);
-	<T> Iterator<T> find(Class<T> type, Object parent, FindOptions options);
+	<T> QueryResultIterator<T> find(Query query);
+	<T> QueryResultIterator<T> find(Query query, FindOptions options);
+	<T> QueryResultIterator<T> find(Class<T> type);
+	<T> QueryResultIterator<T> find(Class<T> type, FindOptions options);
+	<T> QueryResultIterator<T> find(Class<T> type, Object parent);
+	<T> QueryResultIterator<T> find(Class<T> type, Object parent, FindOptions options);
 	
 	/**
 	 * Executes multiple queries and merges the results into a single iterator.
@@ -79,6 +80,7 @@ public interface TypesafeDatastore
 		private Predicate<Entity> entityPredicate;
 		private Predicate<String> propertyPredicate;
 		private boolean returnParent;
+		private boolean prefetch;
 		
 		public void setFetchOptions(FetchOptions fetchOptions)
 		{
@@ -111,6 +113,14 @@ public interface TypesafeDatastore
 		public boolean isReturnParent()
 		{
 			return returnParent;
+		}
+		public void setPrefetch(boolean prefetch)
+		{
+			this.prefetch = prefetch;
+		}
+		public boolean isPrefetch()
+		{
+			return prefetch;
 		}
 	}
 	
