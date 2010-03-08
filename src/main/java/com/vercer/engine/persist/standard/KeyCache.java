@@ -1,4 +1,4 @@
-package com.vercer.engine.persist.util;
+package com.vercer.engine.persist.standard;
 
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -45,10 +45,17 @@ public class KeyCache
 	public Key evictInstance(Object reference)
 	{
 		ObjectReference<Key> keyReference = cacheByValue.remove(reference);
-		Key key = keyReference.get();
-		Object removed = cacheByKey.remove(key);
-		assert removed == reference;
-		return key;
+		if (keyReference != null)
+		{
+			Key key = keyReference.get();
+			Object removed = cacheByKey.remove(key);
+			assert removed == reference;
+			return key;
+		}
+		else
+		{
+			return null;
+		}
 	}
 
 	public Object evictKey(Key key)

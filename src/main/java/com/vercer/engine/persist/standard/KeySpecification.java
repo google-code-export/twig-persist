@@ -1,4 +1,4 @@
-package com.vercer.engine.persist;
+package com.vercer.engine.persist.standard;
 
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;

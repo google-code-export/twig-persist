@@ -10,11 +10,11 @@ import com.vercer.engine.persist.util.PropertySets;
 import com.vercer.engine.persist.util.SinglePropertySet;
 import com.vercer.engine.persist.util.generic.GenericTypeReflector;
 
-public abstract class SpecificTypeTranslator<T> implements PropertyTranslator
+public abstract class AbstractTypeTranslator<T> implements PropertyTranslator
 {
 	private final Class<T> clazz;
 
-	public SpecificTypeTranslator(Class<T> clazz)
+	public AbstractTypeTranslator(Class<T> clazz)
 	{
 		this.clazz = clazz;
 	}

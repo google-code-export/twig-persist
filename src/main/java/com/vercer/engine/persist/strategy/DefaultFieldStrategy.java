@@ -6,6 +6,8 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.vercer.engine.persist.util.generic.GenericTypeReflector;
 
@@ -13,14 +15,21 @@ import com.vercer.engine.persist.util.generic.GenericTypeReflector;
  * @author John Patterson <john@vercer.com>
  *
  */
-public class DefaultFieldTypeStrategy implements FieldTypeStrategy
+public class DefaultFieldStrategy implements FieldStrategy
 {
-	public Type kindToType(String kind)
+	private final int defaultVersion;
+
+	public DefaultFieldStrategy(int defaultVersion)
+	{
+		this.defaultVersion = defaultVersion;
+	}
+
+	protected Type nameToType(String name)
 	{
 		try
 		{
-			kind = kind.replace('_', '.');
-			return Class.forName(kind);
+			name = name.replace('_', '.');
+			return Class.forName(name);
 		}
 		catch (ClassNotFoundException e)
 		{
@@ -28,11 +37,22 @@ public class DefaultFieldTypeStrategy implements FieldTypeStrategy
 		}
 	}
 
+	private final static Pattern pattern = Pattern.compile("v\\d_");
+	public final Type kindToType(String name)
+	{
+		Matcher matcher = pattern.matcher(name);
+		if (matcher.lookingAt())
+		{
+			name = name.substring(matcher.end());
+		}
+		return nameToType(name);
+	}
+
 	/**
 	 *
-	 * @see com.vercer.engine.persist.strategy.FieldTypeStrategy#name(java.lang.reflect.Field)
+	 * @see com.vercer.engine.persist.strategy.FieldStrategy#name(java.lang.reflect.Field)
 	 */
-	public String name(Field field)
+	public final String name(Field field)
 	{
 		String name = field.getName();
 		if (name.charAt(0) == '_')
@@ -42,19 +62,39 @@ public class DefaultFieldTypeStrategy implements FieldTypeStrategy
 		return name;
 	}
 
-	public String typeToKind(Type type)
+	public final String typeToKind(Type type)
+	{
+		String kind = typeToName(type);
+		if (kind.indexOf('_') > 0)
+		{
+			throw new IllegalArgumentException("Illegal character '_' in class name " + kind);
+		}
+		int version = version(type);
+		if (version > 0)
+		{
+			kind = "v" + version + "_" + kind;
+		}
+		kind = kind.replace('.', '_');
+		return kind;
+	}
+
+	protected String typeToName(Type type)
 	{
 		Class<?> clazz = GenericTypeReflector.erase(type);
 		String kind = clazz.getName();
-		kind = kind.replace('.', '_');
 		return kind;
+	}
+
+	protected int version(Type type)
+	{
+		return defaultVersion;
 	}
 
 	/**
 	 * Replaces all Collection types and Arrays with List. Converts all elements of
 	 * the collection to the component type.
 	 *
-	 * @see com.vercer.engine.persist.strategy.FieldTypeStrategy#typeOf(java.lang.reflect.Field)
+	 * @see com.vercer.engine.persist.strategy.FieldStrategy#typeOf(java.lang.reflect.Field)
 	 */
 	public Type typeOf(Field field)
 	{
@@ -113,5 +153,7 @@ public class DefaultFieldTypeStrategy implements FieldTypeStrategy
 			}
 		};
 	}
+
+
 
 }

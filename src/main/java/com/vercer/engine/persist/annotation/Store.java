@@ -5,11 +5,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Target({ElementType.FIELD, ElementType.TYPE}) 
+@Target(ElementType.FIELD) 
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Entity
+public @interface Store
 {
-	public enum Relationship { PARENT, CHILD, INDEPENDANT };
-	
-	Relationship value() default Relationship.INDEPENDANT;
+	boolean value() default true;
 }
