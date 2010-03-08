@@ -11,7 +11,6 @@ import java.util.NoSuchElementException;
 import java.util.SortedSet;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.UnmodifiableIterator;
 
 public class ArraySortedSet<T extends Comparable<T>> extends AbstractSet<T> implements SortedSet<T>

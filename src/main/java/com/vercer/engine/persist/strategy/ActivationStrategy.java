@@ -4,5 +4,5 @@ import java.lang.reflect.Field;
 
 public interface ActivationStrategy
 {
-	boolean activate(Field field, int depth);
+	int activationDepth(Field field, int depth);
 }

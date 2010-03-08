@@ -57,11 +57,6 @@ public class ChainedTranslator implements PropertyTranslator
 
 	public Object propertiesToTypesafe(Set<Property> properties, Path prefix, Type type)
 	{
-		if (properties.isEmpty())
-		{
-			return null;
-		}
-
 		for (PropertyTranslator translator: translators)
 		{
 			Object result = translator.propertiesToTypesafe(properties, prefix, type);

@@ -15,6 +15,10 @@ public class DirectTranslator implements PropertyTranslator
 	{
 		if (isDirectType(type))
 		{
+			if (properties.isEmpty())
+			{
+				return NULL_VALUE;
+			}
 			return PropertySets.firstValue(properties);
 		}
 		else

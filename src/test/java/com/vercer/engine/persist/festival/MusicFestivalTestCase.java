@@ -1,12 +1,22 @@
 package com.vercer.engine.persist.festival;
 
-import static org.junit.Assert.*;
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertNull;
+import static junit.framework.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
 
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import org.junit.Test;
 
@@ -14,23 +24,33 @@ import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.QueryResultIterator;
+import com.google.appengine.api.datastore.Transaction;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
 import com.vercer.engine.persist.LocalDatastoreTestCase;
-import com.vercer.engine.persist.TypesafeDatastore.FindOptions;
-import com.vercer.engine.persist.annotation.AnnotationTypesafeDatastore;
+import com.vercer.engine.persist.annotation.AnnotationObjectDatastore;
 import com.vercer.engine.persist.festival.Album.Track;
 import com.vercer.engine.persist.festival.Band.HairStyle;
 
 public class MusicFestivalTestCase extends LocalDatastoreTestCase
 {
-	public Festival createFestival() throws ParseException
+	private AnnotationObjectDatastore datastore;
+
+	@Override
+	public void setUp()
+	{
+		super.setUp();
+		DatastoreService service = DatastoreServiceFactory.getDatastoreService();
+		datastore = new AnnotationObjectDatastore(service);
+	}
+
+	public static MusicFestival createFestival() throws ParseException
 	{
 		DateFormat dateFormat = new SimpleDateFormat("d MMM yyyy");
 
-		Festival festival = new Festival();
+		MusicFestival musicFestival = new MusicFestival();
 
 		RockBand ledzep = new RockBand();
 		ledzep.name = "Led Zeppelin";
@@ -41,6 +61,7 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		Musician page = new Musician();
 		page.name = "Jimmy Page";
 		page.birthday = dateFormat.parse("9 January 1944");
+		ledzep.members = new ArrayList<Musician>();
 		ledzep.members.add(page);
 
 		Musician jones = new Musician();
@@ -65,6 +86,7 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		houses.rocksTheHouse = true;
 		houses.sold = 18000000;
 
+		ledzep.albums = new ArrayList<Album>();
 		ledzep.albums.add(houses);
 
 		houses.tracks = new Album.Track[3];
@@ -89,11 +111,12 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 
 		ledzep.albums.add(iv);
 
-		festival.performances.add(ledzep);
+		musicFestival.bands.add(ledzep);
 
 		RockBand firm = new RockBand();
 		firm.name = "The Firm";
 		firm.hair = HairStyle.BALD;
+		firm.members = new ArrayList<Musician>();
 
 		firm.members.add(page);
 
@@ -103,17 +126,20 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 
 		firm.members.add(rogers);
 
-		festival.performances.add(firm);
+		musicFestival.bands.add(firm);
 
 		DanceBand soulwax = new DanceBand();
 		soulwax.name = "Soulwax";
 		soulwax.locale = new Locale("nl", "be");
+		soulwax.members = new ArrayList<Musician>();
 		soulwax.members.add(new Musician("Stephen Dewaele"));
 		soulwax.members.add(new Musician("David Dewaele"));
 		soulwax.hair = Band.HairStyle.UNKEMPT_FLOPPY;
 		soulwax.tabletsConfiscated = 12; // but they are still acting suspiciously
 
 		Album swradio = new Album();
+		soulwax.albums = new ArrayList<Album>();
+		soulwax.albums.add(swradio);
 		swradio.name = "As Heard on Radio Soulwax Pt. 2";
 		swradio.label = "Play It Again Sam";
 		swradio.released = dateFormat.parse("17 February 2003");
@@ -143,93 +169,220 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 
 		swradio.tracks[1].length = 1.38f;
 
-		festival.performances.add(soulwax);
+		musicFestival.bands.add(soulwax);
 
-		return festival;
+		return musicFestival;
 	}
 
 	@Test
 	public void testLoadDifferentEqualInstances() throws ParseException
 	{
-		Festival festival = createFestival();
+		MusicFestival musicFestival = createFestival();
+
+		Key key = datastore.store(musicFestival);
+
 		DatastoreService service = DatastoreServiceFactory.getDatastoreService();
-		AnnotationTypesafeDatastore datastore = new AnnotationTypesafeDatastore(service);
-
-		Key key = datastore.store(festival);
-
-		AnnotationTypesafeDatastore typesafe2 = new AnnotationTypesafeDatastore(service);
-
+		AnnotationObjectDatastore typesafe2 = new AnnotationObjectDatastore(service);
+		typesafe2.setActivationDepth(5);
 		Object reloaded = typesafe2.load(key);
 
 		// they should be different instances from distinct sessions
-		assertNotSame(reloaded, festival);
-		
+		assertNotSame(reloaded, musicFestival);
+
 		// they should have the same data
-		assertEquals(reloaded, festival);
+		assertEquals(reloaded, musicFestival);
 	}
-	
+
 	@Test
 	public void testEntityFilter() throws ParseException
 	{
-		Festival festival = createFestival();
-		DatastoreService service = DatastoreServiceFactory.getDatastoreService();
-		AnnotationTypesafeDatastore datastore = new AnnotationTypesafeDatastore(service);
-		datastore.store(festival);
-		
-		FindOptions options = new FindOptions();
-		options.setEntityPredicate(new Predicate<Entity>()
+		MusicFestival musicFestival = createFestival();
+		datastore.store(musicFestival);
+
+		Predicate<Entity> predicate = new Predicate<Entity>()
 		{
 			public boolean apply(Entity input)
 			{
 				return input.getKey().getName().equals("Led Zeppelin");
 			}
-		});
-		Iterator<RockBand> results = datastore.find(RockBand.class, options);
+		};
+		Iterator<RockBand> results = datastore.find().type(RockBand.class).filterEntities(predicate).returnResultsNow();
 		assertEquals(Iterators.size(results), 1);
 	}
 
-	
+
 	@Test
 	public void testDeleteAll() throws ParseException
 	{
-		Festival festival = createFestival();
-		DatastoreService service = DatastoreServiceFactory.getDatastoreService();
-		AnnotationTypesafeDatastore datastore = new AnnotationTypesafeDatastore(service);
-		datastore.store(festival);
-		
+		MusicFestival musicFestival = createFestival();
+		datastore.store(musicFestival);
+
 		Iterator<Album> albums = datastore.find(Album.class);
-		
+
 		assertTrue(albums.hasNext());
 
 		datastore.deleteAll(ImmutableList.copyOf(albums));
-		
+
 		albums = datastore.find(Album.class);
-		
+
 		assertFalse(albums.hasNext());
 	}
-	
+
 	@Test
 	public void testLists()
 	{
-		DatastoreService service = DatastoreServiceFactory.getDatastoreService();
-		AnnotationTypesafeDatastore datastore = new AnnotationTypesafeDatastore(service);
-	
 		Album album = new Album();
 		album.name = "Greatest Hits";
 		album.tracks = new Track[1];
 		album.tracks[0] = new Track();
 		album.tracks[0].title = "Friday I'm in Love";
-		
+
 		datastore.store(album);
-		
+
 		datastore.disassociateAll();
-		
+
 		Album load = datastore.load(Album.class, album.name);
-		
+
 		assertEquals(album, load);
-		
+
 	}
-	
-	
-	
+
+	@Test
+	public void asyncQueryTest() throws ParseException, InterruptedException, ExecutionException
+	{
+		MusicFestival musicFestival = createFestival();
+		datastore.store(musicFestival);
+
+		Future<QueryResultIterator<RockBand>> frbs = datastore.find().type(RockBand.class).returnResultsLater();
+		Future<QueryResultIterator<DanceBand>> fdbs = datastore.find().type(DanceBand.class).returnResultsLater();
+
+		QueryResultIterator<RockBand> rbs = frbs.get();
+		QueryResultIterator<DanceBand> dbs = fdbs.get();
+
+		assertTrue(rbs.hasNext());
+		assertTrue(dbs.hasNext());
+	}
+
+	@Test
+	public void asyncStoreSingle() throws ParseException, InterruptedException, ExecutionException
+	{
+		MusicFestival musicFestival = createFestival();
+		Band band1 = musicFestival.bands.get(0);
+		Band band2 = musicFestival.bands.get(1);
+		Future<Key> future1 = datastore.store().instance(band1).returnKeyLater();
+		Future<Key> future2 = datastore.store().instance(band2).returnKeyLater();
+
+		assertEquals("Led Zeppelin", future1.get().getName());
+		assertEquals("The Firm", future2.get().getName());
+	}
+
+	@Test
+	public void asyncStoreMulti() throws ParseException, InterruptedException, ExecutionException
+	{
+		MusicFestival musicFestival = createFestival();
+		Band band1 = musicFestival.bands.get(0);
+		Band band2 = musicFestival.bands.get(1);
+
+		Future<Map<Band, Key>> future1 = datastore.store().instances(Arrays.asList(band1, band2)).returnKeysLater();
+
+		Map<Band, Key> map = future1.get();
+
+		assertEquals(2, map.size());
+
+		assertNotNull(map.get(band1));
+		assertNotNull(map.get(band2));
+	}
+
+	@Test
+	public void batchedStoreMulti() throws ParseException, InterruptedException, ExecutionException
+	{
+		MusicFestival musicFestival = createFestival();
+		Band band1 = musicFestival.bands.get(0);
+		Band band2 = musicFestival.bands.get(1);
+
+		Map<Band, Key> keys = datastore.store().instances(Arrays.asList(band1, band2)).batchRelated().returnKeysNow();
+
+		assertTrue(keys.size() > 2);
+	}
+
+	@Test public void storeDuplicate()
+	{
+		Band band = new Band();
+		band.name = "The XX";
+		datastore.store().instance(band).ensureUniqueKey().returnKeyNow();
+
+		band = new Band();
+		band.name = "The XX";
+		boolean threw = false;
+		try
+		{
+			datastore.store().instance(band).ensureUniqueKey().returnKeyNow();
+		}
+		catch (Exception e)
+		{
+			threw = true;
+		}
+		assertTrue(threw);
+	}
+
+	@Test
+	public void activationDepth() throws ParseException
+	{
+		MusicFestival musicFestival = createFestival();
+
+		datastore.setActivationDepth(1);
+
+		Key stored = datastore.store(musicFestival);
+		datastore.disassociateAll();
+
+		// musicians have depth 3
+		MusicFestival reloaded = datastore.load(stored);
+		assertNull(reloaded.bands.get(0).hair);
+
+		datastore.refresh(reloaded.bands.get(0));
+
+		assertNotNull(reloaded.bands.get(0).hair);
+
+		datastore.setActivationDepth(2);
+		datastore.disassociateAll();
+
+		reloaded = datastore.load(stored);
+		assertNotNull(reloaded.bands.get(0).hair);
+	}
+
+	@Test
+	public void ensureUniqueKey()
+	{
+		Band band1 = new Band();
+		band1.name = "Kasier Chiefs";
+
+		Band band2 = new Band();
+		band2.name = "Chemical Brothers";
+
+		datastore.storeAll(Arrays.asList(band1, band2));
+
+		Transaction txn = datastore.beginTransaction();
+
+		// overwrite band1
+		Band band3 = new Band();
+		band3.name = "Kasier Chiefs";
+		datastore.store().instance(band3);
+		txn.commit();
+
+		txn = datastore.beginTransaction();
+		Band band4 = new Band();
+		band4.name = "Kasier Chiefs";
+
+		boolean threw = false;
+		try
+		{
+			datastore.store().instance(band4).ensureUniqueKey().returnKeyNow();
+		}
+		catch (Exception e)
+		{
+			threw = true;
+        }
+		assertTrue(threw);
+	}
+
 }

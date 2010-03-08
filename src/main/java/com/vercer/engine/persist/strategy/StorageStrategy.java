@@ -14,7 +14,7 @@ public interface StorageStrategy
 	 * @param field The reflected Field to be examined
 	 * @return true to store as a component of the referencing Entity
 	 */
-	boolean component(Field field);
+	boolean embed(Field field);
 
 	/**
 	 * Should this field value be stored as a separate Entity
@@ -31,14 +31,14 @@ public interface StorageStrategy
 	 * @param field The reflected Field to be examined
 	 * @return true if the field is indexed
 	 */
-	boolean indexed(Field field);
+	boolean index(Field field);
 
 	/**
 	 * Should the field be stored at all
 	 * @param field The reflected Field to be examined
 	 * @return true to store the field
 	 */
-	boolean stored(Field field);
+	boolean store(Field field);
 
 
 	/**

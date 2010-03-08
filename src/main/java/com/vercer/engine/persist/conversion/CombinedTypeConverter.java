@@ -14,7 +14,6 @@ public class CombinedTypeConverter implements TypeConverter
 {
 	private final List<SpecificTypeConverter<?, ?>> specifics = new ArrayList<SpecificTypeConverter<?,?>>();
 	private final List<TypeConverter> generals = new ArrayList<TypeConverter>();
-
 	private final Map<Pair<Type, Type>, SpecificTypeConverter<?, ?>> cache = new HashMap<Pair<Type,Type>, SpecificTypeConverter<?,?>>();
 
 	/* (non-Javadoc)
@@ -24,8 +23,11 @@ public class CombinedTypeConverter implements TypeConverter
 	public <T> T convert(Object source, Type type)
 	{
 		// try the specific converters first
-		SpecificTypeConverter<? super Object, ? extends T> specific =
-			 (SpecificTypeConverter<? super Object, ? extends T>) converter(source.getClass(), type);
+		SpecificTypeConverter<? super Object, ? extends T> specific = null;
+		if (source != null)
+		{
+			 specific = (SpecificTypeConverter<? super Object, ? extends T>) converter(source.getClass(), type);
+		}
 
 		if (specific == null)
 		{
@@ -35,7 +37,14 @@ public class CombinedTypeConverter implements TypeConverter
 				Object result = general.convert(source, type);
 				if (result != null)
 				{
-					return (T) result;
+					if (result == nullValue)
+					{
+						return null;
+					}
+					else
+					{
+						return (T) result;
+					}
 				}
 			}
 

@@ -20,6 +20,10 @@ public class CoreTypesTranslator implements PropertyTranslator
 {
 	public Object propertiesToTypesafe(Set<Property> properties, Path path, Type type)
 	{
+		if (properties.isEmpty())
+		{
+			return NULL_VALUE;
+		}
 		Class<?> erased = GenericTypeReflector.erase(type);
 		if (erased == Locale.class)
 		{

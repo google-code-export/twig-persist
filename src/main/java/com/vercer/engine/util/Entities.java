@@ -35,7 +35,6 @@ public final class Entities
 		changed.setPropertiesFrom(entity);
 		return changed;
 	}
-	
 
 	public static Entity createEntity(String kind, String name, Key parent)
 	{
@@ -62,5 +61,5 @@ public final class Entities
 			}
 		}
 	}
-	
+
 }

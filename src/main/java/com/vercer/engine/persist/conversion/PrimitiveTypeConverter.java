@@ -37,6 +37,21 @@ public class PrimitiveTypeConverter implements TypeConverter
 		if (erased.isPrimitive())
 		{
 			wrapper = primitives.get(erased);
+			if (source == null)
+			{
+				if (Number.class.isAssignableFrom(wrapper))
+				{
+					source = 0;
+				}
+				else if (Boolean.class == wrapper)
+				{
+					source = false;
+				}
+				else
+				{
+					throw new IllegalStateException("Unkonwn primitive default " + type);
+				}
+			}
 
 			if (source.getClass() == wrapper)
 			{
@@ -49,9 +64,14 @@ public class PrimitiveTypeConverter implements TypeConverter
 		{
 			wrapper = erased;
 		}
+		else if (source == null)
+		{
+			// consider null a primitive value
+			return (T) nullValue;
+		}
 
 		// convert any primitives to string
-		if ((primitives.containsKey(source.getClass()) || wrappers.contains(source.getClass())) && type == String.class)
+		if (type == String.class && (primitives.containsKey(source.getClass()) || wrappers.contains(source.getClass())))
 		{
 			return (T) source.toString();
 		}
@@ -59,7 +79,7 @@ public class PrimitiveTypeConverter implements TypeConverter
 		// we need a primitive wrapper so convert directly
 		if (wrapper == null)
 		{
-			return null;
+			return null;  // signal that we cannot convert this type
 		}
 		else
 		{

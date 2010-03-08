@@ -3,56 +3,32 @@ package com.vercer.engine.persist.annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
-import com.vercer.engine.persist.strategy.DefaultFieldTypeStrategy;
-import com.vercer.engine.persist.strategy.RelationshipStrategy;
-import com.vercer.engine.persist.strategy.StorageStrategy;
+import com.vercer.engine.persist.strategy.CombinedStrategy;
+import com.vercer.engine.persist.strategy.DefaultFieldStrategy;
+import com.vercer.engine.persist.util.generic.GenericTypeReflector;
 
-public class AnnotationStrategy extends DefaultFieldTypeStrategy implements RelationshipStrategy, StorageStrategy
+public class AnnotationStrategy extends DefaultFieldStrategy
+	implements CombinedStrategy
 {
 	private final boolean indexed;
 
-	public AnnotationStrategy(boolean indexed)
+	public AnnotationStrategy(boolean indexPropertiesDefault, int defaultVersion)
 	{
-		this.indexed = indexed;
+		super(defaultVersion);
+		this.indexed = indexPropertiesDefault;
 	}
 
 	public boolean child(Field field)
 	{
-		Entity annotation = field.getAnnotation(Entity.class);
-		if (annotation == null)
-		{
-			annotation = field.getType().getAnnotation(Entity.class);
-		}
-
-		if (annotation != null)
-		{
-			return annotation.value() == Entity.Relationship.CHILD;
-		}
-		else
-		{
-			return false;
-		}
+		return field.isAnnotationPresent(Child.class);
 	}
 
 	public boolean parent(Field field)
 	{
-		Entity annotation = field.getAnnotation(Entity.class);
-		if (annotation == null)
-		{
-			annotation = field.getType().getAnnotation(Entity.class);
-		}
-
-		if (annotation != null)
-		{
-			return annotation.value() == Entity.Relationship.PARENT;
-		}
-		else
-		{
-			return false;
-		}
+		return field.isAnnotationPresent(Parent.class);
 	}
 
-	public boolean component(Field field)
+	public boolean embed(Field field)
 	{
 		Embed annotation = field.getAnnotation(Embed.class);
 		if (annotation == null)
@@ -70,25 +46,25 @@ public class AnnotationStrategy extends DefaultFieldTypeStrategy implements Rela
 		}
 	}
 
-	public boolean stored(Field field)
+	public boolean store(Field field)
 	{
-		Stored annotation = field.getAnnotation(Stored.class);
+		Store annotation = field.getAnnotation(Store.class);
 		if (annotation != null)
 		{
 			return annotation.value();
 		}
 		else
 		{
-			return true;
+			return !Modifier.isTransient(field.getType().getModifiers());
 		}
 	}
 
-	public boolean indexed(Field field)
+	public boolean index(Field field)
 	{
-		Indexed annotation = field.getDeclaringClass().getAnnotation(Indexed.class);
-		if (field.getAnnotation(Indexed.class) != null)
+		Index annotation = field.getDeclaringClass().getAnnotation(Index.class);
+		if (field.getAnnotation(Index.class) != null)
 		{
-			annotation = field.getAnnotation(Indexed.class);
+			annotation = field.getAnnotation(Index.class);
 		}
 		if (annotation != null)
 		{
@@ -134,13 +110,40 @@ public class AnnotationStrategy extends DefaultFieldTypeStrategy implements Rela
 
 	public boolean entity(Field field)
 	{
-		if (field.isAnnotationPresent(Entity.class))
+		return field.isAnnotationPresent(Parent.class) ||
+		field.isAnnotationPresent(Child.class) ||
+		field.isAnnotationPresent(Independent.class);
+	}
+
+	public int activationDepth(Field field, int depth)
+	{
+		Activate annotation = field.getDeclaringClass().getAnnotation(Activate.class);
+		if (field.getAnnotation(Activate.class) != null)
 		{
-			return true;
+			annotation = field.getAnnotation(Activate.class);
+		}
+		if (annotation != null)
+		{
+			if (annotation.value() > depth)
+			{
+				return annotation.value();
+			}
+		}
+		return depth;
+	}
+
+	@Override
+	protected int version(java.lang.reflect.Type type)
+	{
+		Class<?> clazz = GenericTypeReflector.erase(type);
+		if (clazz.isAnnotationPresent(Version.class))
+		{
+			return clazz.getAnnotation(Version.class).value();
 		}
 		else
 		{
-			return field.getType().isAnnotationPresent(Entity.class);
+			return super.version(type);
 		}
 	}
+
 }

@@ -6,13 +6,10 @@ package com.vercer.engine.persist.festival;
 import java.util.Arrays;
 import java.util.Date;
 
-import com.google.appengine.api.datastore.Blob;
-import com.vercer.engine.persist.ReflectiveObject;
+import com.google.appengine.api.datastore.Text;
 import com.vercer.engine.persist.annotation.Embed;
-import com.vercer.engine.persist.annotation.Entity;
 import com.vercer.engine.persist.annotation.Key;
 import com.vercer.engine.persist.annotation.Type;
-import com.vercer.engine.persist.annotation.Entity.Relationship;
 
 public class Album
 {
@@ -30,14 +27,53 @@ public class Album
 	@Embed
 	Track[] tracks;
 
-	public static class Track extends ReflectiveObject
+	public static class Track
 	{
+		@Type(Text.class)
 		String title;
 		float length;
 
-		public Track()
+		@Override
+		public int hashCode()
 		{
-			super(true);
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + Float.floatToIntBits(length);
+			result = prime * result + ((title == null) ? 0 : title.hashCode());
+			return result;
+		}
+		@Override
+		public boolean equals(Object obj)
+		{
+			if (this == obj)
+			{
+				return true;
+			}
+			if (obj == null)
+			{
+				return false;
+			}
+			if (!(obj instanceof Track))
+			{
+				return false;
+			}
+			Track other = (Track) obj;
+			if (Float.floatToIntBits(length) != Float.floatToIntBits(other.length))
+			{
+				return false;
+			}
+			if (title == null)
+			{
+				if (other.title != null)
+				{
+					return false;
+				}
+			}
+			else if (!title.equals(other.title))
+			{
+				return false;
+			}
+			return true;
 		}
 	}
 

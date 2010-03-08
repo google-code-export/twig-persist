@@ -40,8 +40,8 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 		}
 	};
 	private final TypeConverter converters;
-	
-	// permanent cache of class fields to reduce reflection 
+
+	// permanent cache of class fields to reduce reflection
 	private static Map<Class<?>, List<Field>> classFields = new ConcurrentHashMap<Class<?>, List<Field>>();
 
 	public ObjectFieldTranslator(TypeConverter converters)
@@ -53,16 +53,16 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 	{
 		if (properties.isEmpty())
 		{
-			return null;
+			return NULL_VALUE;
 		}
-		
+
 		Class<?> clazz = GenericTypeReflector.erase(type);
 		Object instance = createInstance(clazz);
 		activate(properties, instance, path);
 		return instance;
 	}
 
-	private void activate(Set<Property> properties, Object instance, Path path)
+	protected void activate(Set<Property> properties, Object instance, Path path)
 	{
 		// ensure the properties are sorted
 		if (properties instanceof SortedSet<?> == false)
@@ -102,6 +102,8 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 				// get the type that we need to store
 				Type type = typeFromField(field);
 
+				onBeforeTranslate(field, childProperties);
+
 				// create instance
 				Object value;
 				try
@@ -113,24 +115,40 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 					// add a bit of context to the trace
 					throw new IllegalStateException("Problem translating field " + field, e);
 				}
-				
-				// TODO not known if a null was not translatable or just null - solve using ObjRef
-				if (value != null)
-				{
-					// if the value was converted to another type we may need to convert it back
-					value = converters.convert(value, field.getGenericType());
 
-					try
-					{
-						field.set(instance, value);
-					}
-					catch (Exception e)
-					{
-						throw new IllegalStateException("Could not set value " + value + " to field " + field, e);
-					}
+				onAfterTranslate(field, value);
+
+				if (value == null)
+				{
+					throw new IllegalStateException("Could not translate path " + childPath);
+				}
+
+				if (value == NULL_VALUE)
+				{
+					value = null;
+				}
+
+				// if the value was converted to another type we may need to convert it back
+				value = converters.convert(value, field.getGenericType());
+
+				try
+				{
+					field.set(instance, value);
+				}
+				catch (Exception e)
+				{
+					throw new IllegalStateException("Could not set value " + value + " to field " + field, e);
 				}
 			}
 		}
+	}
+
+	protected void onAfterTranslate(Field field, Object value)
+	{
+	}
+
+	protected void onBeforeTranslate(Field field, Set<Property> childProperties)
+	{
 	}
 
 	private void alignPropertiesToField(Field field, PeekingIterator<Property> peeking, Path prefix)
@@ -182,7 +200,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 		{
 			return Collections.emptySet();
 		}
-		
+
 		try
 		{
 			List<Field> fields = getSortedFields(object);

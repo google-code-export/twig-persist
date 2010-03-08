@@ -1,11 +1,10 @@
 package com.vercer.engine.persist.util;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.List;
+import java.util.LinkedList;
 
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
@@ -14,23 +13,14 @@ import com.google.common.collect.PeekingIterator;
 public class SortedMergeIterator<T> extends AbstractIterator<T>
 {
 	private final Comparator<T> comparator;
-	
-	Comparator<PeekingIterator<T>> pc = new Comparator<PeekingIterator<T>>()
-	{
-		public int compare(PeekingIterator<T> o1, PeekingIterator<T> o2)
-		{
-			return comparator.compare(o1.peek(), o2.peek());
-		}
-	};
+	private LinkedList<PeekingIterator<T>> peekings;
+	private final boolean dedup;
 
-	private List<PeekingIterator<T>> peekings;
-	private final boolean filter;
-	
-	public SortedMergeIterator(Comparator<T> comparator, Collection<Iterator<T>> iterators, boolean filter)
+	public SortedMergeIterator(Comparator<T> comparator, Collection<Iterator<T>> iterators, boolean ignoreDuplicates)
 	{
 		this.comparator = comparator;
-		this.filter = filter;
-		peekings = new ArrayList<PeekingIterator<T>>();
+		this.dedup = ignoreDuplicates;
+		peekings = new LinkedList<PeekingIterator<T>>();
 		for (Iterator<T> iterator : iterators)
 		{
 			if (iterator.hasNext())
@@ -49,58 +39,41 @@ public class SortedMergeIterator<T> extends AbstractIterator<T>
 		{
 			return endOfData();
 		}
-		
-		PeekingIterator<T> top = top();
-		T next = top.next();
-		topChanged();
+
+		T next = removeTop();
 
 		// discard duplicates
-		if (filter)
+		if (dedup)
 		{
-			while (peekings.size() > 0 && top().peek().equals(next))
+			while (peekings.size() > 0 && peekings.getFirst().peek().equals(next))
 			{
-				top().next();  // skip the current top
-				topChanged();
+				removeTop();
 			}
 		}
-		
+
 		return next;
 	}
 
-	private PeekingIterator<T> top()
+	private T removeTop()
 	{
-		return peekings.get(peekings.size() - 1);
+		PeekingIterator<T> top = peekings.getFirst();
+		T next = top.next(); // step forward the top iterator
+		if (!top.hasNext())
+		{
+			peekings.removeFirst();
+		}
+		Collections.sort(peekings, pc);
+		return next;
 	}
 
-	private void topChanged()
+	Comparator<PeekingIterator<T>> pc = new Comparator<PeekingIterator<T>>()
 	{
-		int size = peekings.size();
-		PeekingIterator<T> top = top();
-		if (top.hasNext())
+		public int compare(PeekingIterator<T> o1, PeekingIterator<T> o2)
 		{
-			T peeked = top.peek();
-			int after;
-			for (after = size - 2; after >= 0; after--)
-			{
-				PeekingIterator<T> peeking = peekings.get(after);
-				T compare = peeking.peek();
-				
-				if (comparator.compare(peeked, compare) > 0)
-				{
-					break;
-				}
-			}
-			
-			if (after < size - 2)
-			{
-				peekings.remove(size - 1);
-				peekings.add(after + 1, top);
-			}
+			int compare = comparator.compare(o1.peek(), o2.peek());
+			return compare;
 		}
-		else
-		{
-			peekings.remove(size - 1);
-		}
-	}
+	};
+
 
 }

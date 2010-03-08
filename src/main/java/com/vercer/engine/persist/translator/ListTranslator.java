@@ -50,9 +50,9 @@ public class ListTranslator extends DecoratingTranslator
 		// TODO handle this in a more general place
 		if (properties.isEmpty())
 		{
-			return null;
+			return NULL_VALUE;
 		}
-		
+
 		// need to adapt a set of property lists into a list of property sets
 		List<Set<Property>> propertySets = Lists.newArrayList();
 		boolean complete = false;
@@ -94,7 +94,7 @@ public class ListTranslator extends DecoratingTranslator
 					complete = false;
 				}
 			}
-			
+
 			if (complete == false)
 			{
 				propertySets.add(result);
@@ -110,13 +110,13 @@ public class ListTranslator extends DecoratingTranslator
 		for (Set<Property> itemProperties : propertySets)
 		{
 			Object convertedChild = chained.propertiesToTypesafe(itemProperties, path, componentType);
-			
+
 			// if we cannot convert every member of the list we fail
 			if (convertedChild == null)
 			{
 				return null;
 			}
-			
+
 			objects.add(convertedChild);
 		}
 
@@ -134,7 +134,7 @@ public class ListTranslator extends DecoratingTranslator
 			{
 				return Collections.emptySet();
 			}
-			
+
 			final Map<Path, List<Object>> lists = new HashMap<Path, List<Object>>(8);
 
 			int count = 0;
@@ -154,14 +154,14 @@ public class ListTranslator extends DecoratingTranslator
 					{
 						Object value = property.getValue();
 						Path itemPath = property.getPath();
-						
+
 						// we can encode only one level of collection
 						if (value instanceof List<?>)
 						{
 							itemPath = new Path.Builder(itemPath).meta(LIST_SERIALIZED_META).build();
 							value = SERIALIZABLE_TO_BLOB.convert((Serializable) value);
 						}
-						
+
 						List<Object> values = lists.get(itemPath);
 						if (values == null)
 						{

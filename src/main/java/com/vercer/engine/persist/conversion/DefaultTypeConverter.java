@@ -27,13 +27,13 @@ public class DefaultTypeConverter extends CombinedTypeConverter
 	{
 		register(new ByteArrayToBlob());
 		register(new BlobToByteArray());
-		
+
 		register(new BlobToSerializable());
 		register(new SerializableToBlob());
-		
+
 		register(new StringToText());
 		register(new TextToString());
-		
+
 		register(new StringToDate());
 		register(new DateToString());
 
@@ -45,7 +45,7 @@ public class DefaultTypeConverter extends CombinedTypeConverter
 	@Override
 	public <T> T convert(Object source, Type type)
 	{
-		if (isSuperType(type, source.getClass()))
+		if (source != null && isSuperType(type, source.getClass()))
 		{
 			return (T) source;
 		}
@@ -63,7 +63,7 @@ public class DefaultTypeConverter extends CombinedTypeConverter
 		{
 			return true;
 		}
-		
+
 		Pair<Type, Class<?>> key = new Pair<Type, Class<?>>(type, clazz);
 		Boolean superType = superTypes.get(key);
 		if (superType != null)
@@ -93,7 +93,7 @@ public class DefaultTypeConverter extends CombinedTypeConverter
 			return source.getValue();
 		}
 	}
-	
+
 	public static class ByteArrayToBlob implements SpecificTypeConverter<byte[], Blob>
 	{
 		public Blob convert(byte[] source)
@@ -101,7 +101,7 @@ public class DefaultTypeConverter extends CombinedTypeConverter
 			return new Blob(source);
 		}
 	}
-	
+
 	public static class BlobToByteArray implements SpecificTypeConverter<Blob, byte[]>
 	{
 		public byte[] convert(Blob source)
@@ -109,7 +109,7 @@ public class DefaultTypeConverter extends CombinedTypeConverter
 			return source.getBytes();
 		}
 	}
-	
+
 	public static class SerializableToBlob implements SpecificTypeConverter<Serializable, Blob>
 	{
 		public Blob convert(Serializable source)
