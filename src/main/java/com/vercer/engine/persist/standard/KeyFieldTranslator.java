@@ -15,13 +15,13 @@ import com.vercer.engine.persist.translator.DecoratingTranslator;
 
 final class KeyFieldTranslator extends DecoratingTranslator
 {
-	private final StrategyObjectDatastore strategyObjectDatastore;
+	private final StrategyObjectDatastore datastore;
 	private final TypeConverter converters;
 
 	KeyFieldTranslator(StrategyObjectDatastore strategyObjectDatastore, PropertyTranslator chained, TypeConverter converters)
 	{
 		super(chained);
-		this.strategyObjectDatastore = strategyObjectDatastore;
+		this.datastore = strategyObjectDatastore;
 		this.converters = converters;
 	}
 
@@ -30,7 +30,7 @@ final class KeyFieldTranslator extends DecoratingTranslator
 		assert path.getParts().size() == 1 : "Key field should be in root Entity";
 
 		// key spec may be null if we are in an update as we already have the key
-		if (this.strategyObjectDatastore.writeKeySpec != null)
+		if (this.datastore.writeKeySpec != null)
 		{
 			if (instance != null)
 			{
@@ -38,8 +38,16 @@ final class KeyFieldTranslator extends DecoratingTranslator
 				if (!instance.equals(0))
 				{
 					// the key name is not stored in the fields but only in key
-					String keyName = converters.convert(instance, String.class);
-					this.strategyObjectDatastore.writeKeySpec.setName(keyName);
+					if (Number.class.isAssignableFrom(instance.getClass()))
+					{
+						Long converted = converters.convert(instance, Long.class);
+						this.datastore.writeKeySpec.setId(converted);
+					}
+					else
+					{
+						String keyName = converters.convert(instance, String.class);
+						this.datastore.writeKeySpec.setName(keyName);
+					}
 				}
 			}
 		}
@@ -51,10 +59,10 @@ final class KeyFieldTranslator extends DecoratingTranslator
 		assert properties.isEmpty();
 
 		// the key value is not stored in the properties but in the key
-		Object keyValue = this.strategyObjectDatastore.readKey.getName();
+		Object keyValue = this.datastore.readKey.getName();
 		if (keyValue == null)
 		{
-			keyValue = this.strategyObjectDatastore.readKey.getId();
+			keyValue = this.datastore.readKey.getId();
 		}
 		Object keyObject = converters.convert(keyValue, type);
 		return keyObject;

@@ -248,6 +248,75 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 	}
 
 	@Test
+	public void batchedStoreMulti() throws ParseException, InterruptedException, ExecutionException
+	{
+		MusicFestival musicFestival = createFestival();
+		Band band1 = musicFestival.bands.get(0);
+		Band band2 = musicFestival.bands.get(1);
+
+		Map<Band, Key> keys = datastore.store().instances(Arrays.asList(band1, band2)).batchRelated().returnKeysNow();
+
+		assertTrue(keys.size() > 2);
+	}
+
+	@Test
+	public void testNumericKeys()
+	{
+		LongKeyType longKeyType = new LongKeyType();
+		longKeyType.key = 9l;
+
+		datastore.store(longKeyType);
+		datastore.disassociateAll();
+
+		QueryResultIterator<LongKeyType> found = datastore.find(LongKeyType.class);
+		while (found.hasNext())
+		{
+			System.out.println(found.next().key);
+		}
+
+		LongKeyType longKeyType2 = datastore.load(LongKeyType.class, 9l);
+		assertEquals(longKeyType2.key.longValue(), 9l);
+
+		PrimitiveLongKeyType plongKeyType = new PrimitiveLongKeyType();
+		plongKeyType.key = 9l;
+
+		datastore.store(plongKeyType);
+
+		datastore.disassociateAll();
+
+		PrimitiveLongKeyType plongKeyType2 = datastore.load(PrimitiveLongKeyType.class, 9l);
+		assertEquals(plongKeyType2.key, 9l);
+
+		IntKeyType intKeyType = new IntKeyType();
+		intKeyType.key = 9;
+
+		datastore.store(intKeyType);
+
+		datastore.disassociateAll();
+
+		IntKeyType intKeyType2 = datastore.load(IntKeyType.class, 9);
+		assertEquals(intKeyType2.key.intValue(), 9);
+
+	}
+
+	public static class LongKeyType
+	{
+		@com.vercer.engine.persist.annotation.Key Long key;
+	}
+	public static class PrimitiveLongKeyType
+	{
+		@com.vercer.engine.persist.annotation.Key long key;
+	}
+	public static class IntKeyType
+	{
+		@com.vercer.engine.persist.annotation.Key Integer key;
+	}
+	public static class DoubleKeyType
+	{
+		@com.vercer.engine.persist.annotation.Key Double key;
+	}
+
+	@Test
 	public void asyncQueryTest() throws ParseException, InterruptedException, ExecutionException
 	{
 		MusicFestival musicFestival = createFestival();
@@ -277,6 +346,42 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 	}
 
 	@Test
+	public void ensureUniqueKey()
+	{
+		Band band1 = new Band();
+		band1.name = "Kasier Chiefs";
+	
+		Band band2 = new Band();
+		band2.name = "Chemical Brothers";
+	
+		datastore.storeAll(Arrays.asList(band1, band2));
+	
+		Transaction txn = datastore.beginTransaction();
+	
+		// overwrite band1
+		Band band3 = new Band();
+		band3.name = "Kasier Chiefs";
+		datastore.store().instance(band3);
+		txn.commit();
+	
+		txn = datastore.beginTransaction();
+		Band band4 = new Band();
+		band4.name = "Kasier Chiefs";
+	
+		boolean threw = false;
+		try
+		{
+			datastore.store().instance(band4).ensureUniqueKey().returnKeyNow();
+		}
+		catch (Exception e)
+		{
+			threw = true;
+	    }
+		txn.rollback();
+		assertTrue(threw);
+	}
+
+	@Test
 	public void asyncStoreMulti() throws ParseException, InterruptedException, ExecutionException
 	{
 		MusicFestival musicFestival = createFestival();
@@ -291,38 +396,6 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 
 		assertNotNull(map.get(band1));
 		assertNotNull(map.get(band2));
-	}
-
-	@Test
-	public void batchedStoreMulti() throws ParseException, InterruptedException, ExecutionException
-	{
-		MusicFestival musicFestival = createFestival();
-		Band band1 = musicFestival.bands.get(0);
-		Band band2 = musicFestival.bands.get(1);
-
-		Map<Band, Key> keys = datastore.store().instances(Arrays.asList(band1, band2)).batchRelated().returnKeysNow();
-
-		assertTrue(keys.size() > 2);
-	}
-
-	@Test public void storeDuplicate()
-	{
-		Band band = new Band();
-		band.name = "The XX";
-		datastore.store().instance(band).ensureUniqueKey().returnKeyNow();
-
-		band = new Band();
-		band.name = "The XX";
-		boolean threw = false;
-		try
-		{
-			datastore.store().instance(band).ensureUniqueKey().returnKeyNow();
-		}
-		catch (Exception e)
-		{
-			threw = true;
-		}
-		assertTrue(threw);
 	}
 
 	@Test
@@ -350,38 +423,23 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		assertNotNull(reloaded.bands.get(0).hair);
 	}
 
-	@Test
-	public void ensureUniqueKey()
+	@Test public void storeDuplicate()
 	{
-		Band band1 = new Band();
-		band1.name = "Kasier Chiefs";
+		Band band = new Band();
+		band.name = "The XX";
+		datastore.store().instance(band).ensureUniqueKey().returnKeyNow();
 
-		Band band2 = new Band();
-		band2.name = "Chemical Brothers";
-
-		datastore.storeAll(Arrays.asList(band1, band2));
-
-		Transaction txn = datastore.beginTransaction();
-
-		// overwrite band1
-		Band band3 = new Band();
-		band3.name = "Kasier Chiefs";
-		datastore.store().instance(band3);
-		txn.commit();
-
-		txn = datastore.beginTransaction();
-		Band band4 = new Band();
-		band4.name = "Kasier Chiefs";
-
+		band = new Band();
+		band.name = "The XX";
 		boolean threw = false;
 		try
 		{
-			datastore.store().instance(band4).ensureUniqueKey().returnKeyNow();
+			datastore.store().instance(band).ensureUniqueKey().returnKeyNow();
 		}
 		catch (Exception e)
 		{
 			threw = true;
-        }
+		}
 		assertTrue(threw);
 	}
 

@@ -50,7 +50,7 @@ import com.vercer.util.LazyProxy;
  *
  * @author John Patterson <john@vercer.com>
  */
-public class StrategyObjectDatastore extends BaseStatelessObjectDatastore
+public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 {
 	private static final Logger logger = Logger.getLogger(StrategyObjectDatastore.class.getName());
 	private static final int DEFAULT_ACTIVATION_DEPTH = Integer.MAX_VALUE;
@@ -479,7 +479,16 @@ public class StrategyObjectDatastore extends BaseStatelessObjectDatastore
 	{
 		assert activationDepth.size() == 1;
 
-		String converted = converter.convert(key, String.class);
+		Object converted;
+		if (Number.class.isAssignableFrom(key.getClass()))
+		{
+			converted = converter.convert(key, Long.class);
+		}
+		else
+		{
+			converted = converter.convert(key, String.class);
+		}
+
 		Key parentKey = null;
 		if (parent != null)
 		{
