@@ -11,6 +11,7 @@ public class KeySpecification
 	private String kind;
 	private ObjectReference<Key> parentKeyReference;
 	private String name;
+	private Long id;
 
 	public KeySpecification()
 	{
@@ -31,6 +32,11 @@ public class KeySpecification
 	public void setName(String name)
 	{
 		this.name = name;
+	}
+
+	public Long getId()
+	{
+		return id;
 	}
 
 	public String getKind()
@@ -55,7 +61,7 @@ public class KeySpecification
 
 	public boolean isComplete()
 	{
-		return kind != null && name != null;
+		return kind != null && (name != null || id != null);
 	}
 
 	public Key toKey()
@@ -64,11 +70,25 @@ public class KeySpecification
 		{
 			if (parentKeyReference == null)
 			{
-				return KeyFactory.createKey(kind, name);
+				if (id == null)
+				{
+					return KeyFactory.createKey(kind, name);
+				}
+				else
+				{
+					return KeyFactory.createKey(kind, id);
+				}
 			}
 			else
 			{
-				return KeyFactory.createKey(parentKeyReference.get(), kind, name);
+				if (id == null)
+				{
+					return KeyFactory.createKey(parentKeyReference.get(), kind, name);
+				}
+				else
+				{
+					return KeyFactory.createKey(parentKeyReference.get(), kind, id);
+				}
 			}
 		}
 		else
@@ -103,9 +123,19 @@ public class KeySpecification
 			name = specification.name;
 		}
 
+		if (id == null)
+		{
+			id = specification.id;
+		}
+
 		if (kind == null)
 		{
 			kind = specification.kind;
 		}
+	}
+
+	public void setId(Long id)
+	{
+		this.id = id;
 	}
 }

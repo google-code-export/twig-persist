@@ -51,11 +51,6 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 
 	public final Object propertiesToTypesafe(Set<Property> properties, Path path, Type type)
 	{
-		if (properties.isEmpty())
-		{
-			return NULL_VALUE;
-		}
-
 		Class<?> clazz = GenericTypeReflector.erase(type);
 		Object instance = createInstance(clazz);
 		activate(properties, instance, path);
