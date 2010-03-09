@@ -36,13 +36,13 @@ import com.vercer.util.reference.ObjectReference;
  *
  * @author John Patterson <john@vercer.com>
  */
-public abstract class BaseStatelessObjectDatastore implements ObjectDatastore
+public abstract class AbstractStatelessObjectDatastore implements ObjectDatastore
 {
 	private final DatastoreService service;
 	private PropertyTranslator translator;
 	private boolean indexed;
 
-	protected BaseStatelessObjectDatastore(DatastoreService datastore)
+	protected AbstractStatelessObjectDatastore(DatastoreService datastore)
 	{
 		this.service = datastore;
 	}
@@ -159,12 +159,16 @@ public abstract class BaseStatelessObjectDatastore implements ObjectDatastore
 
 	protected Entity createEntity(KeySpecification spec)
 	{
-		Key parent = null;
-		if (spec.getParentKeyReference() != null)
+		if (spec.isComplete())
 		{
-			parent = spec.getParentKeyReference().get();
+			return new Entity(spec.toKey());
 		}
-		return Entities.createEntity(spec.getKind(), spec.getName(), parent);
+		else
+		{
+			ObjectReference<Key> parentKeyReference = spec.getParentKeyReference();
+			Key parentKey = parentKeyReference == null ? null : parentKeyReference.get();
+			return Entities.createEntity(spec.getKind(), null, parentKey);
+		}
 	}
 
 	/**
@@ -195,18 +199,32 @@ public abstract class BaseStatelessObjectDatastore implements ObjectDatastore
 		return load(type, key, null);
 	}
 
-	protected final <T> T internalLoad(Class<T> type, String name, Key parent)
+	protected final <T> T internalLoad(Class<T> type, Object converted, Key parent)
 	{
 		String kind = typeToKind(type);
 
 		Key key;
 		if (parent == null)
 		{
-			key = KeyFactory.createKey(kind, name);
+			if (converted instanceof Long)
+			{
+				key = KeyFactory.createKey(kind, (Long) converted);
+			}
+			else
+			{
+				key = KeyFactory.createKey(kind, (String) converted);
+			}
 		}
 		else
 		{
-			key = KeyFactory.createKey(parent, kind, name);
+			if (converted instanceof Long)
+			{
+				key = KeyFactory.createKey(parent, kind, (Long) converted);
+			}
+			else
+			{
+				key = KeyFactory.createKey(parent, kind, (String) converted);
+			}
 		}
 
 		// needed to avoid sun generics bug "no unique maximal instance exists..."
