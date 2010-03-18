@@ -65,7 +65,7 @@ public class DefaultFieldStrategy implements FieldStrategy
 	public final String typeToKind(Type type)
 	{
 		String kind = typeToName(type);
-		if (kind.indexOf('_') > 0)
+		if (kind.indexOf('-') > 0)
 		{
 			throw new IllegalArgumentException("Illegal character '_' in class name " + kind);
 		}

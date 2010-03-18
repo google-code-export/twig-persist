@@ -12,10 +12,10 @@ public class StandardMergeParentsCommand<P> extends StandardBaseParentsCommand<P
 	private final List<Iterator<Entity>> childIterators;
 	private final List<SortPredicate> sorts;
 
-	public StandardMergeParentsCommand(StandardTypedFindCommand<?, ?> command, List<Iterator<Entity>> childIterators, List<SortPredicate> sorts)
+	public StandardMergeParentsCommand(StandardTypedFindCommand<?, ?> command, List<Iterator<Entity>> childEntityIterators, List<SortPredicate> sorts)
 	{
 		super(command);
-		this.childIterators = childIterators;
+		this.childIterators = childEntityIterators;
 		this.sorts = sorts;
 	}
 

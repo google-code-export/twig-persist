@@ -478,9 +478,7 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 		};
 	}
 
-
-	Iterator<Entity> mergeEntities(List<Iterator<Entity>> iterators,
-			List<SortPredicate> sorts)
+	Iterator<Entity> mergeEntities(List<Iterator<Entity>> iterators, List<SortPredicate> sorts)
 	{
 		Iterator<Entity> merged;
 		if (sorts != null && !sorts.isEmpty())

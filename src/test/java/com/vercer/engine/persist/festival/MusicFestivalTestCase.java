@@ -315,7 +315,6 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 	{
 		@com.vercer.engine.persist.annotation.Key Double key;
 	}
-
 	@Test
 	public void asyncQueryTest() throws ParseException, InterruptedException, ExecutionException
 	{
@@ -350,24 +349,24 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 	{
 		Band band1 = new Band();
 		band1.name = "Kasier Chiefs";
-	
+
 		Band band2 = new Band();
 		band2.name = "Chemical Brothers";
-	
+
 		datastore.storeAll(Arrays.asList(band1, band2));
-	
+
 		Transaction txn = datastore.beginTransaction();
-	
+
 		// overwrite band1
 		Band band3 = new Band();
 		band3.name = "Kasier Chiefs";
 		datastore.store().instance(band3);
 		txn.commit();
-	
+
 		txn = datastore.beginTransaction();
 		Band band4 = new Band();
 		band4.name = "Kasier Chiefs";
-	
+
 		boolean threw = false;
 		try
 		{
@@ -441,6 +440,15 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 			threw = true;
 		}
 		assertTrue(threw);
+	}
+	
+	@Test 
+	public void countEntites() throws ParseException
+	{
+		MusicFestival musicFestival = createFestival();
+		datastore.store(musicFestival);
+		int count = datastore.find().type(Musician.class).countResultsNow();
+		assertEquals(7, count);
 	}
 
 }

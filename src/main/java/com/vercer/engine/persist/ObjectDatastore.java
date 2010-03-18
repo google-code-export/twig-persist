@@ -22,13 +22,14 @@ public interface ObjectDatastore
 	Key store(Object instance, String name);
 	Key store(Object instance, String name, Object parent);
 	Key store(Object instance, Object parent);
-	<T> Map<T, Key> storeAll(Collection<T> instances);
-	<T> Map<T, Key> storeAll(Collection<T> instances, Object parent);
+	<T> Map<T, Key> storeAll(Collection<? extends T> instances);
+	<T> Map<T, Key> storeAll(Collection<? extends T> instances, Object parent);
 
 	// convenience load methods
 	<T> T load(Key key);
 	<T> T load(Class<T> type, Object key);
 	<T> T load(Class<T> type, Object key, Object parent);
+//	<T, K> Map<K, T> load(Class<? extends T> type, Collection<? extends K> keys);
 
 	// convenience find methods
 	<T> QueryResultIterator<T> find(Class<T> type);

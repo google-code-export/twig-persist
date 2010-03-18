@@ -2,6 +2,7 @@ package com.vercer.engine.persist.standard;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Future;
@@ -9,8 +10,10 @@ import java.util.concurrent.Future;
 import com.google.appengine.api.datastore.Cursor;
 import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.QueryResultIterator;
+import com.google.appengine.api.datastore.Transaction;
 import com.google.appengine.api.datastore.Query.SortDirection;
 import com.vercer.engine.persist.FindCommand.RootFindCommand;
 
@@ -118,6 +121,20 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 		return futureSingleQueryInstanceIterator();
 	}
 
+	public int countResultsNow()
+	{
+		Collection<Query> queries = getValidatedQueries();
+		if (queries.size() > 1)
+		{
+			throw new IllegalStateException("Too many queries");
+		}
+
+		Transaction txn = this.datastore.getTransaction();
+		Query query = queries.iterator().next();
+		PreparedQuery prepared = this.datastore.getService().prepare(txn, query);
+		return prepared.countEntities();
+	}
+	
 	public QueryResultIterator<T> returnResultsNow()
 	{
 		if (children == null)
