@@ -42,6 +42,7 @@ public interface FindCommand
 
 		QueryResultIterator<T> returnResultsNow();
 		Future<QueryResultIterator<T>> returnResultsLater();
+		int countResultsNow();
 	}
 
 	interface BranchFindCommand<T> extends TypedFindCommand<T, BranchFindCommand<T>>

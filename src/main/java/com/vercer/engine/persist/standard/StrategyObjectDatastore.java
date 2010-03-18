@@ -3,6 +3,7 @@ package com.vercer.engine.persist.standard;
 import java.io.NotSerializableException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -497,6 +498,26 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 		return internalLoad(type, converted, parentKey);
 	}
 
+//	public final <T, K> Map<K, T>  load(Class<? extends T> type, Collection<? extends K> keys)
+//	{
+//		assert activationDepth.size() == 1;
+//
+//		List<Object> converted = new ArrayList<Object>(keys.size());
+//		for (K key : keys)
+//		{
+//			if (Number.class.isAssignableFrom(key.getClass()))
+//			{
+//				converted.add(converter.convert(key, Long.class));
+//			}
+//			else
+//			{
+//				converted.add(converter.convert(key, String.class));
+//			}
+//		}
+//
+//		return internalLoadAll(type, converted);
+//	}
+
 	public final void update(Object instance)
 	{
 		Key key = keyCache.getCachedKey(instance);
@@ -592,12 +613,12 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 		return keyCache.getCachedKey(instance);
 	}
 
-	public final <T> Map<T, Key> storeAll(Collection<T> instances)
+	public final <T> Map<T, Key> storeAll(Collection<? extends T> instances)
 	{
 		return storeAll(instances, (Key) null);
 	}
 
-	public final <T> Map<T, Key> storeAll(Collection<T> instances, Object parent)
+	public final <T> Map<T, Key> storeAll(Collection<? extends T> instances, Object parent)
 	{
 		final Map<T, Entity> entities = instancesToEntities(instances, parent, false);
 		final List<Key> put = getService().put(entities.values());
@@ -620,7 +641,7 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 		}.newProxy();
 	}
 
-	final <T> Map<T, Entity> instancesToEntities(Collection<T> instances, Object parent, boolean batch)
+	final <T> Map<T, Entity> instancesToEntities(Collection<? extends T> instances, Object parent, boolean batch)
 	{
 		Key parentKey = null;
 		if (parent != null)

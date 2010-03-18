@@ -14,6 +14,15 @@ import java.util.List;
 
 import com.vercer.engine.persist.util.generic.GenericTypeReflector;
 
+/**
+ * Handles conversions from any Collection type or Array to either a HashSet, ArrayList or Array.  
+ * 
+ * Generic Collections and Arrays will be converted into the correct generic Array type.
+ * 
+ * To add a conversion to a more specific Collection type you will need to add a SpecificTypeConverter<S, T> 
+ * 
+ * @author John Patterson <john@vercer.com>
+ */
 public class CollectionConverter implements TypeConverter
 {
 	private final TypeConverter delegate;
@@ -106,7 +115,8 @@ public class CollectionConverter implements TypeConverter
 			}
 			else
 			{
-				throw new AssertionError("Type has already been checked");
+				throw new IllegalArgumentException("Unsupported Collection type " + type +
+						". Try declaring the interface instead of the concrete collection type.");
 			}
 		}
 	}
