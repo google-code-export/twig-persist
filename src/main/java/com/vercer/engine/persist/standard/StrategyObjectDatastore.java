@@ -155,9 +155,15 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 			}
 
 			@Override
-			protected PropertyTranslator translator(Field field)
+			protected PropertyTranslator translator(Field field, Object instance)
 			{
-				return StrategyObjectDatastore.this.translator(field);
+				return StrategyObjectDatastore.this.writeTranslator(field, instance);
+			}
+
+			@Override
+			protected PropertyTranslator translator(Field field, Set<Property> properties)
+			{
+				return StrategyObjectDatastore.this.readTranslator(field, properties);
 			}
 
 			@Override
@@ -170,8 +176,10 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 				}
 				else
 				{
-					// replace fields with new ones
+					// we are refreshing existing instance so just reuse it
 					instance = refreshing;
+					
+					// clear the the current refresh instance
 					refreshing = null;
 				}
 
@@ -226,6 +234,16 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 
 		setPropertyTranslator(translator);
 		keyCache = new KeyCache();
+	}
+
+	protected PropertyTranslator readTranslator(Field field, Set<Property> properties)
+	{
+		return translator(field);
+	}
+
+	protected PropertyTranslator writeTranslator(Field field, Object instance)
+	{
+		return translator(field);
 	}
 
 	protected PropertyTranslator translator(Field field)

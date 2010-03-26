@@ -357,13 +357,6 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 				throw new IllegalStateException("Could not translate instance: " + instance);
 			}
 
-			// clear all existing properties
-			Set<String> names = entity.getProperties().keySet();
-			for (String name : names)
-			{
-				entity.removeProperty(name);
-			}
-
 			// copy in new properties
 			transferProperties(entity, properties);
 		}

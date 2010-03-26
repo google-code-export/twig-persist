@@ -450,5 +450,34 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		int count = datastore.find().type(Musician.class).countResultsNow();
 		assertEquals(7, count);
 	}
+	
+	@Test
+	public void testClassNameEscape()
+	{
+		Type_with__under___scores instance = new Type_with__under___scores();
+		instance.hello = "world";
+		datastore.store(instance);
+		datastore.refresh(instance);
+	}
+	
+	@Test
+	public void testUpdate()
+	{
+		Band band = new Band();
+		band.name = "Pearl Jam";
+		band.hair = HairStyle.BALD;
+		
+		datastore.store(band);
+
+		assertNotNull(datastore.load(Band.class, "Pearl Jam"));
+		
+		band.hair = HairStyle.LONG_LIKE_A_GIRL;
+		
+		datastore.update(band);
+		
+		datastore.disassociateAll();
+		
+		assertEquals(HairStyle.LONG_LIKE_A_GIRL, datastore.load(Band.class, "Pearl Jam").hair);
+	}
 
 }

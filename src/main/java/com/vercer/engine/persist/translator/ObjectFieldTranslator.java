@@ -92,7 +92,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 				Set<Property> childProperties = new ArraySortedSet<Property>(elements);
 				fieldProperties.clear();  // reuse
 
-				PropertyTranslator translator = translator(field);
+				PropertyTranslator translator = translator(field, childProperties);
 
 				// get the type that we need to store
 				Type type = typeFromField(field);
@@ -223,7 +223,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 
 					Path childPath = new Path.Builder(path).field(fieldToPartName(field)).build();
 
-					PropertyTranslator translator = translator(field);
+					PropertyTranslator translator = translator(field, value);
 					Set<Property> properties = translator.typesafeToProperties(value, childPath, indexed(field));
 					if (properties == null)
 					{
@@ -267,6 +267,8 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 
 	protected abstract boolean stored(Field field);
 
-	protected abstract PropertyTranslator translator(Field field);
+	protected abstract PropertyTranslator translator(Field field, Object instance);
+	
+	protected abstract PropertyTranslator translator(Field field, Set<Property> properties);
 
 }

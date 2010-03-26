@@ -24,11 +24,15 @@ public class DefaultFieldStrategy implements FieldStrategy
 		this.defaultVersion = defaultVersion;
 	}
 
+	/**
+	 * Decode a type name - possibly abbreviated - into a type.
+	 * 
+	 * @param name The portion of the kind name that specifies the Type
+	 */
 	protected Type nameToType(String name)
 	{
 		try
 		{
-			name = name.replace('_', '.');
 			return Class.forName(name);
 		}
 		catch (ClassNotFoundException e)
@@ -40,11 +44,16 @@ public class DefaultFieldStrategy implements FieldStrategy
 	private final static Pattern pattern = Pattern.compile("v\\d_");
 	public final Type kindToType(String name)
 	{
-		Matcher matcher = pattern.matcher(name);
+        Matcher matcher = pattern.matcher(name);
 		if (matcher.lookingAt())
 		{
 			name = name.substring(matcher.end());
 		}
+		
+		//use space as a place holder as it cannot exist in property names
+		name = name.replaceAll("__", " ");
+		name = name.replace('_', '.');
+		name = name.replace(' ', '_');
 		return nameToType(name);
 	}
 
@@ -65,19 +74,25 @@ public class DefaultFieldStrategy implements FieldStrategy
 	public final String typeToKind(Type type)
 	{
 		String kind = typeToName(type);
-		if (kind.indexOf('-') > 0)
-		{
-			throw new IllegalArgumentException("Illegal character '_' in class name " + kind);
-		}
+		
+		kind = kind.replace('.', ' ');
+		kind = kind.replaceAll("_", "__");
+		kind = kind.replace(' ', '_');
+		
 		int version = version(type);
 		if (version > 0)
 		{
 			kind = "v" + version + "_" + kind;
 		}
-		kind = kind.replace('.', '_');
 		return kind;
 	}
 
+	/**
+	 * The converse method nametoType must understand how to "decode" type
+	 * names encoded by this method
+	 * 
+	 * @return A representation that can unambiguously specify the type
+	 */
 	protected String typeToName(Type type)
 	{
 		Class<?> clazz = GenericTypeReflector.erase(type);
@@ -85,6 +100,9 @@ public class DefaultFieldStrategy implements FieldStrategy
 		return kind;
 	}
 
+	/**
+	 * @return The datastore version to store this type under
+	 */
 	protected int version(Type type)
 	{
 		return defaultVersion;
