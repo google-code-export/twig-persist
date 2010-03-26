@@ -23,6 +23,16 @@ public class MemoryCache<K, V> implements Cache<K, V>
 	private final boolean prune;
 	private final boolean intern;
 
+	/**
+	 * @param capacity Maximum items to store
+	 * @param prune Should we check for expired items after <code>capacity</code> operations
+	 * @param intern Set to true if key items are not unique instances
+	 */
+	public MemoryCache(int capacity)
+	{
+		this(capacity, false, true);
+	}
+
 	public MemoryCache(int capacity, boolean prune, boolean intern)
 	{
 		this.capacity = capacity;
@@ -101,9 +111,16 @@ public class MemoryCache<K, V> implements Cache<K, V>
 	public V value(K key)
 	{
 		CacheItem<K, V> item = item(key);
-		if (item != null && item.isValid())
+		if (item != null)
 		{
-			return item.getValue();
+			if (item.isValid())
+			{
+				return item.getValue();
+			}
+			else
+			{
+				invalidate(key);
+			}
 		}
 
 		return null;

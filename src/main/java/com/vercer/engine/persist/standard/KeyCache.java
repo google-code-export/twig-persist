@@ -48,8 +48,7 @@ public class KeyCache
 		if (keyReference != null)
 		{
 			Key key = keyReference.get();
-			Object removed = cacheByKey.remove(key);
-			assert removed == reference;
+			cacheByKey.remove(key);
 			return key;
 		}
 		else
