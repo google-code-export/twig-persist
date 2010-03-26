@@ -129,20 +129,6 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 	{
 		return this.<P>returnParentsCommandNow().returnParentsNow();
 	}
-//
-//	private Iterator<Entity> nowEntityIterator()
-//	{
-//		Collection<Query> queries = queries();
-//		if (queries.size() == 1)
-//		{
-//			return nowSingleQueryEntities(queries.iterator().next());
-//		}
-//		else
-//		{
-//			assert queries.isEmpty() == false;
-//			return nowMultipleQueryEntities(queries);
-//		}
-//	}
 
 	Iterator<Entity> childEntitiesToParentEntities(Iterator<Entity> childEntities)
 	{
@@ -174,7 +160,7 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 			{
 				List<Iterator<Entity>> childIterators = new ArrayList<Iterator<Entity>>(queries.size());
 				long start = System.currentTimeMillis();
-				if (forceMultipleNow)
+				if (forceMultipleNow)  // just for performance testing async vs sync keys only
 				{
 					for (Query query : queries)
 					{
@@ -291,28 +277,116 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 			throw new IllegalStateException("Multiple queries defined");
 		}
 
-		Query query = queries.iterator().next();
-
+		final Query query = queries.iterator().next();
 		final Future<QueryResultIterator<Entity>> futureEntities = futureSingleQueryEntities(query);
 
-		return new FutureEntitiesToInstances<R>(futureEntities, query.isKeysOnly());
+		return new Future<QueryResultIterator<R>>()
+		{
+			private QueryResultIterator<R> doGet(QueryResultIterator<Entity> entities)
+			{
+					Iterator<Entity> iterator = applyEntityFilter(entities);
+					Iterator<R> instances = entityToInstanceIterator(iterator, query.isKeysOnly());
+					return new BasicQueryResultIterator<R>(instances, entities);
+			}
+
+			public QueryResultIterator<R> get() throws InterruptedException,
+					ExecutionException
+			{
+				try
+				{
+					return doGet(futureEntities.get());
+				}
+				catch (Throwable t)
+				{
+					if (isInternalIncompatability(t))
+					{
+						// just do a normal sync call
+						return nowSingleQueryInstanceIterator();
+					}
+					else
+					{
+						throw (RuntimeException) t;
+					}
+				}
+			}
+
+			public QueryResultIterator<R> get(long timeout, TimeUnit unit)
+					throws InterruptedException, ExecutionException,
+					TimeoutException
+			{
+				try
+				{
+					return doGet(futureEntities.get(timeout, unit));
+				}
+				catch (Throwable t)
+				{
+					if (isInternalIncompatability(t))
+					{
+						// just do a normal sync call
+						return nowSingleQueryInstanceIterator();
+					}
+					else
+					{
+						throw (RuntimeException) t;
+					}
+				}
+			}
+
+			public boolean isCancelled()
+			{
+				return futureEntities.isCancelled();
+			}
+
+			public boolean isDone()
+			{
+				return futureEntities.isDone();
+			}
+			public boolean cancel(boolean mayInterruptIfRunning)
+			{
+				return futureEntities.cancel(mayInterruptIfRunning);
+			}
+		};
 	}
 
 	private Future<QueryResultIterator<Entity>> futureSingleQueryEntities(Query query)
 	{
-		Transaction txn = this.datastore.getTransaction();
-		final Future<QueryResultIterator<Entity>> futureEntities;
-		AsyncPreparedQuery prepared = new AsyncPreparedQuery(query, txn);
-		FetchOptions fetchOptions = getFetchOptions();
-		if (fetchOptions == null)
+		// need to catch throwables that might indicate the GAE private classes have changed
+		try
 		{
-			futureEntities = prepared.asFutureQueryResultIterator();
+			Transaction txn = this.datastore.getTransaction();
+			Future<QueryResultIterator<Entity>> futureEntities;
+			AsyncPreparedQuery prepared = new AsyncPreparedQuery(query, txn);
+			FetchOptions fetchOptions = getFetchOptions();
+			if (fetchOptions == null)
+			{
+				futureEntities = prepared.asFutureQueryResultIterator();
+			}
+			else
+			{
+				futureEntities = prepared.asFutureQueryResultIterator(fetchOptions);
+			}
+			return futureEntities;
 		}
-		else
+		catch (Throwable t)
 		{
-			futureEntities = prepared.asFutureQueryResultIterator(fetchOptions);
+			if (isInternalIncompatability(t))
+			{
+				QueryResultIterator<Entity> result = nowSingleQueryEntities(query);
+				return new ImmediateFuture<QueryResultIterator<Entity>>(result);
+			}
+			else
+			{
+				throw (RuntimeException) t;
+			}
 		}
-		return futureEntities;
+	}
+
+	private boolean isInternalIncompatability(Throwable t)
+	{
+		return t instanceof Error || 
+		t instanceof SecurityException || 
+		t instanceof ClassNotFoundException ||
+		t instanceof NoSuchMethodException;
 	}
 
 	protected Iterator<Entity> nowMultipleQueryEntities(Collection<Query> queries)
@@ -349,27 +423,103 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 	{
 		Collection<Query> queries = getValidatedQueries();
 
-		return futureMultipleQueriesInstanceIterator(queries);
+		try
+		{
+			return futureMultipleQueriesInstanceIterator(queries);
+		}
+		catch (Throwable t)
+		{
+			if (isInternalIncompatability(t))
+			{
+				Iterator<R> result = nowMultiQueryInstanceIterator();
+				return new ImmediateFuture<Iterator<R>>(result);
+			}
+			else
+			{
+				throw (RuntimeException) t;
+			}
+		}
+	}
+
+	protected <R> Iterator<R> nowMultiQueryInstanceIterator()
+	{
+		try
+		{
+			Collection<Query> queries = getValidatedQueries();
+			Iterator<Entity> entities = nowMultipleQueryEntities(queries);
+			return entityToInstanceIterator(entities, false);
+		}
+		catch (Exception e)
+		{
+			// only unchecked exceptions thrown from datastore service
+			throw (RuntimeException) e.getCause();
+		}
 	}
 
 	private <R> Future<Iterator<R>> futureMultipleQueriesInstanceIterator(Collection<Query> queries)
 	{
-		Future<Iterator<Entity>> futureMerged = futureMergedEntities(queries);
-
+		final Future<Iterator<Entity>> futureMerged = futureMergedEntities(queries);
 		final boolean keysOnly = queries.iterator().next().isKeysOnly();
 
-		return new FutureWrapper<Iterator<Entity>, Iterator<R>>(futureMerged)
+		return new Future<Iterator<R>>()
 		{
 			@Override
-			protected Throwable convertException(Throwable arg0)
+			public boolean cancel(boolean mayInterruptIfRunning)
 			{
-				return arg0;
+				return futureMerged.cancel(mayInterruptIfRunning);
 			}
 
 			@Override
-			protected Iterator<R> wrap(Iterator<Entity> arg0) throws Exception
+			public Iterator<R> get() throws InterruptedException, ExecutionException
 			{
-				return entityToInstanceIterator(arg0, keysOnly);
+				try
+				{
+					return entityToInstanceIterator(futureMerged.get(), keysOnly);
+				}
+				catch (Throwable t)
+				{
+					if (isInternalIncompatability(t))
+					{
+						return nowSingleQueryInstanceIterator();
+					}
+					else
+					{
+						throw (RuntimeException) t;
+					}
+				}
+			}
+
+			@Override
+			public Iterator<R> get(long timeout, TimeUnit unit) throws InterruptedException,
+					ExecutionException, TimeoutException
+			{
+				try
+				{
+					return entityToInstanceIterator(futureMerged.get(timeout, unit), keysOnly);
+				}
+				catch (Throwable t)
+				{
+					if (isInternalIncompatability(t))
+					{
+						return nowSingleQueryInstanceIterator();
+					}
+					else
+					{
+						throw (RuntimeException) t;
+					}
+				}
+			}
+
+			@Override
+			public boolean isCancelled()
+			{
+				return futureMerged.isCancelled();
+			}
+
+			@Override
+			public boolean isDone()
+			{
+				return futureMerged.isDone();
 			}
 		};
 
@@ -498,53 +648,6 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 	{
 		Function<Entity, R> function = new EntityToInstanceFunction<R>(this.propertyPredicate);
 		return Iterators.transform(entities, function);
-	}
-
-	private final class FutureEntitiesToInstances<R> implements Future<QueryResultIterator<R>>
-	{
-		private final Future<QueryResultIterator<Entity>> futureEntities;
-		private final boolean keysOnly;
-
-		private FutureEntitiesToInstances(Future<QueryResultIterator<Entity>> futureEntities, boolean keysOnly)
-		{
-			this.futureEntities = futureEntities;
-			this.keysOnly = keysOnly;
-		}
-
-		public boolean cancel(boolean mayInterruptIfRunning)
-		{
-			return futureEntities.cancel(mayInterruptIfRunning);
-		}
-
-		public QueryResultIterator<R> get() throws InterruptedException,
-				ExecutionException
-		{
-			return doGet(futureEntities.get());
-		}
-
-		private QueryResultIterator<R> doGet(QueryResultIterator<Entity> entities)
-		{
-			Iterator<Entity> iterator = applyEntityFilter(entities);
-			Iterator<R> instances = entityToInstanceIterator(iterator, keysOnly);
-			return new BasicQueryResultIterator<R>(instances, entities);
-		}
-
-		public QueryResultIterator<R> get(long timeout, TimeUnit unit)
-				throws InterruptedException, ExecutionException,
-				TimeoutException
-		{
-			return doGet(futureEntities.get(timeout, unit));
-		}
-
-		public boolean isCancelled()
-		{
-			return futureEntities.isCancelled();
-		}
-
-		public boolean isDone()
-		{
-			return futureEntities.isDone();
-		}
 	}
 
 	private final class EntityToInstanceFunction<R> implements Function<Entity, R>
