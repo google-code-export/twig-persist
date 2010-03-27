@@ -19,8 +19,8 @@ public interface ObjectDatastore
 
 	// convenience store methods
 	Key store(Object instance);
-	Key store(Object instance, String name);
-	Key store(Object instance, String name, Object parent);
+	Key store(Object instance, String keyName);
+	Key store(Object instance, String keyName, Object parent);
 	Key store(Object instance, Object parent);
 	<T> Map<T, Key> storeAll(Collection<? extends T> instances);
 	<T> Map<T, Key> storeAll(Collection<? extends T> instances, Object parent);
@@ -29,7 +29,6 @@ public interface ObjectDatastore
 	<T> T load(Key key);
 	<T> T load(Class<T> type, Object key);
 	<T> T load(Class<T> type, Object key, Object parent);
-//	<T, K> Map<K, T> load(Class<? extends T> type, Collection<? extends K> keys);
 
 	// convenience find methods
 	<T> QueryResultIterator<T> find(Class<T> type);
@@ -43,8 +42,8 @@ public interface ObjectDatastore
 	// activation
 	int getActivationDepth();
 	void setActivationDepth(int depth);
-
 	void refresh(Object instance);
+	
 	void update(Object instance);
 	void storeOrUpdate(Object instance);
 	void storeOrUpdate(Object instance, Object parent);
