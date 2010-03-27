@@ -292,44 +292,14 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 			public QueryResultIterator<R> get() throws InterruptedException,
 					ExecutionException
 			{
-				try
-				{
 					return doGet(futureEntities.get());
-				}
-				catch (Throwable t)
-				{
-					if (isInternalIncompatability(t))
-					{
-						// just do a normal sync call
-						return nowSingleQueryInstanceIterator();
-					}
-					else
-					{
-						throw (RuntimeException) t;
-					}
-				}
 			}
 
 			public QueryResultIterator<R> get(long timeout, TimeUnit unit)
 					throws InterruptedException, ExecutionException,
 					TimeoutException
 			{
-				try
-				{
 					return doGet(futureEntities.get(timeout, unit));
-				}
-				catch (Throwable t)
-				{
-					if (isInternalIncompatability(t))
-					{
-						// just do a normal sync call
-						return nowSingleQueryInstanceIterator();
-					}
-					else
-					{
-						throw (RuntimeException) t;
-					}
-				}
 			}
 
 			public boolean isCancelled()
@@ -350,9 +320,6 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 
 	private Future<QueryResultIterator<Entity>> futureSingleQueryEntities(Query query)
 	{
-		// need to catch throwables that might indicate the GAE private classes have changed
-		try
-		{
 			Transaction txn = this.datastore.getTransaction();
 			Future<QueryResultIterator<Entity>> futureEntities;
 			AsyncPreparedQuery prepared = new AsyncPreparedQuery(query, txn);
@@ -366,28 +333,15 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 				futureEntities = prepared.asFutureQueryResultIterator(fetchOptions);
 			}
 			return futureEntities;
-		}
-		catch (Throwable t)
-		{
-			if (isInternalIncompatability(t))
-			{
-				QueryResultIterator<Entity> result = nowSingleQueryEntities(query);
-				return new ImmediateFuture<QueryResultIterator<Entity>>(result);
-			}
-			else
-			{
-				throw (RuntimeException) t;
-			}
-		}
 	}
-
-	private boolean isInternalIncompatability(Throwable t)
-	{
-		return t instanceof Error || 
-		t instanceof SecurityException || 
-		t instanceof ClassNotFoundException ||
-		t instanceof NoSuchMethodException;
-	}
+//
+//	private boolean isInternalIncompatability(Throwable t)
+//	{
+//		return t instanceof Error || 
+//		t instanceof SecurityException || 
+//		t instanceof ClassNotFoundException ||
+//		t instanceof NoSuchMethodException;
+//	}
 
 	protected Iterator<Entity> nowMultipleQueryEntities(Collection<Query> queries)
 	{
@@ -423,22 +377,7 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 	{
 		Collection<Query> queries = getValidatedQueries();
 
-		try
-		{
 			return futureMultipleQueriesInstanceIterator(queries);
-		}
-		catch (Throwable t)
-		{
-			if (isInternalIncompatability(t))
-			{
-				Iterator<R> result = nowMultiQueryInstanceIterator();
-				return new ImmediateFuture<Iterator<R>>(result);
-			}
-			else
-			{
-				throw (RuntimeException) t;
-			}
-		}
 	}
 
 	protected <R> Iterator<R> nowMultiQueryInstanceIterator()
@@ -472,42 +411,14 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 			@Override
 			public Iterator<R> get() throws InterruptedException, ExecutionException
 			{
-				try
-				{
 					return entityToInstanceIterator(futureMerged.get(), keysOnly);
-				}
-				catch (Throwable t)
-				{
-					if (isInternalIncompatability(t))
-					{
-						return nowSingleQueryInstanceIterator();
-					}
-					else
-					{
-						throw (RuntimeException) t;
-					}
-				}
 			}
 
 			@Override
 			public Iterator<R> get(long timeout, TimeUnit unit) throws InterruptedException,
 					ExecutionException, TimeoutException
 			{
-				try
-				{
 					return entityToInstanceIterator(futureMerged.get(timeout, unit), keysOnly);
-				}
-				catch (Throwable t)
-				{
-					if (isInternalIncompatability(t))
-					{
-						return nowSingleQueryInstanceIterator();
-					}
-					else
-					{
-						throw (RuntimeException) t;
-					}
-				}
 			}
 
 			@Override
