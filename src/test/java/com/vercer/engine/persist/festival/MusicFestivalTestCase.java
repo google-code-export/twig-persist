@@ -48,7 +48,7 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 
 	public static MusicFestival createFestival() throws ParseException
 	{
-		DateFormat dateFormat = new SimpleDateFormat("d MMM yyyy");
+		DateFormat dateFormat = new SimpleDateFormat("d MMM yyyy", Locale.ENGLISH);
 
 		MusicFestival musicFestival = new MusicFestival();
 
