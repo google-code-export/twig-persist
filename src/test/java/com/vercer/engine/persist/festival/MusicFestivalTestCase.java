@@ -12,6 +12,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
@@ -458,6 +459,29 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		instance.hello = "world";
 		datastore.store(instance);
 		datastore.refresh(instance);
+	}
+	
+	@Test
+	public void testNoKeysWithAncestor()
+	{
+		Band band = new Band();
+		band.name = "Janes Addiction";
+		
+		Album album = new Album();
+		album.name = "Jane Says";
+		band.albums = Collections.singletonList(album);
+		
+		datastore.store(band);
+		
+		datastore.disassociateAll();
+		
+		band = datastore.load(Band.class, "Janes Addiction");
+		
+		datastore.find()
+			.type(Album.class)
+			.withAncestor(band)
+			.fetchNoFields()
+			.returnResultsNow();
 	}
 	
 	@Test
