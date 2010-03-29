@@ -91,7 +91,7 @@ public class AsyncPreparedQuery extends BasePreparedQuery
 				{
 					result.mergeFrom(bs);
 				}
-				QueryResultsSourceImpl src = new QueryResultsSourceImpl(fetchOptions, txn);
+				QueryResultsSourceImpl src = new QueryResultsSourceImpl(null, fetchOptions, txn);
 				List<Entity> prefetchedEntities = src.loadFromPb(result);
 				return new QueryResultIteratorImpl(AsyncPreparedQuery.this, prefetchedEntities,
 						src, fetchOptions, txn);

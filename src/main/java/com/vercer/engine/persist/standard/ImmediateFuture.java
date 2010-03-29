@@ -14,32 +14,27 @@ public class ImmediateFuture<T> implements Future<T>
 		this.result = result;
 	}
 	
-	@Override
 	public boolean cancel(boolean mayInterruptIfRunning)
 	{
 		return false;
 	}
 
-	@Override
 	public T get() throws InterruptedException, ExecutionException
 	{
 		return result;
 	}
 
-	@Override
 	public T get(long timeout, TimeUnit unit)
 			throws InterruptedException, ExecutionException, TimeoutException
 	{
 		return result;
 	}
 
-	@Override
 	public boolean isCancelled()
 	{
 		return false;
 	}
 
-	@Override
 	public boolean isDone()
 	{
 		return false;

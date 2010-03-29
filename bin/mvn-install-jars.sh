@@ -1,4 +1,4 @@
-export VERSION="1.3.1"
+export VERSION="1.3.2"
 export SDK=$1
 export LIB="${SDK}/lib"
 

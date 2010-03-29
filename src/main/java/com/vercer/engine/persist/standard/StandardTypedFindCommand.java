@@ -402,32 +402,27 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 
 		return new Future<Iterator<R>>()
 		{
-			@Override
 			public boolean cancel(boolean mayInterruptIfRunning)
 			{
 				return futureMerged.cancel(mayInterruptIfRunning);
 			}
 
-			@Override
 			public Iterator<R> get() throws InterruptedException, ExecutionException
 			{
 					return entityToInstanceIterator(futureMerged.get(), keysOnly);
 			}
 
-			@Override
 			public Iterator<R> get(long timeout, TimeUnit unit) throws InterruptedException,
 					ExecutionException, TimeoutException
 			{
 					return entityToInstanceIterator(futureMerged.get(timeout, unit), keysOnly);
 			}
 
-			@Override
 			public boolean isCancelled()
 			{
 				return futureMerged.isCancelled();
 			}
 
-			@Override
 			public boolean isDone()
 			{
 				return futureMerged.isDone();
