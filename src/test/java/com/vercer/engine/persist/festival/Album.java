@@ -29,9 +29,17 @@ public class Album
 
 	public static class Track
 	{
+		public static class SingleDetails
+		{
+			String bside;
+			int released;
+		}
+		
 		@Type(Text.class)
 		String title;
 		float length;
+		
+		SingleDetails details;
 
 		@Override
 		public int hashCode()

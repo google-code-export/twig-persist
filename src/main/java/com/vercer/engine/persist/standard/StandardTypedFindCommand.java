@@ -40,6 +40,9 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 
 	protected List<StandardBranchFindCommand<T>> children;
 	protected List<Filter> filters;
+	
+	// TODO remove this! Written for testing but might keep something similar to force
+	// sync queries. So just keeping it here for now
 	public static boolean forceMultipleNow;
 
 	private class Filter

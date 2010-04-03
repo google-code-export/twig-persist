@@ -6,6 +6,7 @@ public class Musician
 {
 	String name;
 	Date birthday;
+	Integer favouriteNumber;
 
 	public Musician(String name)
 	{

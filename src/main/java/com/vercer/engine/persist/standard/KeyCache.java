@@ -70,7 +70,7 @@ public class KeyCache
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T> T getCachedEntity(Key key)
+	public <T> T getCachedInstance(Key key)
 	{
 		return (T) cacheByKey.get(key);
 	}
