@@ -23,6 +23,7 @@ import com.vercer.engine.persist.PropertyTranslator;
 import com.vercer.engine.persist.Path.Part;
 import com.vercer.engine.persist.conversion.DefaultTypeConverter.BlobToSerializable;
 import com.vercer.engine.persist.conversion.DefaultTypeConverter.SerializableToBlob;
+import com.vercer.engine.persist.standard.AbstractStatelessObjectDatastore;
 import com.vercer.engine.persist.util.SimpleProperty;
 import com.vercer.engine.persist.util.SinglePropertySet;
 import com.vercer.engine.persist.util.generic.GenericTypeReflector;
@@ -66,18 +67,22 @@ public class ListTranslator extends DecoratingTranslator
 				Path itemPath = property.getPath();
 				Part nextPart = itemPath.firstPartAfterPrefix(path);
 				Object list = property.getValue();
+				
+				// every property should be of the same type but just repeat check
 				if (list instanceof List<?>)
 				{
+					// we have a list of property values
 					values = (List<?>) list;
 				}
 				else if (nextPart != null && nextPart.isMeta() && nextPart.getName().equals(LIST_SERIALIZED_META))
 				{
+					// we have a serialized list of property values
 					values = (List<?>) BLOB_TO_SERIALIZABLE.convert((Blob) list);
 					itemPath = itemPath.head();
 				}
 				else
 				{
-					// this is not a list
+					// this is not a list so do not handle it
 					return null;
 				}
 
@@ -155,10 +160,14 @@ public class ListTranslator extends DecoratingTranslator
 						Object value = property.getValue();
 						Path itemPath = property.getPath();
 
-						// we can encode only one level of collection
+						// we can store only one level of collection in a multi-valued property 
 						if (value instanceof List<?>)
 						{
+							// we need to serialize lists inside lists
 							itemPath = new Path.Builder(itemPath).meta(LIST_SERIALIZED_META).build();
+							
+							// make sure we do not serialize key references - dereference them to keys
+							value = AbstractStatelessObjectDatastore.dereferencePropertyValue(value);
 							value = SERIALIZABLE_TO_BLOB.convert((Serializable) value);
 						}
 

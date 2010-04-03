@@ -100,7 +100,12 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		houses.tracks[2] = new Album.Track();
 		houses.tracks[2].title = "Over the Hills and Far Away";
 		houses.tracks[2].length = 4.50f;
-//		houses.band = ledzep;
+		
+		// set an entity inside an embedded class
+		Album.Track.SingleDetails details = new Album.Track.SingleDetails();
+		details.released = 3;
+		details.bside = "Do ya make er";
+		houses.tracks[2].details = details;
 
 		Album iv = new Album();
 		iv.name = "Led Zeppelin IV";
@@ -252,8 +257,8 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 	public void batchedStoreMulti() throws ParseException, InterruptedException, ExecutionException
 	{
 		MusicFestival musicFestival = createFestival();
-		Band band1 = musicFestival.bands.get(0);
-		Band band2 = musicFestival.bands.get(1);
+		Band band1 = musicFestival.bands.get(1);
+		Band band2 = musicFestival.bands.get(2);
 
 		Map<Band, Key> keys = datastore.store().instances(Arrays.asList(band1, band2)).batchRelated().returnKeysNow();
 

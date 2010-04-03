@@ -43,6 +43,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 
 	// permanent cache of class fields to reduce reflection
 	private static Map<Class<?>, List<Field>> classFields = new ConcurrentHashMap<Class<?>, List<Field>>();
+	private static Map<Class<?>, Constructor<?>> constructors = new ConcurrentHashMap<Class<?>, Constructor<?>>();
 
 	public ObjectFieldTranslator(TypeConverter converters)
 	{
@@ -173,20 +174,32 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 	{
 		try
 		{
-			// use no-args constructor
-			Constructor<?> constructor = clazz.getDeclaredConstructor();
-
-			// allow access to private constructor
-			if (!constructor.isAccessible())
-			{
-				constructor.setAccessible(true);
-			}
+			Constructor<?> constructor = getNoArgsConstructor(clazz);
 			return constructor.newInstance();
 		}
 		catch (Exception e)
 		{
 			throw new IllegalArgumentException("Could not construct instance of: " + clazz, e);
 		}
+	}
+
+	private Constructor<?> getNoArgsConstructor(Class<?> clazz) throws NoSuchMethodException
+	{
+		Constructor<?> constructor = constructors.get(clazz);
+		if (constructor == null)
+		{
+			// use no-args constructor
+			constructor = clazz.getDeclaredConstructor();
+	
+			// allow access to private constructor
+			if (!constructor.isAccessible())
+			{
+				constructor.setAccessible(true);
+			}
+			
+			constructors.put(clazz, constructor);
+		}
+		return constructor;
 	}
 
 	public final Set<Property> typesafeToProperties(Object object, Path path, boolean indexed)

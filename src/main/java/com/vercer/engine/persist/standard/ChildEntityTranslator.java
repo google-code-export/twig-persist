@@ -41,7 +41,7 @@ final class ChildEntityTranslator implements PropertyTranslator
 				// clear the current key spec so it is not used as parent
 				KeySpecification current = ChildEntityTranslator.this.strategyObjectDatastore.writeKeySpec;
 
-				Key key = ChildEntityTranslator.this.strategyObjectDatastore.keyCache.getCachedKey(instance);
+				Key key = ChildEntityTranslator.this.strategyObjectDatastore.getKeyCache().getCachedKey(instance);
 				if (key == null)
 				{
 					key = ChildEntityTranslator.this.strategyObjectDatastore.store(instance);

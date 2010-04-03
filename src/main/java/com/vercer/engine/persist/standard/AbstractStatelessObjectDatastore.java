@@ -67,7 +67,7 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 
 	protected final Entity instanceToEntity(Object instance, Key parentKey, String name)
 	{
-		onBeforeTranslate(instance);
+		onBeforeEncode(instance);
 		Entity entity;
 		try
 		{
@@ -87,7 +87,7 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 		{
 			throw newExceptionOnTranslateWrite(e, instance);
 		}
-		onAfterTranslate(instance, entity);
+		onAfterEncode(instance, entity);
 		return entity;
 	}
 
@@ -97,31 +97,7 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 		{
 			// dereference object references
 			Object value = property.getValue();
-			if (value instanceof ObjectReference<?>)
-			{
-				value = ((ObjectReference<?>)value).get();
-			}
-			else if (value instanceof List<?>)
-			{
-				// we know the value is a mutable list from CollectionTranslator
-				@SuppressWarnings("unchecked")
-				List<Object> values = (List<Object>) value;
-				for (int i = 0; i < values.size(); i++)
-				{
-					Object item = values.get(i);
-					if (item instanceof ObjectReference<?>)
-					{
-						// dereference the value and set it in-place
-						Object dereferenced = ((ObjectReference<?>) item).get();
-						values.set(i, dereferenced);
-					}
-					else
-					{
-						// assume that they are all references or none
-						break;
-					}
-				}
-			}
+			value = dereferencePropertyValue(value);
 
 			if (property.isIndexed())
 			{
@@ -132,6 +108,31 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 				entity.setUnindexedProperty(property.getPath().toString(), value);
 			}
 		}
+	}
+
+	public static Object dereferencePropertyValue(Object value)
+	{
+		if (value instanceof ObjectReference<?>)
+		{
+			value = ((ObjectReference<?>)value).get();
+		}
+		else if (value instanceof List<?>)
+		{
+			// we know the value is a mutable list from ListTranslator
+			@SuppressWarnings("unchecked")
+			List<Object> values = (List<Object>) value;
+			for (int i = 0; i < values.size(); i++)
+			{
+				Object item = values.get(i);
+				if (item instanceof ObjectReference<?>)
+				{
+					// dereference the value and set it in-place
+					Object dereferenced = ((ObjectReference<?>) item).get();
+					values.set(i, dereferenced);  // replace the reference
+				}
+			}
+		}
+		return value;
 	}
 
 	/**
@@ -252,7 +253,7 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 
 	public <T> T toTypesafe(Entity entity, Predicate<String> predicate)
 	{
-		onBeforeRestore(entity);
+		onBeforeDecode(entity);
 
 		Type type = kindToType(entity.getKind());
 
@@ -275,17 +276,9 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 			throw new IllegalStateException("Could not translate entity " + entity);
 		}
 
-		onAfterRestore(entity, result);
+		onAfterDecode(entity, result);
 
 		return result;
-	}
-
-	protected void onAfterRestore(Entity entity, Object instance)
-	{
-	}
-
-	protected void onBeforeRestore(Entity entity)
-	{
 	}
 
 	public Query query(Type type)
@@ -296,14 +289,6 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 	protected RuntimeException newExceptionOnTranslateWrite(Exception e, Object instance)
 	{
 		return new RuntimeException(e);
-	}
-
-	protected void onBeforeTranslate(Object instance)
-	{
-	}
-
-	protected void onAfterTranslate(Object instance, Entity entity)
-	{
 	}
 
 	public final <T> T load(Key key)
@@ -394,9 +379,62 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 		onAfterDelete(keys);
 	}
 
+	// instance life-cycle extension points
+
+	/**
+	 * Called before every instance is translated from a types-safe object
+	 * to a low-level datastore Entity. This must occur before storing
+	 * or updating every instance.
+	 * 
+	 * @param instance
+	 */
+	protected void onBeforeEncode(Object instance)
+	{
+	}
+
+	/**
+	 * Called after every instance is translated from a types-safe object
+	 * to a low-level datastore Entity. This must occur before storing
+	 * or updating every instance.
+	 * 
+	 * @param instance
+	 * @param entity
+	 */
+	protected void onAfterEncode(Object instance, Entity entity)
+	{
+	}
+	
+
+	/**
+	 * Called after every entity returned from the datastore has been translated 
+	 * into a type-safe instance.
+	 * 
+	 * @param entity
+	 * @param instance
+	 */
+	protected void onAfterDecode(Entity entity, Object instance)
+	{
+	}
+
+	/**
+	 * Called before every entity returned from the datastore is translated into a
+	 * type-safe instance.
+	 *  
+	 * @param entity
+	 */
+	protected void onBeforeDecode(Entity entity)
+	{
+	}
+
+	/**
+	 * Called after every instance that is deleted from the datastore.
+	 * 
+	 * @param keys
+	 */
 	protected void onAfterDelete(Collection<Key> keys)
 	{
 	}
+
 
 	private static final Function<Entity, Key> entityToKeyFunction = new Function<Entity, Key>()
 	{

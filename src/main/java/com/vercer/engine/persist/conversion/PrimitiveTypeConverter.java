@@ -31,6 +31,12 @@ public class PrimitiveTypeConverter implements TypeConverter
 	@SuppressWarnings("unchecked")
 	public <T> T convert(Object source, Type type)
 	{
+		if (source == null)
+		{
+			// consider null a primitive value
+			return (T) nullValue;
+		}
+		
 		// if we have a primitive or wrapper get the wrapper
 		Class<?> erased = GenericTypeReflector.erase(type);
 		Class<?> wrapper = null;
@@ -63,11 +69,6 @@ public class PrimitiveTypeConverter implements TypeConverter
 		else if (wrappers.contains(erased))
 		{
 			wrapper = erased;
-		}
-		else if (source == null)
-		{
-			// consider null a primitive value
-			return (T) nullValue;
 		}
 
 		// convert any primitives to string

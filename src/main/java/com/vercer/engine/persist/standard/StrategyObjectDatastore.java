@@ -82,7 +82,7 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 		}
 	};
 
-	final KeyCache keyCache;
+	private final KeyCache keyCache;
 
 	/**
 	 * Flag that indicates we are associating instances with this session so do not store them
@@ -184,7 +184,7 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 				}
 
 				// need to cache the instance immediately so children can ref it
-				if (keyCache.getCachedEntity(readKey) == null)
+				if (keyCache.getCachedInstance(readKey) == null)
 				{
 					// only cache first time - not for embedded components
 					keyCache.cache(readKey, instance);
@@ -333,34 +333,39 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 	}
 
 	@Override
-	protected void onBeforeTranslate(Object instance)
+	protected void onBeforeEncode(Object instance)
 	{
 		depth++;
 		if (keyCache.getCachedKey(instance) != null)
 		{
 			throw new IllegalStateException("Cannot store same instance twice: " + instance);
 		}
-
+		// create a place to put key details as we discover properties
 		KeySpecification keySpec = new KeySpecification();
 
 		// an existing write key spec indicates that we are a child
 		if (writeKeySpec != null)
 		{
+			// make the existing spec the parent of the new current spec
 			keySpec.setParentKeyReference(writeKeySpec.toObjectReference());
 		}
 
+		// cache the empty key details now in case a child references back to us
 		keyCache.cacheKeyReferenceForInstance(instance, keySpec.toObjectReference());
 
 		writeKeySpec = keySpec;
 	}
 
 	@Override
-	protected void onAfterTranslate(Object instance, Entity entity)
+	protected void onAfterEncode(Object instance, Entity entity)
 	{
 		depth--;
 		writeKeySpec = null;
+		
+		// replace the temp key ObjRef with the full key for this instance 
 		keyCache.cache(entity.getKey(), instance);
 
+		// we can store all entities for a single batch put
 		if (batching)
 		{
 			if (batched == null)
@@ -371,9 +376,13 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 		}
 	}
 
+	/**
+	 * Potentially store an entity in the datastore.
+	 */
 	@Override
 	protected Key storeEntity(Entity entity)
 	{
+		// we could be just pretending to store to process the instance to get its key
 		if (associating)
 		{
 			// do not save the entity because we just want the key
@@ -410,7 +419,7 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 	public <T> T toTypesafe(Entity entity, Predicate<String> propertyPredicate)
 	{
 		// cast needed to avoid sun generics bug "no unique maximal instance exists..."
-		T typesafe = (T) keyCache.getCachedEntity(entity.getKey());
+		T typesafe = (T) keyCache.getCachedInstance(entity.getKey());
 		if (typesafe == null)
 		{
 			Key current = readKey;
@@ -425,13 +434,13 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public final <T> T keyToInstance(Key key, Predicate<String> propertyPredicate)
+	public <T> T keyToInstance(Key key, Predicate<String> propertyPredicate)
 	{
 		// only cache full instances
 		T typesafe = null;
 		if (propertyPredicate == null)
 		{
-			typesafe = (T) keyCache.getCachedEntity(key);
+			typesafe = (T) keyCache.getCachedInstance(key);
 		}
 
 		if (typesafe == null)
@@ -595,7 +604,7 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 
 	Object getInstanceFromCacheOrLoad(Key key)
 	{
-		Object instance = keyCache.getCachedEntity(key);
+		Object instance = keyCache.getCachedInstance(key);
 		if (instance == null)
 		{
 			instance = load(key);
@@ -754,14 +763,19 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 		return componentTranslator;
 	}
 
-	public final PropertyTranslator getKeyFieldTranslator()
+	protected final PropertyTranslator getKeyFieldTranslator()
 	{
 		return keyFieldTranslator;
 	}
 
-	public final PropertyTranslator getDefaultTranslator()
+	protected final PropertyTranslator getDefaultTranslator()
 	{
 		return defaultTranslator;
+	}
+	
+	protected final KeyCache getKeyCache()
+	{
+		return keyCache;
 	}
 
 	private final Function<Object, Key> instanceToKey = new Function<Object, Key>()
