@@ -4,6 +4,7 @@ import java.io.NotSerializableException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -82,6 +83,7 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 		}
 	};
 
+	// TODO refactor this into an InstanceStrategy
 	private final KeyCache keyCache;
 
 	/**
@@ -333,13 +335,19 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 	}
 
 	@Override
-	protected void onBeforeEncode(Object instance)
+	protected void onBeforeStore(Object instance)
 	{
-		depth++;
 		if (keyCache.getCachedKey(instance) != null)
 		{
 			throw new IllegalStateException("Cannot store same instance twice: " + instance);
 		}
+	}
+	
+	@Override
+	protected void onBeforeEncode(Object instance)
+	{
+		depth++;
+
 		// create a place to put key details as we discover properties
 		KeySpecification keySpec = new KeySpecification();
 
@@ -396,11 +404,13 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 		}
 		else if (batching)
 		{
-			// don't store anything yet if we are baching writes
+			// don't store anything yet if we are batching writes
 			Key key = entity.getKey();
+			
+			// related entities must have a full key without being stored
 			if (depth > 1 && !key.isComplete())
 			{
-				// incomplete keys are no good to us
+				// incomplete keys are no good to us - we need a key now
 				throw new IllegalArgumentException("Batched child entity does not have complete key: " + entity);
 			}
 
@@ -414,9 +424,8 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 		}
 	}
 
-	@Override
 	@SuppressWarnings("unchecked")
-	public <T> T toTypesafe(Entity entity, Predicate<String> propertyPredicate)
+	public <T> T toTypesafe(Entity entity, Predicate<Property> propertyPredicate)
 	{
 		// cast needed to avoid sun generics bug "no unique maximal instance exists..."
 		T typesafe = (T) keyCache.getCachedInstance(entity.getKey());
@@ -434,7 +443,7 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public <T> T keyToInstance(Key key, Predicate<String> propertyPredicate)
+	public <T> T keyToInstance(Key key, Predicate<Property> propertyPredicate)
 	{
 		// only cache full instances
 		T typesafe = null;
@@ -648,7 +657,7 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 	public final <T> Map<T, Key> storeAll(Collection<? extends T> instances, Object parent)
 	{
 		final Map<T, Entity> entities = instancesToEntities(instances, parent, false);
-		final List<Key> put = getService().put(entities.values());
+		final List<Key> put = getDefaultService().put(entities.values());
 
 		// use a lazy map because often keys ignored
 		return new LazyProxy<Map<T, Key>>(Map.class)
@@ -808,12 +817,28 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 		{
 			throw new IllegalStateException("Already in active transaction");
 		}
-		transaction = getService().beginTransaction();
+		transaction = getDefaultService().beginTransaction();
 		return transaction;
 	}
 
 	public final void removeTransaction()
 	{
 		transaction = null;
+	}
+
+	@Override
+	public void activate(Object... instances)
+	{
+		activateAll(Arrays.asList(instances));
+	}
+
+	@Override
+	public void activateAll(Collection<?> instances)
+	{
+		// TODO optimise this
+		for (Object instance : instances)
+		{
+			refresh(instance);
+		}
 	}
 }

@@ -10,6 +10,16 @@ import com.vercer.util.reference.SimpleObjectReference;
 
 public class KeyCache
 {
+	private static class ActivatableKeyReference extends SimpleObjectReference<Key>
+	{
+		private static final long serialVersionUID = 1L;
+		private boolean activated;
+		public ActivatableKeyReference(Key object)
+		{
+			super(object);
+		}
+	}
+	
 	private Map<Key, Object> cacheByKey = new MapMaker()
 		.weakValues()
 		.concurrencyLevel(1)
@@ -24,7 +34,7 @@ public class KeyCache
 	public void cache(Key key, Object object)
 	{
 		cacheByKey.put(key, object);
-		SimpleObjectReference<Key> reference = new SimpleObjectReference<Key>(key);
+		SimpleObjectReference<Key> reference = new ActivatableKeyReference(key);
 		cacheByValue.put(object, reference);
 	}
 
@@ -80,6 +90,25 @@ public class KeyCache
 		ObjectReference<Key> reference = cacheByValue.get(entity);
 		if (reference != null)
 		{
+			return reference.get();
+		}
+		else
+		{
+			return null;
+		}
+	}
+	
+	public Key getCachedKeyAndActivate(Object entity)
+	{
+		// we are sure of the key reference type because the full key and instance must have been added 
+		ActivatableKeyReference reference = (ActivatableKeyReference) cacheByValue.get(entity);
+		if (reference != null)
+		{
+			if (reference.activated)
+			{
+				throw new IllegalStateException("Instance was already activated");
+			}
+			reference.activated = true;
 			return reference.get();
 		}
 		else

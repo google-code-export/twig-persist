@@ -2,6 +2,7 @@ package com.vercer.engine.persist.standard;
 
 import java.lang.reflect.Type;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -9,6 +10,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.FetchOptions;
@@ -19,14 +21,14 @@ import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.vercer.engine.persist.ObjectDatastore;
 import com.vercer.engine.persist.Path;
 import com.vercer.engine.persist.Property;
 import com.vercer.engine.persist.PropertyTranslator;
+import com.vercer.engine.persist.util.Entities;
 import com.vercer.engine.persist.util.PropertyMapToSet;
 import com.vercer.engine.persist.util.generic.GenericTypeReflector;
-import com.vercer.engine.util.Entities;
 import com.vercer.util.reference.ObjectReference;
 
 /**
@@ -39,12 +41,13 @@ import com.vercer.util.reference.ObjectReference;
 public abstract class AbstractStatelessObjectDatastore implements ObjectDatastore
 {
 	private final DatastoreService service;
+	private final Map<DatastoreServiceConfig, DatastoreService> services = new HashMap<DatastoreServiceConfig, DatastoreService>(2);
 	private PropertyTranslator translator;
 	private boolean indexed;
 
-	protected AbstractStatelessObjectDatastore(DatastoreService datastore)
+	protected AbstractStatelessObjectDatastore(DatastoreService service)
 	{
-		this.service = datastore;
+		this.service = service;
 	}
 
 	protected final void setPropertyTranslator(PropertyTranslator translator)
@@ -59,13 +62,14 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 
 	protected final Key store(Object instance, Key parentKey, String name)
 	{
+		onBeforeStore(instance);
 		Entity entity = instanceToEntity(instance, parentKey, name);
 		Key key = storeEntity(entity);
-
+		onAfterStore(instance, entity);
 		return key;
 	}
 
-	protected final Entity instanceToEntity(Object instance, Key parentKey, String name)
+	final Entity instanceToEntity(Object instance, Key parentKey, String name)
 	{
 		onBeforeEncode(instance);
 		Entity entity;
@@ -134,13 +138,13 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 		}
 		return value;
 	}
-
+	
 	/**
 	 * Give subclasses a chance to intercept all datastore puts
 	 */
 	protected Key storeEntity(Entity entity)
 	{
-		return service.put(entity);
+		return getDefaultService().put(entity);
 	}
 
 	public final Key store(Object instance, String name)
@@ -241,7 +245,7 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 
 	public final <T> QueryResultIterator<T> find(Class<T> type, Object ancestor)
 	{
-		return find().type(type).withAncestor(ancestor).returnResultsNow();
+		return find().type(type).ancestor(ancestor).returnResultsNow();
 	}
 
 	public final <T> T toTypesafe(Entity entity)
@@ -251,7 +255,7 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 		return result;
 	}
 
-	public <T> T toTypesafe(Entity entity, Predicate<String> predicate)
+	public <T> T toTypesafe(Entity entity, Predicate<Property> filter)
 	{
 		onBeforeDecode(entity);
 
@@ -259,12 +263,12 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 
 		// filter out unwanted properties at the lowest level
 		Map<String, Object> basic = entity.getProperties();
-		if (predicate != null)
-		{
-			basic = Maps.filterKeys(basic, predicate);
-		}
 
 		Set<Property> properties = new PropertyMapToSet(basic, indexed);
+		if (filter != null)
+		{
+			properties = Sets.filter(properties, filter);
+		}
 
 		// order the properties for efficient separation by field
 		properties = new TreeSet<Property>(properties);
@@ -299,7 +303,7 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 	}
 
 	@SuppressWarnings("unchecked")
-	protected <T> T keyToInstance(Key key, Predicate<String> propertyPredicate)
+	protected <T> T keyToInstance(Key key, Predicate<Property> filter)
 	{
 		Entity entity = keyToEntity(key);
 		if (entity == null)
@@ -308,7 +312,7 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 		}
 		else
 		{
-			return (T) toTypesafe(entity, propertyPredicate);
+			return (T) toTypesafe(entity, filter);
 		}
 	}
 
@@ -316,7 +320,7 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 	{
 		try
 		{
-			return service.get(key);
+			return getDefaultService().get(key);
 		}
 		catch (EntityNotFoundException e)
 		{
@@ -324,9 +328,14 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 		}
 	}
 
-	public final DatastoreService getService()
+	public final DatastoreService getDefaultService()
 	{
 		return service;
+	}
+	
+	public final DatastoreService getService(DatastoreServiceConfig config)
+	{
+		return services.get(config);
 	}
 
 	public final void update(Object instance, Key key)
@@ -355,16 +364,12 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 		onAfterUpdate(instance, entity);
 	}
 
-	protected void onAfterUpdate(Object instance, Entity entity)
-	{
-	}
-
 	public final void deleteAll(Type type)
 	{
 		Query query = query(type);
 		query.setKeysOnly();
 		FetchOptions options = FetchOptions.Builder.withChunkSize(100);
-		Iterator<Entity> entities = service.prepare(query).asIterator(options);
+		Iterator<Entity> entities = getDefaultService().prepare(query).asIterator(options);
 		Iterator<Key> keys = Iterators.transform(entities, entityToKeyFunction);
 		Iterator<List<Key>> partitioned = Iterators.partition(keys, 100);
 		while (partitioned.hasNext())
@@ -375,7 +380,7 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 
 	protected final void deleteKeys(Collection<Key> keys)
 	{
-		service.delete(keys);
+		getDefaultService().delete(keys);
 		onAfterDelete(keys);
 	}
 
@@ -401,6 +406,19 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 	 * @param entity
 	 */
 	protected void onAfterEncode(Object instance, Entity entity)
+	{
+	}
+	
+
+	protected void onAfterUpdate(Object instance, Entity entity)
+	{
+	}
+	
+	protected void onBeforeStore(Object instance)
+	{
+	}
+	
+	protected void onAfterStore(Object instance, Entity entity)
 	{
 	}
 	

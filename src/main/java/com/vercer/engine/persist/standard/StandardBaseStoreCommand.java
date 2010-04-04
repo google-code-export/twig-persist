@@ -56,7 +56,7 @@ abstract class StandardBaseStoreCommand<T, C extends CommonStoreCommand<T, C>> i
 		{
 			keys.add(entity.getKey());
 		}
-		Map<Key, Entity> map = command.datastore.getService().get(keys);
+		Map<Key, Entity> map = command.datastore.getDefaultService().get(keys);
 		if (!map.isEmpty())
 		{
 			throw new IllegalStateException("Keys already exist: " + map);

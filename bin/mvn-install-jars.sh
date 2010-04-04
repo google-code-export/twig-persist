@@ -42,3 +42,11 @@ mvn install:install-file \
 	-Dpackaging=jar \
 	-DgeneratePom=true \
 	-DcreateChecksum=true
+mvn install:install-file \
+	-Dfile="${LIB}/appengine-tools-api.jar" \
+	-DgroupId=com.google.appengine \
+	-DartifactId=appengine-tools-api \
+	-Dversion=${VERSION} \
+	-Dpackaging=jar \
+	-DgeneratePom=true \
+	-DcreateChecksum=true

@@ -8,11 +8,13 @@ import java.util.List;
 import java.util.concurrent.Future;
 
 import com.google.appengine.api.datastore.Cursor;
+import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.QueryResultIterator;
+import com.google.appengine.api.datastore.QueryResultList;
 import com.google.appengine.api.datastore.Transaction;
 import com.google.appengine.api.datastore.Query.SortDirection;
 import com.vercer.engine.persist.FindCommand.RootFindCommand;
@@ -49,12 +51,12 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 		return options;
 	}
 
-	public RootFindCommand<T> withAncestor(Object ancestor)
+	public RootFindCommand<T> ancestor(Object ancestor)
 	{
 		this.ancestor = ancestor;
 		return this;
 	}
-
+	
 	public RootFindCommand<T> fetchNoFields()
 	{
 		keysOnly = true;
@@ -131,8 +133,20 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 
 		Transaction txn = this.datastore.getTransaction();
 		Query query = queries.iterator().next();
-		PreparedQuery prepared = this.datastore.getService().prepare(txn, query);
+		PreparedQuery prepared = this.datastore.getDefaultService().prepare(txn, query);
 		return prepared.countEntities();
+	}
+	
+	public QueryResultList<T> returnAllResultsNow()
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	public Future<QueryResultList<T>> returnAllResultsLater()
+	{
+		// TODO Auto-generated method stub
+		return null;
 	}
 	
 	public QueryResultIterator<T> returnResultsNow()

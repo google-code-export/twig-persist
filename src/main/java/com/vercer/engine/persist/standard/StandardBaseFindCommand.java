@@ -5,12 +5,13 @@ import java.util.Iterator;
 import com.google.appengine.api.datastore.Entity;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
+import com.vercer.engine.persist.Property;
 import com.vercer.engine.persist.FindCommand.BaseFindCommand;
 
 abstract class StandardBaseFindCommand<T, C extends BaseFindCommand<C>> implements BaseFindCommand<C>
 {
 	protected Predicate<Entity> entityPredicate;
-	protected Predicate<String> propertyPredicate;
+	protected Predicate<Property> propertyPredicate;
 	protected final StrategyObjectDatastore datastore;
 
 	public StandardBaseFindCommand(StrategyObjectDatastore datastore)
@@ -26,7 +27,7 @@ abstract class StandardBaseFindCommand<T, C extends BaseFindCommand<C>> implemen
 	}
 
 	@SuppressWarnings("unchecked")
-	public C filterProperties(Predicate<String> predicate)
+	public C filterProperties(Predicate<Property> predicate)
 	{
 		this.propertyPredicate = predicate;
 		return (C) this;

@@ -29,21 +29,22 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ForwardingIterator;
 import com.google.common.collect.Iterators;
+import com.vercer.engine.persist.FindCommand;
+import com.vercer.engine.persist.Property;
 import com.vercer.engine.persist.FindCommand.BranchFindCommand;
+import com.vercer.engine.persist.FindCommand.MergeOperator;
 import com.vercer.engine.persist.FindCommand.ParentsCommand;
 import com.vercer.engine.persist.FindCommand.TypedFindCommand;
+import com.vercer.engine.persist.FindCommand.SplitFindCommand;
 import com.vercer.engine.persist.util.SortedMergeIterator;
 
-public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, C>> extends StandardBaseFindCommand<T, C> implements TypedFindCommand<T, C>
+public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, C>> extends StandardBaseFindCommand<T, C> implements TypedFindCommand<T, C>, SplitFindCommand<T>
 {
 	private static final Logger log = Logger.getLogger(StandardTypedFindCommand.class.getName());
 
 	protected List<StandardBranchFindCommand<T>> children;
 	protected List<Filter> filters;
-	
-	// TODO remove this! Written for testing but might keep something similar to force
-	// sync queries. So just keeping it here for now
-	public static boolean forceMultipleNow;
+	private MergeOperator operator;
 
 	private class Filter
 	{
@@ -78,15 +79,29 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 		filters.add(new Filter(field, operator, value));
 		return (C) this;
 	}
+	
+	@SuppressWarnings("unchecked")
+	public C addRangeFilter(String field, Object from, Object to)
+	{
+		addFilter(field, FilterOperator.GREATER_THAN_OR_EQUAL, from);
+		addFilter(field, FilterOperator.LESS_THAN, to);
+		return (C) this;
+	}
 
-	public BranchFindCommand<T> addChildQuery()
+	public SplitFindCommand<T> split(FindCommand.MergeOperator operator)
+	{
+		this.operator = operator;
+		return this;
+	}
+	
+	public BranchFindCommand<T> addBranch()
 	{
 		StandardBranchFindCommand<T> child = new StandardBranchFindCommand<T>(this);
 		if (children == null)
 		{
 			children = new ArrayList<StandardBranchFindCommand<T>>(2);
 		}
-		children.add(child);
+		children.add(child);		
 		return child;
 	}
 
@@ -162,24 +177,10 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 			try
 			{
 				List<Iterator<Entity>> childIterators = new ArrayList<Iterator<Entity>>(queries.size());
-				long start = System.currentTimeMillis();
-				if (forceMultipleNow)  // just for performance testing async vs sync keys only
+				List<Future<QueryResultIterator<Entity>>> futures = multiQueriesToFutureEntityIterators(queries);
+				for (Future<QueryResultIterator<Entity>> future : futures)
 				{
-					for (Query query : queries)
-					{
-						Iterator<Entity> iterator = datastore.getService().prepare(query).asIterator();
-						childIterators.add(iterator);
-					}
-					log.info("Now " + (System.currentTimeMillis() - start));
-				}
-				else
-				{
-					List<Future<QueryResultIterator<Entity>>> futures = multiQueriesToFutureEntityIterators(queries);
-					for (Future<QueryResultIterator<Entity>> future : futures)
-					{
-						childIterators.add(future.get());
-					}
-					log.info("Future " + (System.currentTimeMillis() - start));
+					childIterators.add(future.get());
 				}
 
 				Query query = queries.iterator().next();
@@ -259,7 +260,7 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 	{
 		Transaction txn = this.datastore.getTransaction();
 		final QueryResultIterator<Entity> entities;
-		PreparedQuery prepared = this.datastore.getService().prepare(txn, query);
+		PreparedQuery prepared = this.datastore.getDefaultService().prepare(txn, query);
 		FetchOptions fetchOptions = getFetchOptions();
 		if (fetchOptions == null)
 		{
@@ -352,7 +353,7 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 		Transaction txn = this.datastore.getTransaction();
 		for (Query query : queries)
 		{
-			PreparedQuery prepared = this.datastore.getService().prepare(txn, query);
+			PreparedQuery prepared = this.datastore.getDefaultService().prepare(txn, query);
 			Iterator<Entity> entities;
 			FetchOptions fetchOptions = getFetchOptions();
 			if (fetchOptions == null)
@@ -561,9 +562,9 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 
 	private final class EntityToInstanceFunction<R> implements Function<Entity, R>
 	{
-		private final Predicate<String> predicate;
+		private final Predicate<Property> predicate;
 
-		public EntityToInstanceFunction(Predicate<String> predicate)
+		public EntityToInstanceFunction(Predicate<Property> predicate)
 		{
 			this.predicate = predicate;
 		}
