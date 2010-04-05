@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.vercer.engine.persist.conversion.PrimitiveTypeConverter;
 import com.vercer.engine.persist.util.generic.GenericTypeReflector;
 
 /**
@@ -17,6 +18,39 @@ import com.vercer.engine.persist.util.generic.GenericTypeReflector;
  */
 public class DefaultFieldStrategy implements FieldStrategy
 {
+	private static final class ReplacedListType implements ParameterizedType
+	{
+		private final Type type;
+		private final Type replaced;
+
+		private ReplacedListType(Type type, Type replaced)
+		{
+			this.type = type;
+			this.replaced = replaced;
+		}
+
+		public Type getRawType()
+		{
+			return List.class;
+		}
+
+		public Type getOwnerType()
+		{
+			return null;
+		}
+
+		public Type[] getActualTypeArguments()
+		{
+			return new Type[] { replaced };
+		}
+
+		@Override
+		public String toString()
+		{
+			return "(Replaced " + type + " with List<" + replaced + ">)";
+		}
+	}
+
 	private final int defaultVersion;
 
 	public DefaultFieldStrategy(int defaultVersion)
@@ -119,7 +153,7 @@ public class DefaultFieldStrategy implements FieldStrategy
 		return replace(field.getGenericType());
 	}
 
-	protected Type replace(Type type)
+	protected Type replace(final Type type)
 	{
 		// turn every collection or array into a list
 		Type componentType = null;
@@ -150,26 +184,16 @@ public class DefaultFieldStrategy implements FieldStrategy
 		// we have a collection type so need to convert it
 
 		// recurse in case we have e.g. List<Twig[]>
-		final Type replaced = replace(componentType);
+		Type replaced = replace(componentType);
+		
+		// use wrapper type for primitives
+		if (GenericTypeReflector.erase(replaced).isPrimitive())
+		{
+			replaced = PrimitiveTypeConverter.getWrapperClassForPrimitive((Class<?>) replaced);
+		}
 
 		// replace the collection type with a list type
-		return new ParameterizedType()
-		{
-			public Type getRawType()
-			{
-				return List.class;
-			}
-
-			public Type getOwnerType()
-			{
-				return null;
-			}
-
-			public Type[] getActualTypeArguments()
-			{
-				return new Type[] { replaced };
-			}
-		};
+		return new ReplacedListType(type, replaced);
 	}
 
 
