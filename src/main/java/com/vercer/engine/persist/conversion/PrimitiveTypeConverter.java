@@ -195,25 +195,9 @@ public class PrimitiveTypeConverter implements TypeConverter
 			}
 			else if (wrapper == Short.class)
 			{
-				if (source instanceof Long)
+				if (source instanceof Number)
 				{
-					return (T) Short.valueOf(((Long) source).shortValue());
-				}
-				else if (source instanceof Integer)
-				{
-					return (T) Short.valueOf(((Integer) source).shortValue());
-				}
-				else if (source instanceof Float)
-				{
-					return (T) Short.valueOf(((Float) source).shortValue());
-				}
-				else if (source instanceof Double)
-				{
-					return (T) Short.valueOf(((Double) source).shortValue());
-				}
-				else if (source instanceof Byte)
-				{
-					return (T) Short.valueOf(((Byte) source).shortValue());
+					return (T) Short.valueOf(((Number) source).shortValue());
 				}
 				else if (source instanceof String)
 				{
@@ -252,4 +236,8 @@ public class PrimitiveTypeConverter implements TypeConverter
 		}
 	}
 
+	public static Class<?> getWrapperClassForPrimitive(Class<?> primitive)
+	{
+		return primitives.get(primitive);
+	}
 }

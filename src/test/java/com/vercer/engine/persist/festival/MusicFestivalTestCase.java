@@ -21,6 +21,7 @@ import java.util.concurrent.Future;
 
 import org.junit.Test;
 
+import com.google.appengine.api.datastore.Blob;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
@@ -32,6 +33,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.vercer.engine.persist.LocalDatastoreTestCase;
 import com.vercer.engine.persist.annotation.AnnotationObjectDatastore;
+import com.vercer.engine.persist.annotation.Embed;
 import com.vercer.engine.persist.festival.Album.Track;
 import com.vercer.engine.persist.festival.Band.HairStyle;
 
@@ -509,4 +511,19 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		assertEquals(HairStyle.LONG_LIKE_A_GIRL, datastore.load(Band.class, "Pearl Jam").hair);
 	}
 
+	@Test
+	public void testEmbeddedPrimitives()
+	{
+		ClassWithEmbeddedPrimitives testType = new ClassWithEmbeddedPrimitives();
+		testType.number = 8;
+		testType.blob = new Blob(new byte[] { 3, 4 });
+		datastore.store(testType);
+	}
+	
+	public static class ClassWithEmbeddedPrimitives
+	{
+		@Embed long number;
+		@Embed Blob blob;
+	}
+	
 }
