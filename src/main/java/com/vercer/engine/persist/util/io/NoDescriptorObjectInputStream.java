@@ -16,6 +16,7 @@ public class NoDescriptorObjectInputStream extends ObjectInputStream
 	protected ObjectStreamClass readClassDescriptor() throws IOException, ClassNotFoundException
 	{
 		String name = readUTF();
-		return ObjectStreamClass.lookup(Class.forName(name));
+		ObjectStreamClass lookup = ObjectStreamClass.lookup(Class.forName(name));
+		return lookup;
 	}
 }

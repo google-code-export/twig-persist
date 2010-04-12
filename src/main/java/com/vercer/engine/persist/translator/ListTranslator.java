@@ -21,7 +21,7 @@ import com.vercer.engine.persist.Path;
 import com.vercer.engine.persist.Property;
 import com.vercer.engine.persist.PropertyTranslator;
 import com.vercer.engine.persist.Path.Part;
-import com.vercer.engine.persist.conversion.DefaultTypeConverter.BlobToSerializable;
+import com.vercer.engine.persist.conversion.DefaultTypeConverter.BlobToAnything;
 import com.vercer.engine.persist.conversion.DefaultTypeConverter.SerializableToBlob;
 import com.vercer.engine.persist.standard.AbstractStatelessObjectDatastore;
 import com.vercer.engine.persist.util.SimpleProperty;
@@ -31,7 +31,7 @@ import com.vercer.engine.persist.util.generic.GenericTypeReflector;
 public class ListTranslator extends DecoratingTranslator
 {
 	private static final SerializableToBlob SERIALIZABLE_TO_BLOB = new SerializableToBlob();
-	private static final BlobToSerializable BLOB_TO_SERIALIZABLE = new BlobToSerializable();
+	private static final BlobToAnything BLOB_TO_SERIALIZABLE = new BlobToAnything();
 	private static final String LIST_SERIALIZED_META = "list";
 
 	public ListTranslator(PropertyTranslator chained)
