@@ -1,7 +1,6 @@
 package com.vercer.engine.persist.translator;
 
 import java.lang.reflect.Type;
-import java.util.HashSet;
 import java.util.Set;
 
 import com.google.common.base.Predicates;
@@ -34,20 +33,23 @@ public class PolymorphicTranslator extends DecoratingTranslator
 				break;
 			}
 		}
-
-		// filter out the class name
-		Set<Property> filtered = Sets.filter(properties,
-				Predicates.not(new PathPrefixPredicate(typeNamePath)));
-		filtered = new HashSet<Property>(filtered);
-		try
+		
+		// there is no polymorphic field
+		if (typeName != null)
 		{
-			Class<?> clazz = Class.forName(typeName);
-			return chained.propertiesToTypesafe(filtered, prefix, clazz);
+			// filter out the class name
+			properties = Sets.filter(properties, Predicates.not(new PathPrefixPredicate(typeNamePath)));
+			try
+			{
+				type = Class.forName(typeName);
+			}
+			catch (ClassNotFoundException e)
+			{
+				throw new IllegalStateException(e);
+			}
 		}
-		catch (ClassNotFoundException e)
-		{
-			throw new IllegalStateException(e);
-		}
+		
+		return chained.propertiesToTypesafe(properties, prefix, type);
 	}
 //
 //	protected Type className(Set<Property> properties, Path prefix)
