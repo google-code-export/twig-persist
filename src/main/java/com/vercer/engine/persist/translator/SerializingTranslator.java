@@ -11,13 +11,15 @@ import com.vercer.engine.persist.Property;
 import com.vercer.engine.persist.PropertyTranslator;
 import com.vercer.engine.persist.conversion.DefaultTypeConverter;
 import com.vercer.engine.persist.conversion.SpecificTypeConverter;
+import com.vercer.engine.persist.conversion.DefaultTypeConverter.BlobToAnything;
+import com.vercer.engine.persist.conversion.DefaultTypeConverter.SerializableToBlob;
 import com.vercer.engine.persist.util.SimpleProperty;
 
 
 public class SerializingTranslator implements PropertyTranslator
 {
-	private final SpecificTypeConverter<Blob, Serializable> blobToSerializable = new DefaultTypeConverter.BlobToSerializable();
-	private final SpecificTypeConverter<Serializable, Blob> serializableToBlob = new DefaultTypeConverter.SerializableToBlob();
+	private final BlobToAnything blobToSerializable = new DefaultTypeConverter.BlobToAnything();
+	private final SerializableToBlob serializableToBlob = new DefaultTypeConverter.SerializableToBlob();
 
 	public final Object propertiesToTypesafe(Set<Property> properties, Path path, Type type)
 	{
