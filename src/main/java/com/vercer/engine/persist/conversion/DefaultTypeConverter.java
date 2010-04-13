@@ -26,20 +26,20 @@ public class DefaultTypeConverter extends CombinedTypeConverter
 
 	public DefaultTypeConverter()
 	{
-		register(new ByteArrayToBlob());
-		register(new BlobToByteArray());
-
-		register(new BlobToAnything());
-		register(new SerializableToBlob());
-
+		register(new PrimitiveTypeConverter());
+		register(new CollectionConverter(this));
+		
 		register(new StringToText());
 		register(new TextToString());
-
+		
 		register(new StringToDate());
 		register(new DateToString());
 
-		register(new PrimitiveTypeConverter());
-		register(new CollectionConverter(this));
+		register(new ByteArrayToBlob());
+		register(new BlobToByteArray());
+
+		register(new SerializableToBlob());
+		register(new BlobToAnything());
 	}
 
 	@SuppressWarnings("unchecked")
@@ -168,7 +168,7 @@ public class DefaultTypeConverter extends CombinedTypeConverter
 		@SuppressWarnings("unchecked")
 		public <T> T convert(Object source, Type type)
 		{
-			if (source.getClass() == Blob.class)
+			if (source != null && source.getClass() == Blob.class)
 			{
 				return (T) convert((Blob) source);
 			}
