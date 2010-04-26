@@ -129,9 +129,8 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 			throw new IllegalStateException("Too many queries");
 		}
 
-		Transaction txn = this.datastore.getTransaction();
 		Query query = queries.iterator().next();
-		PreparedQuery prepared = this.datastore.getService().prepare(txn, query);
+		PreparedQuery prepared = this.datastore.servicePrepare(query);
 		return prepared.countEntities();
 	}
 	

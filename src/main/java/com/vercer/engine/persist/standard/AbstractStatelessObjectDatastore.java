@@ -14,6 +14,7 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.common.base.Function;
@@ -36,15 +37,14 @@ import com.vercer.util.reference.ObjectReference;
  *
  * @author John Patterson <john@vercer.com>
  */
-public abstract class AbstractStatelessObjectDatastore implements ObjectDatastore
+public abstract class AbstractStatelessObjectDatastore extends DatastoreServiceContainer implements ObjectDatastore
 {
-	private final DatastoreService service;
 	private PropertyTranslator translator;
 	private boolean indexed;
 
-	protected AbstractStatelessObjectDatastore(DatastoreService datastore)
+	protected AbstractStatelessObjectDatastore(DatastoreService service)
 	{
-		this.service = datastore;
+		super(service);
 	}
 
 	protected final void setPropertyTranslator(PropertyTranslator translator)
@@ -140,7 +140,7 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 	 */
 	protected Key storeEntity(Entity entity)
 	{
-		return service.put(entity);
+		return servicePut(entity);
 	}
 
 	public final Key store(Object instance, String name)
@@ -316,17 +316,12 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 	{
 		try
 		{
-			return service.get(key);
+			return serviceGet(key);
 		}
 		catch (EntityNotFoundException e)
 		{
 			return null;
 		}
-	}
-
-	public final DatastoreService getService()
-	{
-		return service;
 	}
 
 	public final void update(Object instance, Key key)
@@ -364,7 +359,7 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 		Query query = query(type);
 		query.setKeysOnly();
 		FetchOptions options = FetchOptions.Builder.withChunkSize(100);
-		Iterator<Entity> entities = service.prepare(query).asIterator(options);
+		Iterator<Entity> entities = servicePrepare(query).asIterator(options);
 		Iterator<Key> keys = Iterators.transform(entities, entityToKeyFunction);
 		Iterator<List<Key>> partitioned = Iterators.partition(keys, 100);
 		while (partitioned.hasNext())
@@ -375,7 +370,7 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 
 	protected final void deleteKeys(Collection<Key> keys)
 	{
-		service.delete(keys);
+		serviceDelete(keys);
 		onAfterDelete(keys);
 	}
 

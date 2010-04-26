@@ -517,7 +517,16 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		ClassWithEmbeddedPrimitives testType = new ClassWithEmbeddedPrimitives();
 		testType.number = 8;
 		testType.blob = new Blob(new byte[] { 3, 4 });
-		datastore.store(testType);
+		boolean threw = false;
+		try
+		{
+			datastore.store(testType);
+		}
+		catch (IllegalStateException e)
+		{
+			threw = true;
+		}
+		assertTrue(threw);
 	}
 	
 	public static class ClassWithEmbeddedPrimitives

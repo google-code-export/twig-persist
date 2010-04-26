@@ -15,7 +15,10 @@ import java.util.logging.Logger;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.PreparedQuery;
+import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Transaction;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
@@ -581,6 +584,10 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 	public final void delete(Object instance)
 	{
 		Key key= keyCache.getCachedKey(instance);
+		if (key == null)
+		{
+			throw new IllegalArgumentException("Instance " + instance + " is not associated");
+		}
 		deleteKeys(Collections.singleton(key));
 	}
 
@@ -647,7 +654,7 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 	public final <T> Map<T, Key> storeAll(Collection<? extends T> instances, Object parent)
 	{
 		final Map<T, Entity> entities = instancesToEntities(instances, parent, false);
-		final List<Key> put = getService().put(entities.values());
+		final List<Key> put = servicePut(entities.values());
 
 		// use a lazy map because often keys ignored
 		return new LazyProxy<Map<T, Key>>(Map.class)
@@ -701,7 +708,7 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 			return entities;
 		}
 	}
-
+	
 	public final void refresh(Object instance)
 	{
 		Key key = associatedKey(instance);
@@ -814,5 +821,70 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 	public final void removeTransaction()
 	{
 		transaction = null;
+	}
+	
+	@Override
+	protected void serviceDelete(Collection<Key> keys)
+	{
+		if (transaction == null)
+		{
+			super.serviceDelete(keys);
+		}
+		else
+		{
+			getService().delete(transaction, keys);
+		}
+	}
+	
+	@Override
+	protected Entity serviceGet(Key key) throws EntityNotFoundException
+	{
+		if (transaction == null)
+		{
+			return super.serviceGet(key);
+		}
+		else
+		{
+			return getService().get(transaction, key);
+		}
+	}
+	
+	@Override
+	protected PreparedQuery servicePrepare(Query query)
+	{
+		if (transaction == null)
+		{
+			return super.servicePrepare(query);
+		}
+		else
+		{
+			return getService().prepare(transaction, query);
+		}
+	}
+	
+	@Override
+	protected Key servicePut(Entity entity)
+	{
+		if (transaction == null)
+		{
+			return super.servicePut(entity);
+		}
+		else
+		{
+			return getService().put(transaction, entity);
+		}
+	}
+	
+	@Override
+	protected List<Key> servicePut(Iterable<Entity> entities)
+	{
+		if (transaction == null)
+		{
+			return super.servicePut(entities);
+		}
+		else
+		{
+			return getService().put(transaction, entities);
+		}
 	}
 }
