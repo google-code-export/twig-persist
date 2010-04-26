@@ -55,7 +55,12 @@ public class AnnotationStrategy extends DefaultFieldStrategy
 		}
 		else
 		{
-			return !Modifier.isTransient(field.getType().getModifiers());
+			int modifiers = field.getModifiers();
+			if (Modifier.isFinal(modifiers))
+			{
+				throw new IllegalStateException("Final field " + field + " cannot be stored");
+			}
+			return !Modifier.isTransient(modifiers) ;
 		}
 	}
 

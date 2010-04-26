@@ -167,7 +167,7 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 				{
 					for (Query query : queries)
 					{
-						Iterator<Entity> iterator = datastore.getService().prepare(query).asIterator();
+						Iterator<Entity> iterator = datastore.servicePrepare(query).asIterator();
 						childIterators.add(iterator);
 					}
 					log.info("Now " + (System.currentTimeMillis() - start));
@@ -257,9 +257,8 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 
 	private QueryResultIterator<Entity> nowSingleQueryEntities(Query query)
 	{
-		Transaction txn = this.datastore.getTransaction();
 		final QueryResultIterator<Entity> entities;
-		PreparedQuery prepared = this.datastore.getService().prepare(txn, query);
+		PreparedQuery prepared = this.datastore.servicePrepare(query);
 		FetchOptions fetchOptions = getFetchOptions();
 		if (fetchOptions == null)
 		{
@@ -349,10 +348,9 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 	protected Iterator<Entity> nowMultipleQueryEntities(Collection<Query> queries)
 	{
 		List<Iterator<Entity>> iterators = new ArrayList<Iterator<Entity>>(queries.size());
-		Transaction txn = this.datastore.getTransaction();
 		for (Query query : queries)
 		{
-			PreparedQuery prepared = this.datastore.getService().prepare(txn, query);
+			PreparedQuery prepared = this.datastore.servicePrepare(query);
 			Iterator<Entity> entities;
 			FetchOptions fetchOptions = getFetchOptions();
 			if (fetchOptions == null)
