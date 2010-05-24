@@ -35,6 +35,7 @@ public class PerformanceApiProxyDelegate extends BaseApiProxyDelegate
 	}
 
 	@Override
+	@SuppressWarnings("unused")
 	public byte[] makeSyncCall(Environment arg0, String arg1, String arg2, byte[] arg3)
 			throws ApiProxyException
 	{
@@ -64,6 +65,7 @@ public class PerformanceApiProxyDelegate extends BaseApiProxyDelegate
 		return pathStats.get(trace);
 	}
 
+	@SuppressWarnings("unused")
 	private StackTraceElement[] stackTraceToPath(StackTraceElement[] trace)
 	{
 		int last, first = 0;
@@ -84,11 +86,4 @@ public class PerformanceApiProxyDelegate extends BaseApiProxyDelegate
 		System.arraycopy(trace, first, shortened, 0, last - first);
 		return shortened;
 	}
-
-
-
-
-
-
-
 }

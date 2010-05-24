@@ -36,6 +36,7 @@ public interface FindCommand
 		RootFindCommand<T> addSort(String field, SortDirection sort);
 		RootFindCommand<T> withAncestor(Object ancestor);
 		RootFindCommand<T> startFrom(int offset);
+		RootFindCommand<T> maximumResults(int limit);
 		RootFindCommand<T> fetchNoFields();
 		RootFindCommand<T> fetchResultsBy(int size);
 		RootFindCommand<T> continueFrom(Cursor cursor);

@@ -13,7 +13,6 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.QueryResultIterator;
-import com.google.appengine.api.datastore.Transaction;
 import com.google.appengine.api.datastore.Query.SortDirection;
 import com.vercer.engine.persist.FindCommand.RootFindCommand;
 
@@ -105,6 +104,18 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 		return this;
 	}
 
+	public RootFindCommand<T> maximumResults(int limit)
+	{
+		if (this.options == null)
+		{
+			this.options = FetchOptions.Builder.withLimit(limit);
+		}
+		else
+		{
+			this.options.offset(limit);
+		}
+		return this;
+	}
 
 	public RootFindCommand<T> addSort(String field, SortDirection direction)
 	{

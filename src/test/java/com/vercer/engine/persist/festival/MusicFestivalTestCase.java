@@ -533,6 +533,7 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 	{
 		@Embed long number;
 		@Embed Blob blob;
+		@Embed ClassWithEmbeddedPrimitives inner;
 	}
 	
 }

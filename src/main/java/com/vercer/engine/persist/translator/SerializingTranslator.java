@@ -10,7 +10,6 @@ import com.vercer.engine.persist.Path;
 import com.vercer.engine.persist.Property;
 import com.vercer.engine.persist.PropertyTranslator;
 import com.vercer.engine.persist.conversion.DefaultTypeConverter;
-import com.vercer.engine.persist.conversion.SpecificTypeConverter;
 import com.vercer.engine.persist.conversion.DefaultTypeConverter.BlobToAnything;
 import com.vercer.engine.persist.conversion.DefaultTypeConverter.SerializableToBlob;
 import com.vercer.engine.persist.util.SimpleProperty;

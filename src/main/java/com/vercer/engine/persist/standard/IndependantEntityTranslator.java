@@ -5,6 +5,7 @@ package com.vercer.engine.persist.standard;
 
 import java.lang.reflect.Type;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import com.google.appengine.api.datastore.Key;
 import com.vercer.engine.persist.Path;
@@ -17,6 +18,7 @@ import com.vercer.util.reference.ReadOnlyObjectReference;
 final class IndependantEntityTranslator implements PropertyTranslator
 {
 	private final StrategyObjectDatastore strategyObjectDatastore;
+	private static final Logger logger = Logger.getLogger(IndependantEntityTranslator.class.getName());
 
 	/**
 	 * @param strategyObjectDatastore
@@ -29,7 +31,13 @@ final class IndependantEntityTranslator implements PropertyTranslator
 	public Object propertiesToTypesafe(Set<Property> properties, Path prefix, Type type)
 	{
 		Key key = PropertySets.firstValue(properties);
-		return this.strategyObjectDatastore.getInstanceFromCacheOrLoad(key);
+		Object result = this.strategyObjectDatastore.getInstanceFromCacheOrLoad(key);
+		if (result == null)
+		{
+			result = NULL_VALUE;
+			logger.warning("No entity found for referenced key " + key);
+		}
+		return result;
 	}
 
 	public Set<Property> typesafeToProperties(final Object instance, final Path path, final boolean indexed)
