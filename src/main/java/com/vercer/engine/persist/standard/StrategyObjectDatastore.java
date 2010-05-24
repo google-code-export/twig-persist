@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
-import java.util.logging.Logger;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
@@ -55,7 +54,7 @@ import com.vercer.util.LazyProxy;
  */
 public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 {
-	private static final Logger logger = Logger.getLogger(StrategyObjectDatastore.class.getName());
+//	private static final Logger logger = Logger.getLogger(StrategyObjectDatastore.class.getName());
 	private static final int DEFAULT_ACTIVATION_DEPTH = Integer.MAX_VALUE;
 
 	// state fields

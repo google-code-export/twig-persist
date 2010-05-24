@@ -31,14 +31,14 @@ public class PrimitiveTypeConverter implements TypeConverter
 	@SuppressWarnings("unchecked")
 	public <T> T convert(Object source, Type type)
 	{
-		if (source == null)
+		Class<?> erased = GenericTypeReflector.erase(type);
+		if (source == null && !erased.isPrimitive())
 		{
 			// consider null a primitive value
 			return (T) nullValue;
 		}
 		
 		// if we have a primitive or wrapper get the wrapper
-		Class<?> erased = GenericTypeReflector.erase(type);
 		Class<?> wrapper = null;
 		if (erased.isPrimitive())
 		{

@@ -20,40 +20,38 @@ public class DatastoreServiceContainer
 		this.service = service;
 	}
 
-	public final DatastoreService getService()
+	public DatastoreService getService()
 	{
 		return service;
 	}
 
 	protected Key servicePut(Entity entity)
 	{
-		return service.put(entity);
+		return getService().put(entity);
 	}
 	
 	protected PreparedQuery servicePrepare(Query query)
 	{
-		return service.prepare(query);
+		return getService().prepare(query);
 	}
 	
 	protected void serviceDelete(Collection<Key> keys)
 	{
-		service.delete(keys);
+		getService().delete(keys);
 	}
 
 	protected Entity serviceGet(Key key) throws EntityNotFoundException
 	{
-		return service.get(key);
+		return getService().get(key);
 	}
 	
 	protected Map<Key, Entity> serviceGet(Iterable<Key> keys)
 	{
-		return service.get(keys);
+		return getService().get(keys);
 	}
 
 	protected List<Key> servicePut(Iterable<Entity> entities)
 	{
-		return service.put(entities);
+		return getService().put(entities);
 	}
-	
-	
 }
