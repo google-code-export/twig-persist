@@ -363,9 +363,6 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 		depth--;
 		writeKeySpec = null;
 		
-		// replace the temp key ObjRef with the full key for this instance 
-		keyCache.cache(entity.getKey(), instance);
-
 		// we can store all entities for a single batch put
 		if (batching)
 		{
@@ -376,6 +373,12 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 			batched.put(instance, entity);
 		}
 	}
+	
+	protected void onAfterStore(Object instance, Key key) 
+	{
+		// replace the temp key ObjRef with the full key for this instance 
+		keyCache.cache(key, instance);
+	};
 
 	/**
 	 * Potentially store an entity in the datastore.
@@ -636,7 +639,11 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 
 	public final Key store(Object instance, String name, Object parent)
 	{
-		Key parentKey = keyCache.getCachedKey(parent);
+		Key parentKey = null;
+		if (parent != null)
+		{
+			parentKey = keyCache.getCachedKey(parent);
+		}
 		return store(instance, parentKey, name);
 	}
 
