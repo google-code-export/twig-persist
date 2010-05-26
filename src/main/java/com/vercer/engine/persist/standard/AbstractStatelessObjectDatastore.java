@@ -58,9 +58,10 @@ public abstract class AbstractStatelessObjectDatastore extends DatastoreServiceC
 
 	protected final Key store(Object instance, Key parentKey, String name)
 	{
+		onBeforeStore(instance);
 		Entity entity = instanceToEntity(instance, parentKey, name);
 		Key key = storeEntity(entity);
-
+		onAfterStore(instance, key);
 		return key;
 	}
 
@@ -398,6 +399,13 @@ public abstract class AbstractStatelessObjectDatastore extends DatastoreServiceC
 	{
 	}
 	
+	protected void onBeforeStore(Object instance)
+	{
+	}
+
+	protected void onAfterStore(Object instance, Key key)
+	{
+	}
 
 	/**
 	 * Called after every entity returned from the datastore has been translated 

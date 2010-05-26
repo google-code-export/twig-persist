@@ -75,7 +75,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 			// handle changes to the class fields
 			alignPropertiesToField(field, peeking, path);
 
-			if (!Modifier.isTransient(field.getModifiers()) && stored(field))
+			if (stored(field))
 			{
 				String name = fieldToPartName(field);
 
