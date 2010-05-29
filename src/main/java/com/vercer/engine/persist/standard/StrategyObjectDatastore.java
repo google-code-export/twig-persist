@@ -400,7 +400,7 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 		}
 		else if (batching)
 		{
-			// don't store anything yet if we are baching writes
+			// don't store anything yet if we are batching writes
 			Key key = entity.getKey();
 			if (depth > 1 && !key.isComplete())
 			{
@@ -659,25 +659,24 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 
 	public final <T> Map<T, Key> storeAll(Collection<? extends T> instances, Object parent)
 	{
+		// encode the instances to entities
 		final Map<T, Entity> entities = instancesToEntities(instances, parent, false);
-		final List<Key> put = servicePut(entities.values());
-
-		// use a lazy map because often keys ignored
-		return new LazyProxy<Map<T, Key>>(Map.class)
+		
+		// actually put them in the datastore and get their keys
+		final List<Key> keys = servicePut(entities.values());
+		
+		LinkedHashMap<T, Key> result = Maps.newLinkedHashMap();
+		Iterator<T> instanceItr = entities.keySet().iterator();
+		Iterator<Key> keyItr = keys.iterator();
+		while (instanceItr.hasNext())
 		{
-			@Override
-			protected Map<T, Key> newInstance()
-			{
-				LinkedHashMap<T, Key> result = Maps.newLinkedHashMap();
-				Iterator<T> instances = entities.keySet().iterator();
-				Iterator<Key> keys = put.iterator();
-				while (instances.hasNext())
-				{
-					result.put(instances.next(), keys.next());
-				}
-				return result;
-			}
-		}.newProxy();
+			// iterate instances and keys in parallel
+			T instance = instanceItr.next();
+			Key key = keyItr.next();
+			onAfterStore(instance, key);
+			result.put(instance, key);
+		}
+		return result;
 	}
 
 	final <T> Map<T, Entity> instancesToEntities(Collection<? extends T> instances, Object parent, boolean batch)

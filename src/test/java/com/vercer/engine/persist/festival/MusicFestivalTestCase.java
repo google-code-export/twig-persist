@@ -266,7 +266,7 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 
 		assertTrue(keys.size() > 2);
 	}
-
+	
 	@Test
 	public void testNumericKeys()
 	{
