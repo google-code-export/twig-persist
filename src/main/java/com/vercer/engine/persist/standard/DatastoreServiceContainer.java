@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceConfig;
+import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
@@ -13,13 +15,28 @@ import com.google.appengine.api.datastore.Query;
 
 public class DatastoreServiceContainer
 {
-	private final DatastoreService service;
+	private DatastoreService service;
 
+	public DatastoreServiceContainer()
+	{
+		this.service = DatastoreServiceFactory.getDatastoreService();
+	}
+	
 	public DatastoreServiceContainer(DatastoreService service)
 	{
 		this.service = service;
 	}
 
+	public void setService(DatastoreService service)
+	{
+		this.service = service;
+	}
+	
+	public void setServiceFromConfig(DatastoreServiceConfig config)
+	{
+		this.service = DatastoreServiceFactory.getDatastoreService(config);
+	}
+	
 	public DatastoreService getService()
 	{
 		return service;
