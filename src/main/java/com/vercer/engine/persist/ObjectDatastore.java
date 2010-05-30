@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.Query;
@@ -63,4 +64,8 @@ public interface ObjectDatastore
 	// transactions
 	Transaction beginTransaction();
 	Transaction getTransaction();
+	
+	// configuration used to change underlying datastore options
+	void setService(DatastoreService service);
+	void setServiceFromConfig(DatastoreServiceConfig config);
 }
