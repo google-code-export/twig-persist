@@ -215,8 +215,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 			MergeSet<Property> merged = new MergeSet<Property>(fields.size());
 			for (Field field : fields)
 			{
-				// never store transient fields
-				if (!Modifier.isTransient(field.getModifiers()) && stored(field))
+				if (stored(field))
 				{
 					// get the type that we need to store
 					Type type = typeFromField(field);
