@@ -8,7 +8,7 @@ import com.google.apphosting.api.ApiProxy.ApiProxyException;
 import com.google.apphosting.api.ApiProxy.Delegate;
 import com.google.apphosting.api.ApiProxy.Environment;
 
-public class LoggingApiProxyDelegate extends BaseApiProxyDelegate
+public class LoggingApiProxyDelegate extends DelegatingApiProxy
 {
 	private static final Logger log = Logger.getLogger(LoggingApiProxyDelegate.class.getName());
 

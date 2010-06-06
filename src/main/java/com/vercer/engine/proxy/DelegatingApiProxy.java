@@ -8,11 +8,11 @@ import com.google.apphosting.api.ApiProxy.Delegate;
 import com.google.apphosting.api.ApiProxy.Environment;
 import com.google.apphosting.api.ApiProxy.LogRecord;
 
-public class BaseApiProxyDelegate implements Delegate<Environment>
+public abstract class DelegatingApiProxy implements Delegate<Environment>
 {
 	private final Delegate<Environment> delegate;
 
-	public BaseApiProxyDelegate(Delegate<Environment> delegate)
+	public DelegatingApiProxy(Delegate<Environment> delegate)
 	{
 		this.delegate = delegate;
 	}
@@ -32,5 +32,10 @@ public class BaseApiProxyDelegate implements Delegate<Environment>
 			throws ApiProxyException
 	{
 		return delegate.makeSyncCall(arg0, arg1, arg2, arg3);
+	}
+	
+	public Delegate<Environment> getDelegate()
+	{
+		return delegate;
 	}
 }

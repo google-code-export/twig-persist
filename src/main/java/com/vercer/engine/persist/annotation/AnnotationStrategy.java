@@ -129,10 +129,7 @@ public class AnnotationStrategy extends DefaultFieldStrategy
 		}
 		if (annotation != null)
 		{
-			if (annotation.value() > depth)
-			{
-				return annotation.value();
-			}
+			return annotation.value();
 		}
 		return depth;
 	}

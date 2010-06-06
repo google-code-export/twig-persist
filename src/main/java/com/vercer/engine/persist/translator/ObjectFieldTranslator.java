@@ -122,7 +122,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 				{
 					value = null;
 				}
-
+				
 				// if the value was converted to another type we may need to convert it back
 				value = converters.convert(value, field.getGenericType());
 
