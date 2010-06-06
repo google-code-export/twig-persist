@@ -129,7 +129,7 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 		activationDepth.push(DEFAULT_ACTIVATION_DEPTH);
 
 		// central translator that reads fields and delegates to the others
-		PropertyTranslator translator = new ObjectFieldTranslator(converter)
+		PropertyTranslator objectTranslator = new ObjectFieldTranslator(converter)
 		{
 			@Override
 			protected boolean indexed(Field field)
@@ -229,11 +229,11 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 		independantTranslator = new ListTranslator(new IndependantEntityTranslator(this));
 		keyFieldTranslator = new KeyFieldTranslator(this, valueTranslator, converter);
 		childTranslator = new ListTranslator(new ChildEntityTranslator(this));
-		componentTranslator = new ListTranslator(translator);
-		polyMorphicComponentTranslator = new ListTranslator(new PolymorphicTranslator(translator));
+		componentTranslator = new ListTranslator(objectTranslator);
+		polyMorphicComponentTranslator = new ListTranslator(new PolymorphicTranslator(objectTranslator, fieldStrategy));
 		defaultTranslator = new ChainedTranslator(new ListTranslator(valueTranslator), getFallbackTranslator());
 
-		setPropertyTranslator(translator);
+		setPropertyTranslator(objectTranslator);
 		keyCache = new KeyCache();
 	}
 

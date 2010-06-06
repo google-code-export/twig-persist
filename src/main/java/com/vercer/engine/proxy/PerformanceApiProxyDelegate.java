@@ -10,7 +10,7 @@ import com.google.apphosting.api.ApiProxy.ApiProxyException;
 import com.google.apphosting.api.ApiProxy.Delegate;
 import com.google.apphosting.api.ApiProxy.Environment;
 
-public class PerformanceApiProxyDelegate extends BaseApiProxyDelegate
+public class PerformanceApiProxyDelegate extends DelegatingApiProxy
 {
 	public static class Statistics
 	{
