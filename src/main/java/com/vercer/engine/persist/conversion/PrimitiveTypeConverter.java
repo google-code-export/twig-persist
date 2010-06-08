@@ -53,6 +53,10 @@ public class PrimitiveTypeConverter implements TypeConverter
 				{
 					source = false;
 				}
+				else if (Character.class == wrapper)
+				{
+					 source = Character.MIN_VALUE;
+				}
 				else
 				{
 					throw new IllegalStateException("Unkonwn primitive default " + type);
