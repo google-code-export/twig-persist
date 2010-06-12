@@ -31,7 +31,7 @@ final class IndependantEntityTranslator implements PropertyTranslator
 	public Object propertiesToTypesafe(Set<Property> properties, Path prefix, Type type)
 	{
 		Key key = PropertySets.firstValue(properties);
-		Object result = this.strategyObjectDatastore.getInstanceFromCacheOrLoad(key);
+		Object result = this.strategyObjectDatastore.keyToInstance(key, null);
 		if (result == null)
 		{
 			result = NULL_VALUE;

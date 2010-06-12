@@ -454,7 +454,21 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 
 		return typesafe;
 	}
-
+	
+	@Override
+	protected Entity keyToEntity(Key key)
+	{
+		if (activationDepth.peek() > 0)
+		{
+			return super.keyToEntity(key);
+		}
+		else
+		{
+			// don't load entity if it will not be activated
+			return new Entity(key);
+		}
+	}
+	
 	@Override
 	protected Entity createEntity(KeySpecification specification)
 	{
@@ -610,16 +624,16 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 		}
 	}
 
-	Object getInstanceFromCacheOrLoad(Key key)
-	{
-		Object instance = keyCache.getCachedInstance(key);
-		if (instance == null)
-		{
-			instance = load(key);
-			assert instance != null;
-		}
-		return instance;
-	}
+//	Object getInstanceFromCacheOrLoad(Key key)
+//	{
+//		Object instance = keyCache.getCachedInstance(key);
+//		if (instance == null)
+//		{
+//			instance = load(key);
+//			assert instance != null;
+//		}
+//		return instance;
+//	}
 
 	Key getKeyFromCacheOrStore(final Object instance)
 	{
