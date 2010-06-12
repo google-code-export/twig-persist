@@ -77,6 +77,7 @@ public class ListTranslator extends DecoratingTranslator
 				else if (nextPart != null && nextPart.isMeta() && nextPart.getName().equals(LIST_SERIALIZED_META))
 				{
 					// we have a serialized list of property values
+					// TODO make this explicit
 					values = (List<?>) BLOB_TO_SERIALIZABLE.convert((Blob) list);
 					itemPath = itemPath.head();
 				}

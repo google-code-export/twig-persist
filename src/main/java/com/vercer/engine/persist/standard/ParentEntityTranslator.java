@@ -38,7 +38,7 @@ final class ParentEntityTranslator implements PropertyTranslator
 			throw new IllegalStateException("No parent for key: " + this.strategyObjectDatastore.readKey);
 		}
 
-		return this.strategyObjectDatastore.getInstanceFromCacheOrLoad(parentKey);
+		return this.strategyObjectDatastore.keyToInstance(parentKey, null);
 	}
 
 	public Set<Property> typesafeToProperties(final Object instance, final Path prefix, final boolean indexed)

@@ -29,7 +29,7 @@ final class ChildEntityTranslator implements PropertyTranslator
 	public Object propertiesToTypesafe(Set<Property> properties, Path prefix, Type type)
 	{
 		Key key = PropertySets.firstValue(properties);
-		return this.strategyObjectDatastore.getInstanceFromCacheOrLoad(key);
+		return this.strategyObjectDatastore.keyToInstance(key, null);
 	}
 
 	public Set<Property> typesafeToProperties(final Object instance, final Path path, final boolean indexed)
