@@ -36,8 +36,12 @@ public class DefaultTypeConverter extends CombinedTypeConverter
 
 		register(new StringToDate());
 		register(new DateToString());
+		
+		register(new StringToClass());
+		register(new ClassToString());
 
 		register(new PrimitiveTypeConverter());
+		
 		register(new CollectionConverter(this));
 	}
 
@@ -162,6 +166,28 @@ public class DefaultTypeConverter extends CombinedTypeConverter
 				return format.parse(source);
 			}
 			catch (ParseException e)
+			{
+				throw new IllegalStateException(e);
+			}
+		}
+	}
+	
+	public static class ClassToString implements SpecificTypeConverter<Class<?>, String>
+	{
+		public String convert(Class<?> source)
+		{
+			return source.getName();
+		}
+	}
+	public static class StringToClass implements SpecificTypeConverter<String, Class<?>>
+	{
+		public Class<?> convert(String source)
+		{
+			try
+			{
+				return Class.forName(source);
+			}
+			catch (ClassNotFoundException e)
 			{
 				throw new IllegalStateException(e);
 			}

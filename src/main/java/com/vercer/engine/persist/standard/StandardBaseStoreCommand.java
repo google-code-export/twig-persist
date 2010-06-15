@@ -30,7 +30,7 @@ abstract class StandardBaseStoreCommand<T, C extends CommonStoreCommand<T, C>> i
 	}
 
 	@SuppressWarnings("unchecked")
-	public C withParent(Object parent)
+	public C parent(Object parent)
 	{
 		return (C) this;
 	}
@@ -56,7 +56,7 @@ abstract class StandardBaseStoreCommand<T, C extends CommonStoreCommand<T, C>> i
 		{
 			keys.add(entity.getKey());
 		}
-		Map<Key, Entity> map = command.datastore.getDefaultService().get(keys);
+		Map<Key, Entity> map = command.datastore.getService().get(keys);
 		if (!map.isEmpty())
 		{
 			throw new IllegalStateException("Keys already exist: " + map);

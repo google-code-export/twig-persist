@@ -75,7 +75,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 			// handle changes to the class fields
 			alignPropertiesToField(field, peeking, path);
 
-			if (!Modifier.isTransient(field.getModifiers()) && stored(field))
+			if (stored(field))
 			{
 				String name = fieldToPartName(field);
 
@@ -124,7 +124,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 					value = null;
 				}
 
-				// if the value was converted to another type we may need to convert it back
+				// if the value was stored as another type we may need to convert it back
 				value = converters.convert(value, field.getGenericType());
 
 				try

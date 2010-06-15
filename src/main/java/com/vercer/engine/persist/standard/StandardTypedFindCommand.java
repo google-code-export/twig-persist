@@ -173,7 +173,6 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 		}
 		else
 		{
-
 			try
 			{
 				List<Iterator<Entity>> childIterators = new ArrayList<Iterator<Entity>>(queries.size());
@@ -260,7 +259,7 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 	{
 		Transaction txn = this.datastore.getTransaction();
 		final QueryResultIterator<Entity> entities;
-		PreparedQuery prepared = this.datastore.getDefaultService().prepare(txn, query);
+		PreparedQuery prepared = this.datastore.getService().prepare(txn, query);
 		FetchOptions fetchOptions = getFetchOptions();
 		if (fetchOptions == null)
 		{
@@ -353,7 +352,7 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 		Transaction txn = this.datastore.getTransaction();
 		for (Query query : queries)
 		{
-			PreparedQuery prepared = this.datastore.getDefaultService().prepare(txn, query);
+			PreparedQuery prepared = this.datastore.getService().prepare(txn, query);
 			Iterator<Entity> entities;
 			FetchOptions fetchOptions = getFetchOptions();
 			if (fetchOptions == null)

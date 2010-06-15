@@ -25,7 +25,7 @@ public class AsyncPreparedQuery extends BasePreparedQuery
 
 	public Future<QueryResultIterator<Entity>> asFutureQueryResultIterator()
 	{
-		return asFutureQueryResultIterator(FetchOptions.Builder.withDefault());
+		return asFutureQueryResultIterator(FetchOptions.Builder.withDefaults());
 	}
 
 	public Future<QueryResultIterator<Entity>> asFutureQueryResultIterator(FetchOptions fetchOptions)
@@ -39,7 +39,7 @@ public class AsyncPreparedQuery extends BasePreparedQuery
 
 	public Future<Integer> countEntitiesAsync()
 	{
-		DatastorePb.Query queryProto = convertToPb(this.query, FetchOptions.Builder.withDefault());
+		DatastorePb.Query queryProto = convertToPb(this.query, FetchOptions.Builder.withDefaults());
 
 		Future<byte[]> fb = AsyncDatastoreHelper.makeAsyncCall("Count", queryProto);
 		return new FutureWrapper<byte[], Integer>(fb)

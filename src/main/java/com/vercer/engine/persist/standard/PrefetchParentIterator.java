@@ -53,7 +53,7 @@ public class PrefetchParentIterator extends AbstractIterator<Entity>
 			start = System.currentTimeMillis();
 
 			// do a bulk get of the keys
-			final Map<Key, Entity> map = datastore.getDefaultService().get(keys);
+			final Map<Key, Entity> map = datastore.getService().get(keys);
 
 			log.fine("Get parents by key" + keys.size() + " keys "
 					+ (System.currentTimeMillis() - start));

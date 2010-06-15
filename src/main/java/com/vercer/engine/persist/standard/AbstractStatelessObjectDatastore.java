@@ -144,7 +144,7 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 	 */
 	protected Key storeEntity(Entity entity)
 	{
-		return getDefaultService().put(entity);
+		return getService().put(entity);
 	}
 
 	public final Key store(Object instance, String name)
@@ -284,8 +284,33 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 
 		return result;
 	}
+	
+	@Override
+	public <T> Iterator<T> toTypesafe(final Iterator<Entity> entities)
+	{
+		return new Iterator<T>()
+		{
+			@Override
+			public boolean hasNext()
+			{
+				return entities.hasNext();
+			}
 
-	public Query query(Type type)
+			@Override
+			public T next()
+			{
+				return toTypesafe(entities.next());
+			}
+
+			@Override
+			public void remove()
+			{
+				entities.remove();
+			}
+		};
+	}
+
+	public Query createQuery(Type type)
 	{
 		return new Query(typeToKind(type));
 	}
@@ -320,7 +345,7 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 	{
 		try
 		{
-			return getDefaultService().get(key);
+			return getService().get(key);
 		}
 		catch (EntityNotFoundException e)
 		{
@@ -328,7 +353,7 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 		}
 	}
 
-	public final DatastoreService getDefaultService()
+	public final DatastoreService getService()
 	{
 		return service;
 	}
@@ -366,10 +391,10 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 
 	public final void deleteAll(Type type)
 	{
-		Query query = query(type);
+		Query query = createQuery(type);
 		query.setKeysOnly();
 		FetchOptions options = FetchOptions.Builder.withChunkSize(100);
-		Iterator<Entity> entities = getDefaultService().prepare(query).asIterator(options);
+		Iterator<Entity> entities = getService().prepare(query).asIterator(options);
 		Iterator<Key> keys = Iterators.transform(entities, entityToKeyFunction);
 		Iterator<List<Key>> partitioned = Iterators.partition(keys, 100);
 		while (partitioned.hasNext())
@@ -380,7 +405,7 @@ public abstract class AbstractStatelessObjectDatastore implements ObjectDatastor
 
 	protected final void deleteKeys(Collection<Key> keys)
 	{
-		getDefaultService().delete(keys);
+		getService().delete(keys);
 		onAfterDelete(keys);
 	}
 

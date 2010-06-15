@@ -78,7 +78,7 @@ public class AnnotationStrategy extends DefaultFieldStrategy
 
 	public boolean key(Field field)
 	{
-		return field.isAnnotationPresent(Key.class);
+		return field.isAnnotationPresent(Key.class) || field.isAnnotationPresent(Id.class);
 	}
 
 	@Override
@@ -94,6 +94,20 @@ public class AnnotationStrategy extends DefaultFieldStrategy
 			return annotation.value();
 		}
 	}
+	
+	@Override
+	protected String typeToName(java.lang.reflect.Type type)
+	{
+		Class<?> erased = GenericTypeReflector.erase(type);
+		Entity annotation = erased.getAnnotation(Entity.class);
+		if (annotation.kind().length() > 0)
+		{
+			return annotation.kind();
+		}
+		
+		return super.typeToName(type);
+	}
+	
 
 	public boolean polymorphic(Field field)
 	{

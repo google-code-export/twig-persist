@@ -44,7 +44,6 @@ public interface FindCommand
 		RootFindCommand<T> addSort(String field);
 		RootFindCommand<T> addSort(String field, SortDirection sort);
 		RootFindCommand<T> ancestor(Object ancestor);
-//		RootFindCommand<T> options(DatastoreOptions options);
 		RootFindCommand<T> startFrom(int offset);
 		RootFindCommand<T> fetchNoFields();
 		RootFindCommand<T> fetchResultsBy(int size);

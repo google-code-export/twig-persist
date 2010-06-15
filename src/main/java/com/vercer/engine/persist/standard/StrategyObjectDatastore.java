@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -250,11 +251,12 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 
 	protected PropertyTranslator translator(Field field)
 	{
-		// optimise when we will not activate the fields
-		if (activationDepth.peek() == 0)
-		{
-			return nullTranslator;
-		}
+// Instances should always be created even wen not activated 
+//		// optimise when we will not activate the fields
+//		if (activationDepth.peek() == 0)
+//		{
+//			return nullTranslator;
+//		}
 
 		if (storageStrategy.entity(field))
 		{
@@ -496,6 +498,11 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 		associating = false;
 	}
 
+	public final Key associatedKey(Object instance)
+	{
+		return keyCache.getCachedKey(instance);
+	}
+
 	@Override
 	protected RuntimeException newExceptionOnTranslateWrite(Exception e, Object instance)
 	{
@@ -512,18 +519,18 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 	}
 
 
-	public final <T> T load(Class<T> type, Object key, Object parent)
+	public final <T> T load(Class<T> type, Object id, Object parent)
 	{
 		assert activationDepth.size() == 1;
 
 		Object converted;
-		if (Number.class.isAssignableFrom(key.getClass()))
+		if (Number.class.isAssignableFrom(id.getClass()))
 		{
-			converted = converter.convert(key, Long.class);
+			converted = converter.convert(id, Long.class);
 		}
 		else
 		{
-			converted = converter.convert(key, String.class);
+			converted = converter.convert(id, String.class);
 		}
 
 		Key parentKey = null;
@@ -534,25 +541,20 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 		return internalLoad(type, converted, parentKey);
 	}
 
-//	public final <T, K> Map<K, T>  load(Class<? extends T> type, Collection<? extends K> keys)
-//	{
-//		assert activationDepth.size() == 1;
-//
-//		List<Object> converted = new ArrayList<Object>(keys.size());
-//		for (K key : keys)
-//		{
-//			if (Number.class.isAssignableFrom(key.getClass()))
-//			{
-//				converted.add(converter.convert(key, Long.class));
-//			}
-//			else
-//			{
-//				converted.add(converter.convert(key, String.class));
-//			}
-//		}
-//
-//		return internalLoadAll(type, converted);
-//	}
+	public final <I, T> Map<I, T>  loadAll(Class<? extends T> type, Collection<I> keys)
+	{
+		assert activationDepth.size() == 1;
+
+		Map<I, T> result = new HashMap<I, T>(keys.size()); 
+		for (I id : keys)
+		{
+			// TODO optimise this
+			T loaded = load(type, id);
+			result.put(id, loaded);
+		}
+
+		return result;
+	}
 
 	public final void update(Object instance)
 	{
@@ -640,13 +642,12 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 
 	public final Key store(Object instance, String name, Object parent)
 	{
-		Key parentKey = keyCache.getCachedKey(parent);
+		Key parentKey = null;
+		if (parent != null)
+		{
+			parentKey = keyCache.getCachedKey(parent);
+		}
 		return store(instance, parentKey, name);
-	}
-
-	public final Key associatedKey(Object instance)
-	{
-		return keyCache.getCachedKey(instance);
 	}
 
 	public final <T> Map<T, Key> storeAll(Collection<? extends T> instances)
@@ -657,7 +658,7 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 	public final <T> Map<T, Key> storeAll(Collection<? extends T> instances, Object parent)
 	{
 		final Map<T, Entity> entities = instancesToEntities(instances, parent, false);
-		final List<Key> put = getDefaultService().put(entities.values());
+		final List<Key> put = getService().put(entities.values());
 
 		// use a lazy map because often keys ignored
 		return new LazyProxy<Map<T, Key>>(Map.class)
@@ -817,7 +818,7 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 		{
 			throw new IllegalStateException("Already in active transaction");
 		}
-		transaction = getDefaultService().beginTransaction();
+		transaction = getService().beginTransaction();
 		return transaction;
 	}
 
@@ -831,7 +832,7 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 	{
 		activateAll(Arrays.asList(instances));
 	}
-
+	
 	@Override
 	public void activateAll(Collection<?> instances)
 	{

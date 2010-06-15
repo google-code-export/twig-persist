@@ -133,7 +133,7 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 
 		Transaction txn = this.datastore.getTransaction();
 		Query query = queries.iterator().next();
-		PreparedQuery prepared = this.datastore.getDefaultService().prepare(txn, query);
+		PreparedQuery prepared = this.datastore.getService().prepare(txn, query);
 		return prepared.countEntities();
 	}
 	
