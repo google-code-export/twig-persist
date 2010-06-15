@@ -2,6 +2,7 @@ package com.vercer.engine.persist.standard;
 
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 
 import com.google.appengine.api.datastore.Key;
 import com.google.common.collect.MapMaker;
@@ -96,6 +97,11 @@ public class KeyCache
 		{
 			return null;
 		}
+	}
+	
+	public Set<Key> getAllKeys()
+	{
+		return cacheByKey.keySet();
 	}
 	
 	public Key getCachedKeyAndActivate(Object entity)

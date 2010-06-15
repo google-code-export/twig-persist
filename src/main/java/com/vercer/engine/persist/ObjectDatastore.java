@@ -2,6 +2,7 @@ package com.vercer.engine.persist;
 
 import java.lang.reflect.Type;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
 
 import com.google.appengine.api.datastore.DatastoreService;
@@ -34,7 +35,8 @@ public interface ObjectDatastore extends Activator
 	<T> T load(Key key);
 	<T> T load(Class<T> type, Object key);
 	<T> T load(Class<T> type, Object key, Object parent);
-
+	<I, T> Map<I, T> loadAll(Class<? extends T> type, Collection<I> ids);
+	
 	// convenience find methods
 	<T> QueryResultIterator<T> find(Class<T> type);
 	<T> QueryResultIterator<T> find(Class<T> type, Object ancestor);
@@ -63,9 +65,10 @@ public interface ObjectDatastore extends Activator
 	Key associatedKey(Object instance);
 
 	// type-safe to low-level bridge methods
-	DatastoreService getDefaultService();
-	Query query(Type type);
+	DatastoreService getService();
+	Query createQuery(Type type);
 	<T> T toTypesafe(Entity entity);
+	<T> Iterator<T> toTypesafe(Iterator<Entity> entity);
 
 	// transactions
 	Transaction beginTransaction();
