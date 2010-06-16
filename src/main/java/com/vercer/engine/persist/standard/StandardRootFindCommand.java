@@ -112,7 +112,7 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 		}
 		else
 		{
-			this.options.offset(limit);
+			this.options.limit(limit);
 		}
 		return this;
 	}
