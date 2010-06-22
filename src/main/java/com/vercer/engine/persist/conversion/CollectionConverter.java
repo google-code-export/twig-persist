@@ -108,7 +108,7 @@ public class CollectionConverter implements TypeConverter
 				convertedItems.add(item);
 			}
 
-			return createCollectionInstance(erased, componentType, convertedItems);
+			return this.<T>createCollectionInstance(erased, componentType, convertedItems);
 		}
 	}
 

@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
@@ -44,6 +45,7 @@ import com.vercer.engine.persist.translator.NativeDirectTranslator;
 import com.vercer.engine.persist.translator.ObjectFieldTranslator;
 import com.vercer.engine.persist.translator.PolymorphicTranslator;
 import com.vercer.util.LazyProxy;
+import com.vercer.util.Reflection;
 
 /**
  * Stateful layer responsible for caching key-object references and
@@ -374,10 +376,80 @@ public class StrategyObjectDatastore extends AbstractStatelessObjectDatastore
 		}
 	}
 	
+	private static final Map<Class<?>, Field> keyFields = new ConcurrentHashMap<Class<?>, Field>();
+	
+	// null values are not permitted in a concurrent hash map so need a "missing" value
+	private static final Field NO_KEY_FIELD;
+	static
+	{
+		try
+		{
+			NO_KEY_FIELD = StrategyObjectDatastore.class.getDeclaredField("NO_KEY_FIELD");
+		}
+		catch (Exception e)
+		{
+			throw new IllegalStateException(e);
+		}
+	}
+	
 	protected void onAfterStore(Object instance, Key key) 
 	{
 		// replace the temp key ObjRef with the full key for this instance 
 		keyCache.cache(key, instance);
+
+		// TODO share fields with ObjectFieldTranslator
+		Field field = null;
+		if (keyFields.containsKey(instance.getClass()))
+		{
+			field = keyFields.get(instance.getClass());
+		}
+		else
+		{
+			List<Field> fields = Reflection.getAccessibleFields(instance.getClass());
+			for (Field possible : fields)
+			{
+				if (possible.isAnnotationPresent(com.vercer.engine.persist.annotation.Key.class))
+				{
+					field = possible;
+					break;
+				}
+			}
+			
+			if (field == null)
+			{
+				field = NO_KEY_FIELD;
+			}
+			keyFields.put(instance.getClass(), field);
+		}
+		
+		try
+		{
+			// if there is a key field
+			if (field != NO_KEY_FIELD)
+			{
+				// see if its current value is null or 0
+				Object current = field.get(instance);
+				if (current == null || current instanceof Number && ((Number) current).longValue() == 0)
+				{
+					Class<?> type = field.getType();
+					Object idOrName = key.getId();
+					
+					// the key name could have been set explicitly when storing 
+					if (idOrName == null)
+					{
+						idOrName = key.getName();
+					}
+					
+					// convert the long or String to the declared key type
+					Object converted = converter.convert(idOrName, type);
+					field.set(instance, converted);
+				}
+			}
+		}
+		catch (Exception e)
+		{
+			throw new IllegalStateException(e);
+		}
 	};
 
 	/**
