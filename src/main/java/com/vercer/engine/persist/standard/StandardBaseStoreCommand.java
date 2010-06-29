@@ -30,13 +30,13 @@ abstract class StandardBaseStoreCommand<T, C extends CommonStoreCommand<T, C>> i
 	}
 
 	@SuppressWarnings("unchecked")
-	public C withParent(Object parent)
+	public C parent(Object parent)
 	{
 		return (C) this;
 	}
 
 	@SuppressWarnings("unchecked")
-	public C batchRelated()
+	public C batch()
 	{
 		batch = true;
 		return (C) this;

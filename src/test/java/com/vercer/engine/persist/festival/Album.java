@@ -8,12 +8,12 @@ import java.util.Date;
 
 import com.google.appengine.api.datastore.Text;
 import com.vercer.engine.persist.annotation.Embed;
-import com.vercer.engine.persist.annotation.Key;
+import com.vercer.engine.persist.annotation.Id;
 import com.vercer.engine.persist.annotation.Type;
 
 public class Album
 {
-	@Key
+	@Id
 	String name;
 	String label;
 
@@ -29,6 +29,12 @@ public class Album
 
 	public static class Track
 	{
+		@Override
+		public String toString()
+		{
+			return "Track [details=" + details + ", length=" + length + ", title=" + title + "]";
+		}
+
 		public static class SingleDetails
 		{
 			String bside;
@@ -50,6 +56,7 @@ public class Album
 			result = prime * result + ((title == null) ? 0 : title.hashCode());
 			return result;
 		}
+		
 		@Override
 		public boolean equals(Object obj)
 		{
@@ -155,6 +162,7 @@ public class Album
 		}
 		if (!Arrays.equals(tracks, other.tracks))
 		{
+			System.out.println("Tracks not equal: " + this + " : " + other);
 			return false;
 		}
 		return true;

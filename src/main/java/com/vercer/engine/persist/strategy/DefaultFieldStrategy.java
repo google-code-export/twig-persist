@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -31,7 +32,7 @@ public class DefaultFieldStrategy implements FieldStrategy
 
 		public Type getRawType()
 		{
-			return List.class;
+			return ArrayList.class;
 		}
 
 		public Type getOwnerType()
@@ -155,7 +156,7 @@ public class DefaultFieldStrategy implements FieldStrategy
 
 	protected Type replace(final Type type)
 	{
-		// turn every collection or array into a list
+		// turn every collection or array into an array list
 		Type componentType = null;
 		Class<?> erased = GenericTypeReflector.erase(type);
 		if (type instanceof GenericArrayType)
@@ -169,7 +170,7 @@ public class DefaultFieldStrategy implements FieldStrategy
 			// we have a normal array like Twig[]
 			componentType = erased.getComponentType();
 		}
-		else if (Collection.class.isAssignableFrom(erased))
+		else if (Collection.class.isAssignableFrom(erased) && !ArrayList.class.isAssignableFrom(erased))
 		{
 			// we have some kind of collection like Set<Twig>
 			Type exact = GenericTypeReflector.getExactSuperType(type, Collection.class);
@@ -181,7 +182,7 @@ public class DefaultFieldStrategy implements FieldStrategy
 			return type;
 		}
 
-		// we have a collection type so need to convert it
+		// we have a collection type so need to convert it to 
 
 		// recurse in case we have e.g. List<Twig[]>
 		Type replaced = replace(componentType);

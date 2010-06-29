@@ -22,15 +22,20 @@ public class StandardMergeParentsCommand<P> extends StandardBaseParentsCommand<P
 	public Iterator<P> returnParentsNow()
 	{
 		List<Iterator<Entity>> parentEntityIterators = new ArrayList<Iterator<Entity>>(childIterators.size());
+		
+		// for each child iterator get a parent iterator
 		for (Iterator<Entity> child : childIterators)
 		{
-			Iterator<Entity> parentEntities = command.childEntitiesToParentEntities(child);
+			Iterator<Entity> parentEntities = childEntitiesToParentEntities(child);
 			parentEntities = applyEntityFilter(parentEntities);
 			parentEntityIterators.add(parentEntities);
 		}
-		Iterator<Entity> mergedParentEntities = command.mergeEntities(parentEntityIterators, sorts);
+		
+		// merge all the parent iterators into a single iterator
+		Iterator<Entity> mergedParentEntities = childCommand.mergeEntities(parentEntityIterators, sorts);
 
-		return command.entityToInstanceIterator(mergedParentEntities, false);
+		// convert the entities into instances to return
+		return childCommand.entityToInstanceIterator(mergedParentEntities, false);
 	}
 
 }

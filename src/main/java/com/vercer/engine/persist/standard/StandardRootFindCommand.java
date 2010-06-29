@@ -13,6 +13,7 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.QueryResultIterator;
+import com.google.appengine.api.datastore.QueryResultList;
 import com.google.appengine.api.datastore.Query.SortDirection;
 import com.vercer.engine.persist.FindCommand.RootFindCommand;
 
@@ -48,12 +49,12 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 		return options;
 	}
 
-	public RootFindCommand<T> withAncestor(Object ancestor)
+	public RootFindCommand<T> ancestor(Object ancestor)
 	{
 		this.ancestor = ancestor;
 		return this;
 	}
-
+	
 	public RootFindCommand<T> fetchNoFields()
 	{
 		keysOnly = true;
@@ -78,7 +79,7 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 		return this;
 	}
 
-	public RootFindCommand<T>  fetchResultsBy(int size)
+	public RootFindCommand<T>  fetchNextBy(int size)
 	{
 		if (this.options == null)
 		{
@@ -87,6 +88,19 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 		else
 		{
 			this.options.chunkSize(size);
+		}
+		return this;
+	}
+	
+	public RootFindCommand<T>  fetchFirst(int size)
+	{
+		if (this.options == null)
+		{
+			this.options = FetchOptions.Builder.withPrefetchSize(size);
+		}
+		else
+		{
+			this.options.prefetchSize(size);
 		}
 		return this;
 	}
@@ -145,6 +159,18 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 		return prepared.countEntities();
 	}
 	
+	public QueryResultList<T> returnAllResultsNow()
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	public Future<QueryResultList<T>> returnAllResultsLater()
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
 	public QueryResultIterator<T> returnResultsNow()
 	{
 		if (children == null)
@@ -201,7 +227,7 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 			throw new IllegalStateException("You must set an ancestor if you run a find this in a transaction");
 		}
 
-		Query query = new Query(datastore.typeToKind(type));
+		Query query = new Query(datastore.fieldStrategy.typeToKind(type));
 		applyFilters(query);
 		if (sorts != null)
 		{

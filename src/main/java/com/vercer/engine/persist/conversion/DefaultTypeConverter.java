@@ -57,7 +57,6 @@ public class DefaultTypeConverter extends CombinedTypeConverter
 		}
 	}
 
-
 	private static boolean isSuperType(Type type, Class<? extends Object> clazz)
 	{
 		if (type == clazz)
@@ -79,7 +78,6 @@ public class DefaultTypeConverter extends CombinedTypeConverter
 		}
 	}
 
-
 	public static class StringToText implements SpecificTypeConverter<String, Text>
 	{
 		public Text convert(String source)
@@ -87,6 +85,7 @@ public class DefaultTypeConverter extends CombinedTypeConverter
 			return new Text(source);
 		}
 	}
+	
 	public static class TextToString implements SpecificTypeConverter<Text, String>
 	{
 		public String convert(Text source)
@@ -202,6 +201,28 @@ public class DefaultTypeConverter extends CombinedTypeConverter
 				return format.parse(source);
 			}
 			catch (ParseException e)
+			{
+				throw new IllegalStateException(e);
+			}
+		}
+	}
+	
+	public static class ClassToString implements SpecificTypeConverter<Class<?>, String>
+	{
+		public String convert(Class<?> source)
+		{
+			return source.getName();
+		}
+	}
+	public static class StringToClass implements SpecificTypeConverter<String, Class<?>>
+	{
+		public Class<?> convert(String source)
+		{
+			try
+			{
+				return Class.forName(source);
+			}
+			catch (ClassNotFoundException e)
 			{
 				throw new IllegalStateException(e);
 			}

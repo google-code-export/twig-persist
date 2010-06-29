@@ -6,6 +6,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Currency;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -16,7 +17,7 @@ import com.vercer.engine.persist.util.PropertySets;
 import com.vercer.engine.persist.util.SinglePropertySet;
 import com.vercer.engine.persist.util.generic.GenericTypeReflector;
 
-public class CoreTypesTranslator implements PropertyTranslator
+public class CoreStringTypesTranslator implements PropertyTranslator
 {
 	public Object propertiesToTypesafe(Set<Property> properties, Path path, Type type)
 	{

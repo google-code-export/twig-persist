@@ -101,14 +101,13 @@ public class CollectionConverter implements TypeConverter
 					item = delegate.convert(item, componentType);
 					if (item == null)
 					{
-						throw new IllegalStateException("Could not convert list item " + item
-								+ " to " + componentType);
+						throw new IllegalStateException("Could not convert list item " + item + " to " + componentType);
 					}
 				}
 				convertedItems.add(item);
 			}
 
-			return createCollectionInstance(erased, componentType, convertedItems);
+			return this.<T>createCollectionInstance(erased, componentType, convertedItems);
 		}
 	}
 
