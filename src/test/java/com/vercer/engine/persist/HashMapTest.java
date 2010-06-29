@@ -1,6 +1,6 @@
 package com.vercer.engine.persist;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -14,7 +14,7 @@ import com.google.appengine.tools.development.testing.LocalDatastoreServiceTestC
 import com.google.appengine.tools.development.testing.LocalServiceTestHelper;
 import com.vercer.engine.persist.annotation.AnnotationObjectDatastore;
 import com.vercer.engine.persist.annotation.Embed;
-import com.vercer.engine.persist.annotation.Key;
+import com.vercer.engine.persist.annotation.Id;
 import com.vercer.engine.persist.annotation.Type;
 
 public class HashMapTest
@@ -52,7 +52,7 @@ public class HashMapTest
 
 	public static class Foo
 	{
-		@Key
+		@Id
 		String myKey;
 		@Embed
 		InnerFoo innerFoo;

@@ -3,21 +3,22 @@
  */
 package com.vercer.engine.persist.festival;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 
 import com.vercer.engine.persist.annotation.Child;
-import com.vercer.engine.persist.annotation.Key;
+import com.vercer.engine.persist.annotation.Id;
 
 public class Band
 {
 	enum HairStyle { LONG_LIKE_A_GIRL, UNKEMPT_FLOPPY, NAVY_SHORT, BALD };
 
-	@Key
+	@Id
 	String name;
 	Locale locale;
 
-	List<Musician> members;
+	LinkedList<Musician> members = new LinkedList<Musician>();
 
 	@Child List<Album> albums;
 	Band.HairStyle hair;
