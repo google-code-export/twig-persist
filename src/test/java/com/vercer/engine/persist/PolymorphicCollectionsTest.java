@@ -2,6 +2,8 @@ package com.vercer.engine.persist;
 
 import java.util.Date;
 
+import junit.framework.Assert;
+
 import org.junit.Test;
 
 import com.google.appengine.api.datastore.QueryResultIterator;
@@ -9,6 +11,7 @@ import com.vercer.engine.persist.annotation.AnnotationObjectDatastore;
 import com.vercer.engine.persist.annotation.Embed;
 import com.vercer.engine.persist.annotation.Key;
 
+@SuppressWarnings("deprecation")
 class Driver {
 	@Key public Long id;
 	@Embed(polymorphic=true) public Vehicle vehicle;
@@ -64,7 +67,7 @@ public class PolymorphicCollectionsTest extends LocalDatastoreTestCase
 		}
 		
 		QueryResultIterator<Driver> result = datastore.find().type(Driver.class).fetchNoFields().returnResultsNow();
-		while (result.hasNext()) 
-			System.out.println(result.next());
+		
+		Assert.assertTrue(result.hasNext());
 	}
 }

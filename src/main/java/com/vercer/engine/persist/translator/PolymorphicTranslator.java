@@ -11,7 +11,7 @@ import com.vercer.engine.persist.PropertyTranslator;
 import com.vercer.engine.persist.strategy.FieldStrategy;
 import com.vercer.engine.persist.util.PathPrefixPredicate;
 import com.vercer.engine.persist.util.SimpleProperty;
-import com.vercer.util.collections.AppendingSet;
+import com.vercer.util.collections.PrependSet;
 
 public class PolymorphicTranslator extends DecoratingTranslator
 {
@@ -77,7 +77,7 @@ public class PolymorphicTranslator extends DecoratingTranslator
 		Path classNamePath = new Path.Builder(prefix).meta(CLASS_NAME).build();
 		Property property = new SimpleProperty(classNamePath, className, true);
 
-		return new AppendingSet<Property>(property, properties);
+		return new PrependSet<Property>(property, properties);
 	}
 
 }

@@ -7,8 +7,7 @@ import com.vercer.engine.persist.strategy.CombinedStrategy;
 import com.vercer.engine.persist.strategy.DefaultFieldStrategy;
 import com.vercer.engine.persist.util.generic.GenericTypeReflector;
 
-public class AnnotationStrategy extends DefaultFieldStrategy
-	implements CombinedStrategy
+public class AnnotationStrategy extends DefaultFieldStrategy implements CombinedStrategy
 {
 	private final boolean indexed;
 
@@ -58,7 +57,15 @@ public class AnnotationStrategy extends DefaultFieldStrategy
 			int modifiers = field.getModifiers();
 			if (Modifier.isFinal(modifiers))
 			{
-				throw new IllegalStateException("Final field " + field + " cannot be stored");
+				String name = field.getName();
+				if (name.matches(".*this\\$[0-9]+"))
+				{
+					throw new IllegalStateException("Inner class " + field.getDeclaringClass() + " must be declared static");
+				}
+				else
+				{
+					throw new IllegalStateException("Final field " + field + " cannot be stored");
+				}
 			}
 			return !Modifier.isTransient(modifiers) ;
 		}
@@ -81,9 +88,10 @@ public class AnnotationStrategy extends DefaultFieldStrategy
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	public boolean key(Field field)
 	{
-		return field.isAnnotationPresent(Key.class);
+		return field.isAnnotationPresent(Key.class) || field.isAnnotationPresent(Id.class);
 	}
 
 	@Override
@@ -99,16 +107,36 @@ public class AnnotationStrategy extends DefaultFieldStrategy
 			return annotation.value();
 		}
 	}
+	
+	@Override
+	protected String typeToName(java.lang.reflect.Type type)
+	{
+		Class<?> erased = GenericTypeReflector.erase(type);
+		Entity annotation = erased.getAnnotation(Entity.class);
+		if (annotation != null && annotation.kind().length() > 0)
+		{
+			return annotation.kind();
+		}
+		
+		return super.typeToName(type);
+	}
+	
 
 	public boolean polymorphic(Field field)
 	{
 		Embed annotation = field.getAnnotation(Embed.class);
+		if (annotation == null)
+		{
+			annotation = field.getType().getAnnotation(Embed.class);
+		}
+		
 		if (annotation != null)
 		{
 			return annotation.polymorphic();
 		}
 		else
 		{
+			// final classes cannot be polymorphic - all others can
 			return !Modifier.isFinal(field.getType().getModifiers());
 		}
 	}

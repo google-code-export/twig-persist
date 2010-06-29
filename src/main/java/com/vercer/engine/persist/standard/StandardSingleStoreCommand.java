@@ -54,7 +54,7 @@ final class StandardSingleStoreCommand<T> extends StandardBaseStoreCommand<T, Si
 			checkUniqueKeys(Collections.singleton(entity));
 		}
 
-		return command.datastore.storeEntity(entity);
+		return command.datastore.putEntity(entity);
 	}
 
 }

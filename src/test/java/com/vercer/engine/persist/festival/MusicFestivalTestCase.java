@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -34,6 +35,7 @@ import com.google.common.collect.Iterators;
 import com.vercer.engine.persist.LocalDatastoreTestCase;
 import com.vercer.engine.persist.annotation.AnnotationObjectDatastore;
 import com.vercer.engine.persist.annotation.Embed;
+import com.vercer.engine.persist.annotation.Id;
 import com.vercer.engine.persist.festival.Album.Track;
 import com.vercer.engine.persist.festival.Band.HairStyle;
 
@@ -64,7 +66,7 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		Musician page = new Musician();
 		page.name = "Jimmy Page";
 		page.birthday = dateFormat.parse("9 January 1944");
-		ledzep.members = new ArrayList<Musician>();
+		ledzep.members = new LinkedList<Musician>();
 		ledzep.members.add(page);
 
 		Musician jones = new Musician();
@@ -124,7 +126,7 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		RockBand firm = new RockBand();
 		firm.name = "The Firm";
 		firm.hair = HairStyle.BALD;
-		firm.members = new ArrayList<Musician>();
+		firm.members = new LinkedList<Musician>();
 
 		firm.members.add(page);
 
@@ -139,7 +141,7 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		DanceBand soulwax = new DanceBand();
 		soulwax.name = "Soulwax";
 		soulwax.locale = new Locale("nl", "be");
-		soulwax.members = new ArrayList<Musician>();
+		soulwax.members = new LinkedList<Musician>();
 		soulwax.members.add(new Musician("Stephen Dewaele"));
 		soulwax.members.add(new Musician("David Dewaele"));
 		soulwax.hair = Band.HairStyle.UNKEMPT_FLOPPY;
@@ -195,10 +197,10 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		Object reloaded = typesafe2.load(key);
 
 		// they should be different instances from distinct sessions
-		assertNotSame(reloaded, musicFestival);
+		assertNotSame(musicFestival, reloaded);
 
 		// they should have the same data
-		assertEquals(reloaded, musicFestival);
+		assertEquals(musicFestival, reloaded);
 	}
 
 	@Test
@@ -251,8 +253,7 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 
 		Album load = datastore.load(Album.class, album.name);
 
-		assertEquals(album, load);
-
+		assertEquals(load, album);
 	}
 
 	@Test
@@ -262,7 +263,7 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		Band band1 = musicFestival.bands.get(1);
 		Band band2 = musicFestival.bands.get(2);
 
-		Map<Band, Key> keys = datastore.store().instances(Arrays.asList(band1, band2)).batchRelated().returnKeysNow();
+		Map<Band, Key> keys = datastore.store().instances(Arrays.asList(band1, band2)).batch().returnKeysNow();
 
 		assertTrue(keys.size() > 2);
 	}
@@ -309,20 +310,21 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 
 	public static class LongKeyType
 	{
-		@com.vercer.engine.persist.annotation.Key Long key;
+		@Id Long key;
 	}
 	public static class PrimitiveLongKeyType
 	{
-		@com.vercer.engine.persist.annotation.Key long key;
+		@Id long key;
 	}
 	public static class IntKeyType
 	{
-		@com.vercer.engine.persist.annotation.Key Integer key;
+		@Id Integer key;
 	}
 	public static class DoubleKeyType
 	{
-		@com.vercer.engine.persist.annotation.Key Double key;
+		@Id Double key;
 	}
+	
 	@Test
 	public void asyncQueryTest() throws ParseException, InterruptedException, ExecutionException
 	{
@@ -486,7 +488,7 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		
 		datastore.find()
 			.type(Album.class)
-			.withAncestor(band)
+			.ancestor(band)
 			.fetchNoFields()
 			.returnResultsNow();
 	}

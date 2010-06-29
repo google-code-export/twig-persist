@@ -10,6 +10,7 @@ import java.util.concurrent.TimeoutException;
 import com.google.appengine.api.utils.FutureWrapper;
 import com.google.apphosting.api.ApiBasePb;
 import com.google.apphosting.api.DatastorePb;
+import com.google.apphosting.api.ApiProxy.ApiConfig;
 
 public class AsyncPreparedQuery extends BasePreparedQuery
 {
