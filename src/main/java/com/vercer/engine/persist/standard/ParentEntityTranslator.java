@@ -15,14 +15,14 @@ import com.vercer.util.reference.ReadOnlyObjectReference;
 
 final class ParentEntityTranslator implements PropertyTranslator
 {
-	private final StrategyObjectDatastore strategyObjectDatastore;
+	private final StrategyObjectDatastore datastore;
 
 	/**
-	 * @param strategyObjectDatastore
+	 * @param datastore
 	 */
-	ParentEntityTranslator(StrategyObjectDatastore strategyObjectDatastore)
+	ParentEntityTranslator(StrategyObjectDatastore datastore)
 	{
-		this.strategyObjectDatastore = strategyObjectDatastore;
+		this.datastore = datastore;
 	}
 
 	public Object propertiesToTypesafe(Set<Property> properties, Path prefix, Type type)
@@ -31,40 +31,31 @@ final class ParentEntityTranslator implements PropertyTranslator
 		assert properties.isEmpty();
 
 		// put the key in a property
-		Key parentKey = this.strategyObjectDatastore.readKey.getParent();
+		Key parentKey = datastore.decodeKey.getParent();
 
 		if (parentKey == null)
 		{
-			throw new IllegalStateException("No parent for key: " + this.strategyObjectDatastore.readKey);
+			throw new IllegalStateException("No parent for key: " + datastore.decodeKey);
 		}
 
-		return this.strategyObjectDatastore.getInstanceFromCacheOrLoad(parentKey);
+		return this.datastore.keyToInstance(parentKey, null);
 	}
 
 	public Set<Property> typesafeToProperties(final Object instance, final Path prefix, final boolean indexed)
 	{
-		// the parent key is not stored as properties but inside the key
 		ReadOnlyObjectReference<Key> keyReference = new ReadOnlyObjectReference<Key>()
 		{
 			public Key get()
 			{
-				// clear the current key spec so the parent is not also child
-				KeySpecification current = ParentEntityTranslator.this.strategyObjectDatastore.writeKeySpec;
-				ParentEntityTranslator.this.strategyObjectDatastore.writeKeySpec = null;
-
-				Key key = ParentEntityTranslator.this.strategyObjectDatastore.getKeyFromCacheOrStore(instance);
-
-				ParentEntityTranslator.this.strategyObjectDatastore.writeKeySpec = current;
-
-				return key;
+				return ParentEntityTranslator.this.datastore.instanceToKey(instance, null);
 			}
 		};
 
 		// an existing parent key ref shows parent is still being stored
-		if (this.strategyObjectDatastore.writeKeySpec != null && this.strategyObjectDatastore.writeKeySpec.getParentKeyReference() == null)
+		if (datastore.encodeKeySpec != null && datastore.encodeKeySpec.getParentKeyReference() == null)
 		{
 			// store the parent key inside the current key
-			this.strategyObjectDatastore.writeKeySpec.setParentKeyReference(keyReference);
+			datastore.encodeKeySpec.setParentKeyReference(keyReference);
 		}
 
 		// no fields are stored for parent

@@ -31,14 +31,14 @@ public class PrimitiveTypeConverter implements TypeConverter
 	@SuppressWarnings("unchecked")
 	public <T> T convert(Object source, Type type)
 	{
-		if (source == null)
+		Class<?> erased = GenericTypeReflector.erase(type);
+		if (source == null && !erased.isPrimitive())
 		{
 			// consider null a primitive value
 			return (T) nullValue;
 		}
 		
 		// if we have a primitive or wrapper get the wrapper
-		Class<?> erased = GenericTypeReflector.erase(type);
 		Class<?> wrapper = null;
 		if (erased.isPrimitive())
 		{
@@ -52,6 +52,10 @@ public class PrimitiveTypeConverter implements TypeConverter
 				else if (Boolean.class == wrapper)
 				{
 					source = false;
+				}
+				else if (Character.class == wrapper)
+				{
+					 source = Character.MIN_VALUE;
 				}
 				else
 				{
@@ -195,25 +199,9 @@ public class PrimitiveTypeConverter implements TypeConverter
 			}
 			else if (wrapper == Short.class)
 			{
-				if (source instanceof Long)
+				if (source instanceof Number)
 				{
-					return (T) Short.valueOf(((Long) source).shortValue());
-				}
-				else if (source instanceof Integer)
-				{
-					return (T) Short.valueOf(((Integer) source).shortValue());
-				}
-				else if (source instanceof Float)
-				{
-					return (T) Short.valueOf(((Float) source).shortValue());
-				}
-				else if (source instanceof Double)
-				{
-					return (T) Short.valueOf(((Double) source).shortValue());
-				}
-				else if (source instanceof Byte)
-				{
-					return (T) Short.valueOf(((Byte) source).shortValue());
+					return (T) Short.valueOf(((Number) source).shortValue());
 				}
 				else if (source instanceof String)
 				{
@@ -252,4 +240,8 @@ public class PrimitiveTypeConverter implements TypeConverter
 		}
 	}
 
+	public static Class<?> getWrapperClassForPrimitive(Class<?> primitive)
+	{
+		return primitives.get(primitive);
+	}
 }

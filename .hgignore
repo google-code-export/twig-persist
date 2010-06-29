@@ -6,3 +6,6 @@ syntax: glob
 target
 .DS_Store
 WEB-INF/appengine-generated
+.settings
+.classpath
+.project

@@ -7,8 +7,7 @@ import com.vercer.engine.persist.strategy.CombinedStrategy;
 import com.vercer.engine.persist.strategy.DefaultFieldStrategy;
 import com.vercer.engine.persist.util.generic.GenericTypeReflector;
 
-public class AnnotationStrategy extends DefaultFieldStrategy
-	implements CombinedStrategy
+public class AnnotationStrategy extends DefaultFieldStrategy implements CombinedStrategy
 {
 	private final boolean indexed;
 
@@ -55,7 +54,20 @@ public class AnnotationStrategy extends DefaultFieldStrategy
 		}
 		else
 		{
-			return !Modifier.isTransient(field.getType().getModifiers());
+			int modifiers = field.getModifiers();
+			if (Modifier.isFinal(modifiers))
+			{
+				String name = field.getName();
+				if (name.matches(".*this\\$[0-9]+"))
+				{
+					throw new IllegalStateException("Inner class " + field.getDeclaringClass() + " must be declared static");
+				}
+				else
+				{
+					throw new IllegalStateException("Final field " + field + " cannot be stored");
+				}
+			}
+			return !Modifier.isTransient(modifiers) ;
 		}
 	}
 
@@ -76,6 +88,7 @@ public class AnnotationStrategy extends DefaultFieldStrategy
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	public boolean key(Field field)
 	{
 		return field.isAnnotationPresent(Key.class) || field.isAnnotationPresent(Id.class);
@@ -100,7 +113,7 @@ public class AnnotationStrategy extends DefaultFieldStrategy
 	{
 		Class<?> erased = GenericTypeReflector.erase(type);
 		Entity annotation = erased.getAnnotation(Entity.class);
-		if (annotation.kind().length() > 0)
+		if (annotation != null && annotation.kind().length() > 0)
 		{
 			return annotation.kind();
 		}
@@ -112,12 +125,18 @@ public class AnnotationStrategy extends DefaultFieldStrategy
 	public boolean polymorphic(Field field)
 	{
 		Embed annotation = field.getAnnotation(Embed.class);
+		if (annotation == null)
+		{
+			annotation = field.getType().getAnnotation(Embed.class);
+		}
+		
 		if (annotation != null)
 		{
 			return annotation.polymorphic();
 		}
 		else
 		{
+			// final classes cannot be polymorphic - all others can
 			return !Modifier.isFinal(field.getType().getModifiers());
 		}
 	}
@@ -138,10 +157,7 @@ public class AnnotationStrategy extends DefaultFieldStrategy
 		}
 		if (annotation != null)
 		{
-			if (annotation.value() > depth)
-			{
-				return annotation.value();
-			}
+			return annotation.value();
 		}
 		return depth;
 	}

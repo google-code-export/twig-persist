@@ -75,10 +75,44 @@ public class Path implements Comparable<Path>
 			builder.append(tail.value);
 			return this;
 		}
+		public Builder append(Part part)
+		{
+			builder.append(part.text);
+			return this;
+		}
 	}
 
 	public static class Part
 	{
+		@Override
+		public int hashCode()
+		{
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((text == null) ? 0 : text.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj)
+		{
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			Part other = (Part) obj;
+			if (text == null)
+			{
+				if (other.text != null)
+					return false;
+			}
+			else if (!text.equals(other.text))
+				return false;
+			return true;
+		}
+
 		private final String text;
 
 		private Part(String text)
@@ -341,6 +375,11 @@ public class Path implements Comparable<Path>
 	public int compareTo(Path o)
 	{
 		return value.compareTo(o.value);
+	}
+
+	public static Builder builder(Path path)
+	{
+		return new Builder(path);
 	}
 
 }

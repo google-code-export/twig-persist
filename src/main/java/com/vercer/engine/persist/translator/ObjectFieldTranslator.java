@@ -2,11 +2,13 @@ package com.vercer.engine.persist.translator;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -14,16 +16,15 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.google.common.collect.Iterators;
-import com.google.common.collect.PeekingIterator;
 import com.vercer.engine.persist.Path;
 import com.vercer.engine.persist.Property;
 import com.vercer.engine.persist.PropertyTranslator;
 import com.vercer.engine.persist.conversion.TypeConverter;
+import com.vercer.engine.persist.util.PropertySets;
 import com.vercer.engine.persist.util.SimpleProperty;
+import com.vercer.engine.persist.util.PropertySets.PrefixPropertySet;
 import com.vercer.engine.persist.util.generic.GenericTypeReflector;
 import com.vercer.util.Reflection;
-import com.vercer.util.collections.ArraySortedSet;
 import com.vercer.util.collections.MergeSet;
 
 /**
@@ -68,32 +69,37 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 
 		// both fields and properties are sorted by name
 		List<Field> fields = getSortedFields(instance);
-		PeekingIterator<Property> peeking = Iterators.peekingIterator(properties.iterator());
-		List<Property> fieldProperties = new ArrayList<Property>();  // reusable instance
+		Iterator<PrefixPropertySet> ppss = PropertySets.prefixPropertySets(properties, path).iterator();
+		PrefixPropertySet pps = null;
 		for (Field field : fields)
 		{
-			// handle changes to the class fields
-			alignPropertiesToField(field, peeking, path);
-
 			if (stored(field))
 			{
 				String name = fieldToPartName(field);
-
-				Path childPath = new Path.Builder(path).field(name).build();
-
-				// get fields starting with part
-				while (peeking.hasNext() && peeking.peek().getPath().hasPrefix(childPath))
+				Path fieldPath = new Path.Builder(path).field(name).build();
+				
+				// handle missing class fields by ignoring the properties
+				while (ppss.hasNext() && (pps == null || pps.getPrefix().compareTo(fieldPath) < 0))
 				{
-					fieldProperties.add(peeking.next());
+					pps = ppss.next();
+				}
+				
+				// if there are no properties for the field we must still
+				// run a translator because some translators do not require
+				// any fields to set a field value e.g. KeyTranslator
+				Set<Property> childProperties;
+				if (pps == null || !fieldPath.equals(pps.getPrefix()))
+				{
+					// there were no properties for this field
+					childProperties = Collections.emptySet();
+				}
+				else
+				{
+					childProperties = pps.getProperties();
 				}
 
-				Property[] elements = fieldProperties.toArray(new Property[fieldProperties.size()]);
-
-				// TODO should be working the original ASS a little harder with offsets
-				Set<Property> childProperties = new ArraySortedSet<Property>(elements);
-				fieldProperties.clear();  // reuse
-
-				PropertyTranslator translator = translator(field, childProperties);
+				// get the correct translator for this field
+				PropertyTranslator translator = decoder(field, childProperties);
 
 				// get the type that we need to store
 				Type type = typeFromField(field);
@@ -104,7 +110,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 				Object value;
 				try
 				{
-					value = translator.propertiesToTypesafe(childProperties, childPath, type);
+					value = translator.propertiesToTypesafe(childProperties, fieldPath, type);
 				}
 				catch (Exception e)
 				{
@@ -116,28 +122,94 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 
 				if (value == null)
 				{
-					throw new IllegalStateException("Could not translate path " + childPath);
+					throw new IllegalStateException("Could not translate path " + fieldPath);
 				}
 
 				if (value == NULL_VALUE)
 				{
 					value = null;
 				}
-
-				// if the value was stored as another type we may need to convert it back
-				value = converters.convert(value, field.getGenericType());
-
-				try
-				{
-					field.set(instance, value);
-				}
-				catch (Exception e)
-				{
-					throw new IllegalStateException("Could not set value " + value + " to field " + field, e);
-				}
+				
+				setFieldValue(instance, field, value);
 			}
 		}
 	}
+
+	private void setFieldValue(Object instance, Field field, Object value)
+	{
+		// check for a default implementations of collections and reuse
+		if (Collection.class.isAssignableFrom(field.getType()))
+		{
+			try
+			{
+				// see if there is a default value
+				Collection<?> existing = (Collection<?>) field.get(instance);
+				if (existing != null && value!= null && existing.getClass() != value.getClass())
+				{
+					// make sure the value is a list - could be a blob
+					value = converters.convert(value, ArrayList.class);
+					
+					existing.clear();
+					typesafeAddAll((Collection<?>) value, existing);
+					return;
+				}
+			}
+			catch (Exception e)
+			{
+				throw new IllegalStateException(e);
+			}
+		}
+		else if (Map.class.isAssignableFrom(field.getType()))
+		{
+			try
+			{
+				// see if there is a default value
+				Map<?, ?> existing = (Map<?, ?>) field.get(instance);
+				if (existing != null && value!= null && existing.getClass() != value.getClass())
+				{
+					// make sure the value is a map - could be a blob
+					value = converters.convert(value, HashMap.class);
+					
+					existing.clear();
+					typesafePutAll((Map<?, ?>) value, existing);
+					return;
+				}
+			}
+			catch (Exception e)
+			{
+				throw new IllegalStateException(e);
+			}
+		}
+
+		// the stored type may not be the same as the declared type
+		// due to the ability to define what type to store an instance
+		// as using FieldTypeStrategy.type(Field) or @Type annotation
+		
+		// convert value to actual field type before setting
+		value = converters.convert(value, field.getGenericType());
+		
+		try
+		{
+			field.set(instance, value);
+		}
+		catch (Exception e)
+		{
+			throw new IllegalStateException("Could not set value " + value + " to field " + field, e);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private <K, V> void typesafePutAll(Map<?, ?> value, Map<?, ?> existing)
+	{
+		((Map<K, V>) existing).putAll((Map<K, V>) value);
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T> void typesafeAddAll(Collection<?> value, Collection<?> existing)
+	{
+		((Collection<T>) existing).addAll((Collection<T>) value);
+	}
+
 
 	protected void onAfterTranslate(Field field, Object value)
 	{
@@ -145,19 +217,6 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 
 	protected void onBeforeTranslate(Field field, Set<Property> childProperties)
 	{
-	}
-
-	private void alignPropertiesToField(Field field, PeekingIterator<Property> peeking, Path prefix)
-	{
-		while (peeking.hasNext() && peekFieldName(peeking, prefix).compareTo(field.getName()) < 0)
-		{
-			peeking.next();
-		}
-	}
-
-	private String peekFieldName(PeekingIterator<Property> peeking, Path prefix)
-	{
-		return peeking.peek().getPath().firstPartAfterPrefix(prefix).getName();
 	}
 
 	protected String fieldToPartName(Field field)
@@ -177,9 +236,13 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 			Constructor<?> constructor = getNoArgsConstructor(clazz);
 			return constructor.newInstance();
 		}
+		catch (NoSuchMethodException e)
+		{
+			throw new IllegalArgumentException("Could not find no args constructor in " + clazz, e);
+		}
 		catch (Exception e)
 		{
-			throw new IllegalArgumentException("Could not construct instance of: " + clazz, e);
+			throw new IllegalArgumentException("Could not construct instance of " + clazz, e);
 		}
 	}
 
@@ -215,8 +278,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 			MergeSet<Property> merged = new MergeSet<Property>(fields.size());
 			for (Field field : fields)
 			{
-				// never store transient fields
-				if (!Modifier.isTransient(field.getModifiers()) && stored(field))
+				if (stored(field))
 				{
 					// get the type that we need to store
 					Type type = typeFromField(field);
@@ -236,7 +298,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 
 					Path childPath = new Path.Builder(path).field(fieldToPartName(field)).build();
 
-					PropertyTranslator translator = translator(field, value);
+					PropertyTranslator translator = encoder(field, value);
 					Set<Property> properties = translator.typesafeToProperties(value, childPath, indexed(field));
 					if (properties == null)
 					{
@@ -280,8 +342,8 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 
 	protected abstract boolean stored(Field field);
 
-	protected abstract PropertyTranslator translator(Field field, Object instance);
+	protected abstract PropertyTranslator encoder(Field field, Object instance);
 	
-	protected abstract PropertyTranslator translator(Field field, Set<Property> properties);
+	protected abstract PropertyTranslator decoder(Field field, Set<Property> properties);
 
 }

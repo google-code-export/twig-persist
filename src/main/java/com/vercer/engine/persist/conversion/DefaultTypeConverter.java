@@ -2,6 +2,7 @@ package com.vercer.engine.persist.conversion;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
@@ -25,24 +26,20 @@ public class DefaultTypeConverter extends CombinedTypeConverter
 
 	public DefaultTypeConverter()
 	{
+		register(new PrimitiveTypeConverter());
+		register(new CollectionConverter(this));
+		
+		register(new StringToText());
+		register(new TextToString());
+		
+		register(new StringToDate());
+		register(new DateToString());
+
 		register(new ByteArrayToBlob());
 		register(new BlobToByteArray());
 
-		register(new BlobToSerializable());
 		register(new SerializableToBlob());
-
-		register(new StringToText());
-		register(new TextToString());
-
-		register(new StringToDate());
-		register(new DateToString());
-		
-		register(new StringToClass());
-		register(new ClassToString());
-
-		register(new PrimitiveTypeConverter());
-		
-		register(new CollectionConverter(this));
+		register(new BlobToAnything());
 	}
 
 	@SuppressWarnings("unchecked")
@@ -59,7 +56,6 @@ public class DefaultTypeConverter extends CombinedTypeConverter
 			return (T) super.convert(source, type);
 		}
 	}
-
 
 	private static boolean isSuperType(Type type, Class<? extends Object> clazz)
 	{
@@ -82,7 +78,6 @@ public class DefaultTypeConverter extends CombinedTypeConverter
 		}
 	}
 
-
 	public static class StringToText implements SpecificTypeConverter<String, Text>
 	{
 		public Text convert(String source)
@@ -90,6 +85,7 @@ public class DefaultTypeConverter extends CombinedTypeConverter
 			return new Text(source);
 		}
 	}
+	
 	public static class TextToString implements SpecificTypeConverter<Text, String>
 	{
 		public String convert(Text source)
@@ -121,7 +117,7 @@ public class DefaultTypeConverter extends CombinedTypeConverter
 			try
 			{
 				ByteArrayOutputStream baos = new ByteArrayOutputStream(256);
-				ObjectOutputStream stream = new NoDescriptorObjectOutputStream(baos);
+				ObjectOutputStream stream = createObjectOutputStream(baos);
 				stream.writeObject(source);
 				return new Blob(baos.toByteArray());
 			}
@@ -131,21 +127,60 @@ public class DefaultTypeConverter extends CombinedTypeConverter
 			}
 		}
 
+		protected ObjectOutputStream createObjectOutputStream(ByteArrayOutputStream baos) throws IOException
+		{
+			return new NoDescriptorObjectOutputStream(baos);
+		}
+
 	}
-	public static class BlobToSerializable implements SpecificTypeConverter<Blob, Serializable>
+	
+	public static class SlowSerializableToBlob extends SerializableToBlob
 	{
-		public Serializable convert(Blob blob)
+		@Override
+		protected ObjectOutputStream createObjectOutputStream(ByteArrayOutputStream baos) throws IOException
+		{
+			return new ObjectOutputStream(baos);
+		}
+	}
+	
+	public static class BlobToAnything implements TypeConverter
+	{
+		public Object convert(Blob blob)
 		{
 			try
 			{
 				ByteArrayInputStream bais = new ByteArrayInputStream(blob.getBytes());
-				ObjectInputStream stream = new NoDescriptorObjectInputStream(bais);
-				return (Serializable) stream.readObject();
+				ObjectInputStream stream = createObjectInputStream(bais);
+				return stream.readObject();
 			}
 			catch (Exception e)
 			{
 				throw new IllegalStateException(e);
 			}
+		}
+
+		protected ObjectInputStream createObjectInputStream(ByteArrayInputStream bais) throws IOException
+		{
+			return new NoDescriptorObjectInputStream(bais);
+		}
+
+		@SuppressWarnings("unchecked")
+		public <T> T convert(Object source, Type type)
+		{
+			if (source != null && source.getClass() == Blob.class)
+			{
+				return (T) convert((Blob) source);
+			}
+			return null;
+		}
+	}
+	
+	public static class SlowBlobToAnything extends BlobToAnything
+	{
+		@Override
+		protected ObjectInputStream createObjectInputStream(ByteArrayInputStream bais) throws IOException
+		{
+			return new ObjectInputStream(bais);
 		}
 	}
 

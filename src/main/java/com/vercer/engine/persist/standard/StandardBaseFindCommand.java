@@ -22,14 +22,22 @@ abstract class StandardBaseFindCommand<T, C extends BaseFindCommand<C>> implemen
 	@SuppressWarnings("unchecked")
 	public C filterEntities(Predicate<Entity> filter)
 	{
+		if (this.entityPredicate != null)
+		{
+			throw new IllegalStateException("Entity filter was already set");
+		}
 		this.entityPredicate = filter;
 		return (C) this;
 	}
 
 	@SuppressWarnings("unchecked")
-	public C filterProperties(Predicate<Property> predicate)
+	public C filterProperties(Predicate<Property> filter)
 	{
-		this.propertyPredicate = predicate;
+		if (this.propertyPredicate != null)
+		{
+			throw new IllegalStateException("Property filter was already set");
+		}
+		this.propertyPredicate = filter;
 		return (C) this;
 	}
 

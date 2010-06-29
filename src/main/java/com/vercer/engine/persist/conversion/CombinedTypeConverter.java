@@ -66,6 +66,16 @@ public class CombinedTypeConverter implements TypeConverter
 		generals.add(general);
 	}
 
+	public void prepend(TypeConverter converter)
+	{
+		generals.add(0, converter);
+	}
+	
+	public void prepend(SpecificTypeConverter<?, ?> converter)
+	{
+		specifics.add(0, converter);
+	}
+
 	public SpecificTypeConverter<?, ?> converter(Type from, Type to)
 	{
 		Pair<Type, Type> pair = new Pair<Type, Type>(from, to);

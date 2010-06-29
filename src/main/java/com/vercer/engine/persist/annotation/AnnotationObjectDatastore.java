@@ -39,6 +39,6 @@ public class AnnotationObjectDatastore extends StrategyObjectDatastore
 
 	protected AnnotationObjectDatastore(DatastoreService datastore, AnnotationStrategy strategy, FieldStrategy fields)
 	{
-		super(datastore, strategy, strategy, strategy, fields);
+		super(datastore, strategy, strategy, strategy, strategy, fields);
 	}
 }

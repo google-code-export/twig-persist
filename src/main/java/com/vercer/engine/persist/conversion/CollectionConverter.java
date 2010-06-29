@@ -9,17 +9,21 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 
 import com.vercer.engine.persist.util.generic.GenericTypeReflector;
 
 /**
- * Handles conversions from any Collection type or Array to either a HashSet, ArrayList or Array.  
+ * Handles conversions from any Collection type or Array to either a HashSet,
+ * ArrayList or Array.
  * 
- * Generic Collections and Arrays will be converted into the correct generic Array type.
+ * Generic Collections and Arrays will be converted into the correct generic
+ * Array type.
  * 
- * To add a conversion to a more specific Collection type you will need to add a SpecificTypeConverter<S, T> 
+ * To add a conversion to a more specific Collection type you will need to add a
+ * SpecificTypeConverter<S, T>
  * 
  * @author John Patterson <john@vercer.com>
  */
@@ -43,6 +47,18 @@ public class CollectionConverter implements TypeConverter
 		else if (source instanceof Object[])
 		{
 			items = (Object[]) source;
+		}
+		else if (source.getClass().isArray())
+		{
+			// must be a primitive array
+			Class<?> componentType = source.getClass().getComponentType();
+			Class<?> wrapper = PrimitiveTypeConverter.getWrapperClassForPrimitive(componentType);
+			int length = Array.getLength(source);
+			items = (Object[]) Array.newInstance(wrapper, length);
+			for (int i = 0; i < length; i++)
+			{
+				items[i] = Array.get(source, i);
+			}
 		}
 
 		if (items == null)
@@ -91,33 +107,54 @@ public class CollectionConverter implements TypeConverter
 				convertedItems.add(item);
 			}
 
+			return this.<T>createCollectionInstance(erased, componentType, convertedItems);
+		}
+	}
 
-			// convert the list of items to the required collection type
-			if (erased.isAssignableFrom(HashSet.class))
+	@SuppressWarnings("unchecked")
+	protected <T> T createCollectionInstance(Class<?> erased, Type componentType, List<Object> convertedItems)
+	{
+		// convert the list of items to the required collection type
+		if (erased.isAssignableFrom(HashSet.class))
+		{
+			T result = (T) new HashSet<Object>(convertedItems);
+			return result;
+		}
+		else if (erased.isAssignableFrom(ArrayList.class))
+		{
+			T result = (T) convertedItems;
+			return result;
+		}
+		else if (erased.isAssignableFrom(EnumSet.class))
+		{
+			EnumSet enumSet = EnumSet.noneOf((Class<? extends Enum>) componentType);
+			for (Object item : convertedItems)
 			{
-				@SuppressWarnings("unchecked")
-				T result = (T) new HashSet<Object>(convertedItems);
-				return result;
+				Enum<?> e;
+				if (item instanceof Enum<?> == false)
+				{
+					Enum<?> tmp = Enum.valueOf((Class<? extends Enum>) erased, (String) item);
+					e = tmp;
+				}
+				else
+				{
+					e = (Enum<?>) item;
+				}
+				enumSet.add(e);
 			}
-			else if (erased.isAssignableFrom(ArrayList.class))
-			{
-				@SuppressWarnings("unchecked")
-				T result = (T) convertedItems;
-				return result;
-			}
-			else if (erased.isArray())
-			{
-				Class<?> arrayClass = GenericTypeReflector.erase(componentType);
-				Object[] array = (Object[]) Array.newInstance(arrayClass, convertedItems.size());
-				@SuppressWarnings("unchecked")
-				T result =  (T) convertedItems.toArray(array);
-				return result;
-			}
-			else
-			{
-				throw new IllegalArgumentException("Unsupported Collection type " + type +
-						". Try declaring the interface instead of the concrete collection type.");
-			}
+			return (T) enumSet;
+		}
+		else if (erased.isArray())
+		{
+			Class<?> arrayClass = GenericTypeReflector.erase(componentType);
+			Object[] array = (Object[]) Array.newInstance(arrayClass, convertedItems.size());
+			T result = (T) convertedItems.toArray(array);
+			return result;
+		}
+		else
+		{
+			throw new IllegalArgumentException("Unsupported Collection type " + erased
+					+ ". Try declaring the interface instead of the concrete collection type.");
 		}
 	}
 }

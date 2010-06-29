@@ -2,13 +2,10 @@ package com.vercer.engine.persist;
 
 import java.lang.reflect.Type;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.Map;
 
-import com.google.appengine.api.datastore.DatastoreService;
-import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.Key;
-import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.appengine.api.datastore.Transaction;
 
@@ -21,8 +18,9 @@ public interface ObjectDatastore extends Activator
 	// convenience store methods
 	Key store(Object instance);
 	Key store(Object instance, String keyName);
-	Key store(Object instance, String keyName, Object parent);
 	Key store(Object instance, Object parent);
+	Key store(Object instance, Object parent, String keyName);
+	
 	<T> Map<T, Key> storeAll(Collection<? extends T> instances);
 	<T> Map<T, Key> storeAll(Collection<? extends T> instances, Object parent);
 
@@ -52,9 +50,7 @@ public interface ObjectDatastore extends Activator
 	
 	/**
 	 * Refresh an instance with the latest version from the datastore bypassing the instance cache
-	 * @deprecated Use <code>activate</code> or <code>activateAll</code> instead.  
 	 */
-	@Deprecated
 	void refresh(Object instance);
 	
 	// cache control operations
@@ -64,13 +60,10 @@ public interface ObjectDatastore extends Activator
 	void disassociateAll();
 	Key associatedKey(Object instance);
 
-	// type-safe to low-level bridge methods
-	DatastoreService getService();
-	Query createQuery(Type type);
-	<T> T toTypesafe(Entity entity);
-	<T> Iterator<T> toTypesafe(Iterator<Entity> entity);
+	void setServiceConfig(DatastoreServiceConfig config);
 
 	// transactions
 	Transaction beginTransaction();
 	Transaction getTransaction();
+	
 }

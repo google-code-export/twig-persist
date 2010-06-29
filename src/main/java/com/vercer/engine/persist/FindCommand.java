@@ -5,10 +5,8 @@ import java.util.List;
 import java.util.concurrent.Future;
 
 import com.google.appengine.api.datastore.Cursor;
-import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.QueryResultIterator;
-import com.google.appengine.api.datastore.QueryResultList;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.common.base.Predicate;
@@ -45,8 +43,10 @@ public interface FindCommand
 		RootFindCommand<T> addSort(String field, SortDirection sort);
 		RootFindCommand<T> ancestor(Object ancestor);
 		RootFindCommand<T> startFrom(int offset);
+		RootFindCommand<T> maximumResults(int limit);
 		RootFindCommand<T> fetchNoFields();
-		RootFindCommand<T> fetchResultsBy(int size);
+		RootFindCommand<T> fetchNextBy(int size);
+		RootFindCommand<T> fetchFirst(int size);
 		RootFindCommand<T> continueFrom(Cursor cursor);
 
 		// terminating methods

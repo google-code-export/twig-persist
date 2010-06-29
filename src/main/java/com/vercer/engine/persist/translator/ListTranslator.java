@@ -21,19 +21,15 @@ import com.vercer.engine.persist.Path;
 import com.vercer.engine.persist.Property;
 import com.vercer.engine.persist.PropertyTranslator;
 import com.vercer.engine.persist.Path.Part;
-import com.vercer.engine.persist.conversion.DefaultTypeConverter.BlobToSerializable;
+import com.vercer.engine.persist.conversion.DefaultTypeConverter.BlobToAnything;
 import com.vercer.engine.persist.conversion.DefaultTypeConverter.SerializableToBlob;
-import com.vercer.engine.persist.standard.AbstractStatelessObjectDatastore;
+import com.vercer.engine.persist.standard.StrategyObjectDatastore;
 import com.vercer.engine.persist.util.SimpleProperty;
 import com.vercer.engine.persist.util.SinglePropertySet;
 import com.vercer.engine.persist.util.generic.GenericTypeReflector;
 
 public class ListTranslator extends DecoratingTranslator
 {
-	private static final SerializableToBlob SERIALIZABLE_TO_BLOB = new SerializableToBlob();
-	private static final BlobToSerializable BLOB_TO_SERIALIZABLE = new BlobToSerializable();
-	private static final String LIST_SERIALIZED_META = "list";
-
 	public ListTranslator(PropertyTranslator chained)
 	{
 		super(chained);
@@ -48,7 +44,6 @@ public class ListTranslator extends DecoratingTranslator
 			return chained.propertiesToTypesafe(properties, path, type);
 		}
 
-		// TODO handle this in a more general place
 		if (properties.isEmpty())
 		{
 			return NULL_VALUE;
@@ -65,7 +60,6 @@ public class ListTranslator extends DecoratingTranslator
 			{
 				List<?> values;
 				Path itemPath = property.getPath();
-				Part nextPart = itemPath.firstPartAfterPrefix(path);
 				Object list = property.getValue();
 				
 				// every property should be of the same type but just repeat check
@@ -74,16 +68,10 @@ public class ListTranslator extends DecoratingTranslator
 					// we have a list of property values
 					values = (List<?>) list;
 				}
-				else if (nextPart != null && nextPart.isMeta() && nextPart.getName().equals(LIST_SERIALIZED_META))
-				{
-					// we have a serialized list of property values
-					values = (List<?>) BLOB_TO_SERIALIZABLE.convert((Blob) list);
-					itemPath = itemPath.head();
-				}
 				else
 				{
-					// this is not a list so do not handle it
-					return null;
+					// we could not handle this value so pass the whole thing down the line
+					return chained.propertiesToTypesafe(properties, path, type);
 				}
 
 				if (values.size() > index)
@@ -151,25 +139,14 @@ public class ListTranslator extends DecoratingTranslator
 
 					if (properties == null)
 					{
-						// could not translate item or list
-						return null;
+						// we could not handle so continue up the chain
+						return chained.typesafeToProperties(object, path, indexed);
 					}
 
 					for (Property property : properties)
 					{
 						Object value = property.getValue();
 						Path itemPath = property.getPath();
-
-						// we can store only one level of collection in a multi-valued property 
-						if (value instanceof List<?>)
-						{
-							// we need to serialize lists inside lists
-							itemPath = new Path.Builder(itemPath).meta(LIST_SERIALIZED_META).build();
-							
-							// make sure we do not serialize key references - dereference them to keys
-							value = AbstractStatelessObjectDatastore.dereferencePropertyValue(value);
-							value = SERIALIZABLE_TO_BLOB.convert((Serializable) value);
-						}
 
 						List<Object> values = lists.get(itemPath);
 						if (values == null)

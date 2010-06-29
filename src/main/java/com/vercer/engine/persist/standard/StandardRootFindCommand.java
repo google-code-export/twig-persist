@@ -8,14 +8,12 @@ import java.util.List;
 import java.util.concurrent.Future;
 
 import com.google.appengine.api.datastore.Cursor;
-import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.appengine.api.datastore.QueryResultList;
-import com.google.appengine.api.datastore.Transaction;
 import com.google.appengine.api.datastore.Query.SortDirection;
 import com.vercer.engine.persist.FindCommand.RootFindCommand;
 
@@ -81,7 +79,7 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 		return this;
 	}
 
-	public RootFindCommand<T>  fetchResultsBy(int size)
+	public RootFindCommand<T>  fetchNextBy(int size)
 	{
 		if (this.options == null)
 		{
@@ -90,6 +88,19 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 		else
 		{
 			this.options.chunkSize(size);
+		}
+		return this;
+	}
+	
+	public RootFindCommand<T>  fetchFirst(int size)
+	{
+		if (this.options == null)
+		{
+			this.options = FetchOptions.Builder.withPrefetchSize(size);
+		}
+		else
+		{
+			this.options.prefetchSize(size);
 		}
 		return this;
 	}
@@ -107,6 +118,18 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 		return this;
 	}
 
+	public RootFindCommand<T> maximumResults(int limit)
+	{
+		if (this.options == null)
+		{
+			this.options = FetchOptions.Builder.withLimit(limit);
+		}
+		else
+		{
+			this.options.offset(limit);
+		}
+		return this;
+	}
 
 	public RootFindCommand<T> addSort(String field, SortDirection direction)
 	{
@@ -131,9 +154,8 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 			throw new IllegalStateException("Too many queries");
 		}
 
-		Transaction txn = this.datastore.getTransaction();
 		Query query = queries.iterator().next();
-		PreparedQuery prepared = this.datastore.getService().prepare(txn, query);
+		PreparedQuery prepared = this.datastore.servicePrepare(query);
 		return prepared.countEntities();
 	}
 	
@@ -205,7 +227,7 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 			throw new IllegalStateException("You must set an ancestor if you run a find this in a transaction");
 		}
 
-		Query query = new Query(datastore.typeToKind(type));
+		Query query = new Query(datastore.fieldStrategy.typeToKind(type));
 		applyFilters(query);
 		if (sorts != null)
 		{

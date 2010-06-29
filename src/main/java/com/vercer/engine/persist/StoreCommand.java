@@ -14,7 +14,7 @@ public interface StoreCommand
 	interface CommonStoreCommand<T, C extends CommonStoreCommand<T, C>>
 	{
 		C parent(Object parent);
-		C batchRelated();
+		C batch();
 		C ensureUniqueKey();
 	}
 

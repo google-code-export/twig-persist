@@ -1,5 +1,6 @@
 package com.vercer.engine.persist.standard;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -46,15 +47,22 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 	protected List<Filter> filters;
 	private MergeOperator operator;
 
-	private class Filter
+	private static class Filter implements Serializable
 	{
+		private static final long serialVersionUID = 1L;
+		
+		@SuppressWarnings("unused")
+		private Filter()
+		{
+		}
+		
 		public Filter(String field, FilterOperator operator, Object value)
 		{
-			super();
 			this.field = field;
 			this.operator = operator;
 			this.value = value;
 		}
+		
 		String field;
 		FilterOperator operator;
 		Object value;
@@ -146,20 +154,6 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 	public <P> Iterator<P> returnParentsNow()
 	{
 		return this.<P>returnParentsCommandNow().returnParentsNow();
-	}
-
-	Iterator<Entity> childEntitiesToParentEntities(Iterator<Entity> childEntities)
-	{
-		childEntities = applyEntityFilter(childEntities);
-		@SuppressWarnings("deprecation")
-		int chunkSize = FetchOptions.DEFAULT_CHUNK_SIZE;
-		FetchOptions fetchOptions = getFetchOptions();
-		if (fetchOptions != null)
-		{
-			chunkSize = fetchOptions.getChunkSize();
-		}
-		Iterator<Entity> parentEntities = new PrefetchParentIterator(childEntities, datastore, chunkSize);
-		return parentEntities;
 	}
 
 	public <P> ParentsCommand<P> returnParentsCommandNow()
@@ -257,9 +251,8 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 
 	private QueryResultIterator<Entity> nowSingleQueryEntities(Query query)
 	{
-		Transaction txn = this.datastore.getTransaction();
 		final QueryResultIterator<Entity> entities;
-		PreparedQuery prepared = this.datastore.getService().prepare(txn, query);
+		PreparedQuery prepared = this.datastore.servicePrepare(query);
 		FetchOptions fetchOptions = getFetchOptions();
 		if (fetchOptions == null)
 		{
@@ -349,10 +342,9 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 	protected Iterator<Entity> nowMultipleQueryEntities(Collection<Query> queries)
 	{
 		List<Iterator<Entity>> iterators = new ArrayList<Iterator<Entity>>(queries.size());
-		Transaction txn = this.datastore.getTransaction();
 		for (Query query : queries)
 		{
-			PreparedQuery prepared = this.datastore.getService().prepare(txn, query);
+			PreparedQuery prepared = this.datastore.servicePrepare(query);
 			Iterator<Entity> entities;
 			FetchOptions fetchOptions = getFetchOptions();
 			if (fetchOptions == null)
@@ -571,7 +563,7 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 		@SuppressWarnings("unchecked")
 		public R apply(Entity entity)
 		{
-			return (R) datastore.toTypesafe(entity, predicate);
+			return (R) datastore.entityToInstance(entity, predicate);
 		}
 	}
 

@@ -4,11 +4,13 @@ import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.vercer.engine.persist.conversion.PrimitiveTypeConverter;
 import com.vercer.engine.persist.util.generic.GenericTypeReflector;
 
 /**
@@ -17,6 +19,39 @@ import com.vercer.engine.persist.util.generic.GenericTypeReflector;
  */
 public class DefaultFieldStrategy implements FieldStrategy
 {
+	private static final class ReplacedListType implements ParameterizedType
+	{
+		private final Type type;
+		private final Type replaced;
+
+		private ReplacedListType(Type type, Type replaced)
+		{
+			this.type = type;
+			this.replaced = replaced;
+		}
+
+		public Type getRawType()
+		{
+			return ArrayList.class;
+		}
+
+		public Type getOwnerType()
+		{
+			return null;
+		}
+
+		public Type[] getActualTypeArguments()
+		{
+			return new Type[] { replaced };
+		}
+
+		@Override
+		public String toString()
+		{
+			return "(Replaced " + type + " with List<" + replaced + ">)";
+		}
+	}
+
 	private final int defaultVersion;
 
 	public DefaultFieldStrategy(int defaultVersion)
@@ -119,9 +154,9 @@ public class DefaultFieldStrategy implements FieldStrategy
 		return replace(field.getGenericType());
 	}
 
-	protected Type replace(Type type)
+	protected Type replace(final Type type)
 	{
-		// turn every collection or array into a list
+		// turn every collection or array into an array list
 		Type componentType = null;
 		Class<?> erased = GenericTypeReflector.erase(type);
 		if (type instanceof GenericArrayType)
@@ -135,7 +170,7 @@ public class DefaultFieldStrategy implements FieldStrategy
 			// we have a normal array like Twig[]
 			componentType = erased.getComponentType();
 		}
-		else if (Collection.class.isAssignableFrom(erased))
+		else if (Collection.class.isAssignableFrom(erased) && !ArrayList.class.isAssignableFrom(erased))
 		{
 			// we have some kind of collection like Set<Twig>
 			Type exact = GenericTypeReflector.getExactSuperType(type, Collection.class);
@@ -147,29 +182,19 @@ public class DefaultFieldStrategy implements FieldStrategy
 			return type;
 		}
 
-		// we have a collection type so need to convert it
+		// we have a collection type so need to convert it to 
 
 		// recurse in case we have e.g. List<Twig[]>
-		final Type replaced = replace(componentType);
+		Type replaced = replace(componentType);
+		
+		// use wrapper type for primitives
+		if (GenericTypeReflector.erase(replaced).isPrimitive())
+		{
+			replaced = PrimitiveTypeConverter.getWrapperClassForPrimitive((Class<?>) replaced);
+		}
 
 		// replace the collection type with a list type
-		return new ParameterizedType()
-		{
-			public Type getRawType()
-			{
-				return List.class;
-			}
-
-			public Type getOwnerType()
-			{
-				return null;
-			}
-
-			public Type[] getActualTypeArguments()
-			{
-				return new Type[] { replaced };
-			}
-		};
+		return new ReplacedListType(type, replaced);
 	}
 
 

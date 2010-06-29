@@ -35,7 +35,7 @@ public class StandardMultipleStoreCommand<T> extends StandardBaseStoreCommand<T,
 			checkUniqueKeys(entities.values());
 		}
 
-		final List<Key> put = command.datastore.getService().put(entities.values());
+		final List<Key> put = command.datastore.servicePut(entities.values());
 
 		// use a lazy map because often keys ignored
 		return new LazyProxy<Map<T, Key>>(Map.class)

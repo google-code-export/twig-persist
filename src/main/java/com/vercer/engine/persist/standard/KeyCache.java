@@ -47,7 +47,7 @@ public class KeyCache
 		}
 	}
 
-	public void clearKeyCache()
+	public void clear()
 	{
 		this.cacheByKey.clear();
 		this.cacheByValue.clear();
@@ -81,14 +81,14 @@ public class KeyCache
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T> T getCachedInstance(Key key)
+	public <T> T getInstance(Key key)
 	{
 		return (T) cacheByKey.get(key);
 	}
 
-	public Key getCachedKey(Object entity)
+	public Key getKey(Object instance)
 	{
-		ObjectReference<Key> reference = cacheByValue.get(entity);
+		ObjectReference<Key> reference = cacheByValue.get(instance);
 		if (reference != null)
 		{
 			return reference.get();
@@ -99,15 +99,20 @@ public class KeyCache
 		}
 	}
 	
+	public ObjectReference<Key> getKeyReference(Object instance)
+	{
+		return cacheByValue.get(instance);
+	}
+
 	public Set<Key> getAllKeys()
 	{
 		return cacheByKey.keySet();
 	}
 	
-	public Key getCachedKeyAndActivate(Object entity)
+	public Key getKeyAndActivate(Object instance)
 	{
 		// we are sure of the key reference type because the full key and instance must have been added 
-		ActivatableKeyReference reference = (ActivatableKeyReference) cacheByValue.get(entity);
+		ActivatableKeyReference reference = (ActivatableKeyReference) cacheByValue.get(instance);
 		if (reference != null)
 		{
 			if (reference.activated)
