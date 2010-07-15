@@ -11,7 +11,6 @@ import java.util.Map.Entry;
 import com.vercer.engine.persist.Path;
 import com.vercer.engine.persist.Property;
 
-
 public final class PropertyMapToSet extends AbstractSet<Property>
 {
 	private final Map<String, Object> properties;

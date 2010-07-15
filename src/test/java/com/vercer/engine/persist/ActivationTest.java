@@ -1,5 +1,6 @@
 package com.vercer.engine.persist;
 
+import java.io.Serializable;
 import java.util.List;
 
 import junit.framework.Assert;
@@ -10,13 +11,11 @@ import com.google.appengine.api.datastore.Key;
 import com.google.common.collect.Lists;
 import com.vercer.engine.persist.annotation.Activate;
 import com.vercer.engine.persist.annotation.AnnotationObjectDatastore;
-import com.vercer.engine.persist.annotation.Embed;
 
 public class ActivationTest extends LocalDatastoreTestCase
 {
 	static class A
 	{
-		@Embed
 		List<B> bs;
 	}
 
@@ -26,8 +25,9 @@ public class ActivationTest extends LocalDatastoreTestCase
 		List<C> cs;
 	}
 
-	static class C
+	static class C implements Serializable
 	{
+		private static final long serialVersionUID = 1L;
 		String field;
 	}
 

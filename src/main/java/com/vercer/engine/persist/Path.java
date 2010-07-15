@@ -11,9 +11,8 @@ import com.vercer.util.Strings;
 public class Path implements Comparable<Path>
 {
 	private final static char FIELD = '.';
-	private final static char INDEX = '#';
 	private final static char TYPE = '$';
-	private final static char[] SEPERATORS = { FIELD, TYPE, INDEX };
+	private final static char[] SEPERATORS = { FIELD, TYPE };
 
 	public static final Path EMPTY_PATH = new Path("");
 
@@ -62,23 +61,50 @@ public class Path implements Comparable<Path>
 			return this;
 		}
 		
-		public Builder index(int index)
-		{
-			builder.append(INDEX);
-			builder.append(index);
-			return this;
-		}
-
 		public Builder append(Path tail)
 		{
 			assert tail.isAbsolute() == false;
 			builder.append(tail.value);
 			return this;
 		}
+		public Builder append(Part part)
+		{
+			builder.append(part.text);
+			return this;
+		}
 	}
 
 	public static class Part
 	{
+		@Override
+		public int hashCode()
+		{
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((text == null) ? 0 : text.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj)
+		{
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			Part other = (Part) obj;
+			if (text == null)
+			{
+				if (other.text != null)
+					return false;
+			}
+			else if (!text.equals(other.text))
+				return false;
+			return true;
+		}
+
 		private final String text;
 
 		private Part(String text)
@@ -96,11 +122,6 @@ public class Path implements Comparable<Path>
 			return text.charAt(0) == TYPE;
 		}
 		
-		public boolean isIndex()
-		{
-			return text.charAt(0) == INDEX;
-		}
-
 		public boolean isRoot()
 		{
 			char c = text.charAt(0);
@@ -341,6 +362,11 @@ public class Path implements Comparable<Path>
 	public int compareTo(Path o)
 	{
 		return value.compareTo(o.value);
+	}
+
+	public static Builder builder(Path path)
+	{
+		return new Builder(path);
 	}
 
 }

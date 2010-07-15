@@ -4,12 +4,12 @@ import java.util.AbstractSet;
 import java.util.Iterator;
 import java.util.Set;
 
-public class AppendingSet<E> extends AbstractSet<E>
+public class PrependSet<E> extends AbstractSet<E>
 {
 	private final E item;
 	private final Set<E> set;
 	
-	public AppendingSet(E item, Set<E> list)
+	public PrependSet(E item, Set<E> list)
 	{
 		this.item = item;
 		this.set = list;
