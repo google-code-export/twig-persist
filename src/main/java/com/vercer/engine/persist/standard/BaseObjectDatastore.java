@@ -22,17 +22,22 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 
 	public BaseObjectDatastore()
 	{
-		this.service = DatastoreServiceFactory.getDatastoreService();
+		this(DatastoreServiceConfig.Builder.withDefaults());
 	}
 	
-	public BaseObjectDatastore(DatastoreService service)
+	public BaseObjectDatastore(DatastoreServiceConfig config)
 	{
-		this.service = service;
+		setConfiguration(config);
 	}
-
-	public void setServiceConfig(DatastoreServiceConfig config)
+	
+	public void setConfiguration(DatastoreServiceConfig config)
 	{
-		this.service = DatastoreServiceFactory.getDatastoreService(config);
+		this.service = newDatastoreService(config);
+	}
+	
+	protected DatastoreService newDatastoreService(DatastoreServiceConfig config)
+	{
+		return DatastoreServiceFactory.getDatastoreService(config);
 	}
 	
 	protected final Key servicePut(Entity entity)
@@ -47,6 +52,18 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 		}
 	}
 	
+	protected final List<Key> servicePut(Iterable<Entity> entities)
+	{
+		if (transaction == null)
+		{
+			return service.put(entities);
+		}
+		else
+		{
+			return service.put(transaction, entities);
+		}
+	}
+
 	protected final PreparedQuery servicePrepare(Query query)
 	{
 		if (transaction == null)
@@ -93,23 +110,6 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 		{
 			return service.get(transaction, keys);
 		}
-	}
-
-	protected final List<Key> servicePut(Iterable<Entity> entities)
-	{
-		if (transaction == null)
-		{
-			return service.put(entities);
-		}
-		else
-		{
-			return service.put(transaction, entities);
-		}
-	}
-
-	public final void setTransaction(Transaction transaction)
-	{
-		this.transaction = transaction;
 	}
 
 	public final Transaction getTransaction()

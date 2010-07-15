@@ -18,7 +18,6 @@ import java.util.TreeSet;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.FetchOptions;
@@ -33,6 +32,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.vercer.engine.persist.FindCommand;
+import com.vercer.engine.persist.LoadCommand;
 import com.vercer.engine.persist.Path;
 import com.vercer.engine.persist.Property;
 import com.vercer.engine.persist.PropertyTranslator;
@@ -100,27 +100,24 @@ public class StrategyObjectDatastore extends BaseObjectDatastore
 	private TypeConverter converter;
 
 	// TODO make all these private when commands have no logic
-	final RelationshipStrategy relationshipStrategy;
-	final FieldStrategy fieldStrategy;
-	final ActivationStrategy activationStrategy;
-	final StorageStrategy storageStrategy;
-	final CacheStrategy cacheStrategy;
+	protected final RelationshipStrategy relationshipStrategy;
+	protected final FieldStrategy fieldStrategy;
+	protected final ActivationStrategy activationStrategy;
+	protected final StorageStrategy storageStrategy;
+	protected final CacheStrategy cacheStrategy;
 
-	public StrategyObjectDatastore(DatastoreService service, CombinedStrategy strategy)
+	public StrategyObjectDatastore(CombinedStrategy strategy)
 	{
-		this(service, strategy, strategy, strategy, strategy, strategy);
+		this(strategy, strategy, strategy, strategy, strategy);
 	}
 
-	public StrategyObjectDatastore(DatastoreService datastore,
+	public StrategyObjectDatastore(
 			RelationshipStrategy relationshipStrategy,
 			StorageStrategy storageStrategy,
 			CacheStrategy cacheStrategy,
 			ActivationStrategy activationStrategy,
 			FieldStrategy fieldStrategy)
 	{
-		// use the protected constructor so we can configure the translator
-		super(datastore);
-
 		// push the default depth onto the stack
 		activationDepthDeque.push(Integer.MAX_VALUE);
 		
@@ -132,6 +129,7 @@ public class StrategyObjectDatastore extends BaseObjectDatastore
 
 		converter = createTypeConverter();
 
+		// the main translator which converts to and from objects
 		objectFieldTranslator = new StrategyObjectFieldTranslator(converter);
 
 		valueTranslatorChain = createValueTranslatorChain();
@@ -144,7 +142,12 @@ public class StrategyObjectDatastore extends BaseObjectDatastore
 		polyMorphicComponentTranslator = new ListTranslator(new MapTranslator(new PolymorphicTranslator(objectFieldTranslator, fieldStrategy), converter));
 		defaultTranslator = new ListTranslator(new MapTranslator(new ChainedTranslator(valueTranslatorChain, getFallbackTranslator()), converter));
 
-		keyCache = new KeyCache();
+		keyCache = createKeyCache();
+	}
+
+	protected KeyCache createKeyCache()
+	{
+		return new KeyCache();
 	}
 	
 	protected PropertyTranslator decoder(Entity entity)
@@ -258,7 +261,7 @@ public class StrategyObjectDatastore extends BaseObjectDatastore
 	/**
 	 * Potentially store an entity in the datastore.
 	 */
-	protected Key putEntity(Entity entity)
+	protected Key entityToKey(Entity entity)
 	{
 		// we could be just pretending to store to process the instance to get its key
 		if (associating)
@@ -294,6 +297,12 @@ public class StrategyObjectDatastore extends BaseObjectDatastore
 		}
 	}
 
+	protected List<Key> entitiesToKeys(Iterable<Entity> entities)
+	{
+		// TODO do some of the same stuff as above
+		return servicePut(entities);
+	}
+	
 	@SuppressWarnings("unchecked")
 	final <T> T entityToInstance(Entity entity, Predicate<Property> filter)
 	{
@@ -341,10 +350,11 @@ public class StrategyObjectDatastore extends BaseObjectDatastore
 				return entities.hasNext();
 			}
 
+			@SuppressWarnings("unchecked")
 			@Override
 			public T next()
 			{
-				return entityToInstance(entities.next(), filter);
+				return (T) entityToInstance(entities.next(), filter);
 			}
 
 			@Override
@@ -406,7 +416,7 @@ public class StrategyObjectDatastore extends BaseObjectDatastore
 				Set<Entry<Key, Entity>> entries = entities.entrySet();
 				for (Entry<Key, Entity> entry : entries)
 				{
-					T instance = entityToInstance(entry.getValue(), filter);
+					T instance = (T) entityToInstance(entry.getValue(), filter);
 					result.put(entry.getKey(), instance);
 				}
 			}
@@ -415,7 +425,8 @@ public class StrategyObjectDatastore extends BaseObjectDatastore
 		return result;
 	}
 
-	final Entity keyToEntity(Key key)
+	// TODO make private once cache strategy working
+	protected Entity keyToEntity(Key key)
 	{
 		if (getActivationDepth() > 0)
 		{
@@ -430,12 +441,12 @@ public class StrategyObjectDatastore extends BaseObjectDatastore
 		}
 		else
 		{
-			// don't load entity if it will not be activated
+			// don't load entity if it will not be activated - but need one for key
 			return new Entity(key);
 		}
 	}
 	
-	final Map<Key, Entity> keysToEntities(Collection<Key> keys)
+	protected Map<Key, Entity> keysToEntities(Collection<Key> keys)
 	{
 		// only load entity if we will activate instance
 		if (getActivationDepth() > 0)
@@ -606,7 +617,7 @@ public class StrategyObjectDatastore extends BaseObjectDatastore
 		Key key = keyCache.getKey(instance);
 		if (key == null)
 		{
-			key = internalStore(instance, parentKey, null);
+			key = internalStore(instance, parentKey);
 		}
 		return key;
 	}
@@ -639,30 +650,23 @@ public class StrategyObjectDatastore extends BaseObjectDatastore
 	@Override
 	public final Key store(Object instance, Object parent)
 	{
-		return store(instance, parent, null);
-	}
-
-	@Override
-	public final Key store(Object instance, Object parent, String name)
-	{
 		Key parentKey = null;
 		if (parent != null)
 		{
-			parentKey= keyCache.getKey(parent);
+			parentKey = keyCache.getKey(parent);
 		}
-		
-		return internalStore(instance, parentKey, name);
+		return internalStore(instance, parentKey);
 	}
 
-	final Key internalStore(Object instance, Key parentKey, String name)
+	final Key internalStore(Object instance, Key parentKey)
 	{
 		// cache the empty key details now in case a child references back to us
 		if (keyCache.getKey(instance) != null)
 		{
 			throw new IllegalStateException("Cannot store same instance twice: " + instance);
 		}
-		Entity entity = instanceToEntity(instance, parentKey, name);
-		Key key = putEntity(entity);
+		Entity entity = instanceToEntity(instance, parentKey);
+		Key key = entityToKey(entity);
 		
 		// replace the temp key ObjRef with the full key for this instance 
 		keyCache.cache(key, instance);
@@ -744,7 +748,7 @@ public class StrategyObjectDatastore extends BaseObjectDatastore
 		final Map<T, Entity> entities = instancesToEntities(instances, parent, false);
 		
 		// actually put them in the datastore and get their keys
-		final List<Key> keys = servicePut(entities.values());
+		final List<Key> keys = entitiesToKeys(entities.values());
 		
 		LinkedHashMap<T, Key> result = Maps.newLinkedHashMap();
 		Iterator<T> instanceItr = entities.keySet().iterator();
@@ -785,6 +789,16 @@ public class StrategyObjectDatastore extends BaseObjectDatastore
 		if (loaded == null)
 		{
 			throw new IllegalStateException("Instance to be refreshed could not be found");
+		}
+	}
+	
+	@Override
+	public void refreshAll(Collection<?> instances)
+	{
+		// TODO optimise!
+		for (Object instance : instances)
+		{
+			refresh(instance);
 		}
 	}
 
@@ -882,13 +896,13 @@ public class StrategyObjectDatastore extends BaseObjectDatastore
 		this.indexed = indexed;
 	}
 
-	final Entity instanceToEntity(Object instance, Key parentKey, String name)
+	final Entity instanceToEntity(Object instance, Key parentKey)
 	{
 		String kind = fieldStrategy.typeToKind(instance.getClass());
 		
 		// push a new encode context
 		KeySpecification existingEncodeKeySpec = encodeKeySpec;
-		encodeKeySpec = new KeySpecification(kind, parentKey, name);
+		encodeKeySpec = new KeySpecification(kind, parentKey, null);
 
 		keyCache.cacheKeyReferenceForInstance(instance, encodeKeySpec.toObjectReference());
 			
@@ -935,7 +949,7 @@ public class StrategyObjectDatastore extends BaseObjectDatastore
 		for (T instance : instances)
 		{
 			// cannot define a key name
-			Entity entity = instanceToEntity(instance, parentKey, null);
+			Entity entity = instanceToEntity(instance, parentKey);
 			entities.put(instance, entity);
 		}
 		
@@ -991,17 +1005,13 @@ public class StrategyObjectDatastore extends BaseObjectDatastore
 		return value;
 	}
 	
-
-	public final Key store(Object instance, String name)
-	{
-		return store(instance, name, null);
-	}
-
+	@Override
 	public final Key store(Object instance)
 	{
 		return store(instance, null);
 	}
 
+	@Override
 	public final <T> T load(Class<T> type, Object key)
 	{
 		return load(type, key, null);
@@ -1091,7 +1101,7 @@ public class StrategyObjectDatastore extends BaseObjectDatastore
 		// pop the encode context
 		encodeKeySpec = null;
 		
-		Key putKey = putEntity(entity);
+		Key putKey = entityToKey(entity);
 		
 		assert putKey.equals(key);
 	}
@@ -1110,7 +1120,7 @@ public class StrategyObjectDatastore extends BaseObjectDatastore
 		}
 	}
 
-	protected final void deleteKeys(Collection<Key> keys)
+	protected void deleteKeys(Collection<Key> keys)
 	{
 		serviceDelete(keys);
 		for (Key key : keys)
@@ -1195,6 +1205,7 @@ public class StrategyObjectDatastore extends BaseObjectDatastore
 				}
 		}
 	
+		@Override
 		protected void onAfterTranslate(Field field, Object value)
 		{
 			activationDepthDeque.pop();
@@ -1217,4 +1228,10 @@ public class StrategyObjectDatastore extends BaseObjectDatastore
 			return arg0.getKey();
 		}
 	};
+
+	@Override
+	public LoadCommand load()
+	{
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
 }

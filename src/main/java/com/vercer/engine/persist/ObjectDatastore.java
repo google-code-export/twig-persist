@@ -14,12 +14,11 @@ public interface ObjectDatastore extends Activator
 	// fluent style methods
 	StoreCommand store();
 	FindCommand find();
+	LoadCommand load();
 
 	// convenience store methods
 	Key store(Object instance);
-	Key store(Object instance, String keyName);
 	Key store(Object instance, Object parent);
-	Key store(Object instance, Object parent, String keyName);
 	
 	<T> Map<T, Key> storeAll(Collection<? extends T> instances);
 	<T> Map<T, Key> storeAll(Collection<? extends T> instances, Object parent);
@@ -49,9 +48,10 @@ public interface ObjectDatastore extends Activator
 	void setActivationDepth(int depth);
 	
 	/**
-	 * Refresh an instance with the latest version from the datastore bypassing the instance cache
+	 * Refresh an associated instance with the latest version from the datastore 
 	 */
 	void refresh(Object instance);
+	void refreshAll(Collection<?> instances);
 	
 	// cache control operations
 	void associate(Object instance);
@@ -60,7 +60,7 @@ public interface ObjectDatastore extends Activator
 	void disassociateAll();
 	Key associatedKey(Object instance);
 
-	void setServiceConfig(DatastoreServiceConfig config);
+	void setConfiguration(DatastoreServiceConfig config);
 
 	// transactions
 	Transaction beginTransaction();

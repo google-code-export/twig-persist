@@ -47,14 +47,14 @@ final class StandardSingleStoreCommand<T> extends StandardBaseStoreCommand<T, Si
 		{
 			parentKey = command.datastore.associatedKey(parent);
 		}
-		Entity entity = command.datastore.instanceToEntity(instance, parentKey, null);
+		Entity entity = command.datastore.instanceToEntity(instance, parentKey);
 
 		if (unique)
 		{
 			checkUniqueKeys(Collections.singleton(entity));
 		}
 
-		return command.datastore.putEntity(entity);
+		return command.datastore.entityToKey(entity);
 	}
 
 }

@@ -1,7 +1,5 @@
 package com.vercer.engine.persist.annotation;
 
-import com.google.appengine.api.datastore.DatastoreService;
-import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.vercer.engine.persist.standard.StrategyObjectDatastore;
 import com.vercer.engine.persist.strategy.FieldStrategy;
 
@@ -9,36 +7,26 @@ public class AnnotationObjectDatastore extends StrategyObjectDatastore
 {
 	public AnnotationObjectDatastore()
 	{
-		this(DatastoreServiceFactory.getDatastoreService());
+		this(true, 0);
 	}
-
-	public AnnotationObjectDatastore(DatastoreService datastore)
+	
+	public AnnotationObjectDatastore(boolean indexed, int defaultVersion)
 	{
-		this(datastore, true);
+		this(new AnnotationStrategy(indexed, defaultVersion));
 	}
 
 	public AnnotationObjectDatastore(boolean indexed)
 	{
-		this(DatastoreServiceFactory.getDatastoreService(), indexed);
+		this(new AnnotationStrategy(indexed, 0));
 	}
 
-	public AnnotationObjectDatastore(boolean indexed, int defaultVersion)
+	public AnnotationObjectDatastore(FieldStrategy fields)
 	{
-		this(DatastoreServiceFactory.getDatastoreService(), new AnnotationStrategy(indexed, defaultVersion));
+		this(new AnnotationStrategy(true, 0), fields);
 	}
 
-	public AnnotationObjectDatastore(DatastoreService datastore, boolean indexed)
+	protected AnnotationObjectDatastore(AnnotationStrategy strategy, FieldStrategy fields)
 	{
-		this(datastore, new AnnotationStrategy(indexed, 0));
-	}
-
-	public AnnotationObjectDatastore(DatastoreService datastore, FieldStrategy fields)
-	{
-		this(datastore, new AnnotationStrategy(true, 0), fields);
-	}
-
-	protected AnnotationObjectDatastore(DatastoreService datastore, AnnotationStrategy strategy, FieldStrategy fields)
-	{
-		super(datastore, strategy, strategy, strategy, strategy, fields);
+		super(strategy, strategy, strategy, strategy, fields);
 	}
 }
