@@ -13,7 +13,6 @@ import com.vercer.engine.persist.TypeWithCollections.TypeWithEnum.MyEnum;
 import com.vercer.engine.persist.annotation.AnnotationObjectDatastore;
 import com.vercer.engine.persist.conversion.CombinedTypeConverter;
 import com.vercer.engine.persist.conversion.DefaultTypeConverter;
-import com.vercer.engine.persist.conversion.TypeConverter;
 
 
 public class SerializeCollectionsTest extends LocalDatastoreTestCase
@@ -24,9 +23,9 @@ public class SerializeCollectionsTest extends LocalDatastoreTestCase
 		ObjectDatastore datastore = new AnnotationObjectDatastore()
 		{
 			@Override
-			protected TypeConverter createTypeConverter()
+			protected CombinedTypeConverter createTypeConverter()
 			{
-				CombinedTypeConverter dtc = createDefaultTypeConverter();
+				DefaultTypeConverter dtc = new DefaultTypeConverter();
 				dtc.prepend(new DefaultTypeConverter.SlowBlobToAnything());
 				dtc.prepend(new DefaultTypeConverter.SlowSerializableToBlob());
 				return dtc;

@@ -1,4 +1,8 @@
 syntax: glob
+*.orig
+.classpath
+.project
+.settings
 target
 .DS_Store
 WEB-INF/appengine-generated

@@ -17,6 +17,14 @@ import com.google.storage.onestore.v3.OnestoreEntity;
 import com.google.storage.onestore.v3.OnestoreEntity.Reference;
 import com.vercer.util.reference.SimpleObjectReference;
 
+/**
+ * This class has access to package private internals that are essential to async operations
+ * but has the danger that if the internal code is updated this may break without warning.
+ * 
+ * Use at your own risk.
+ * 
+ * @author John Patterson <john@vercer.com>
+ */
 public class AsyncDatastoreHelper
 {
 	public static Future<List<Key>> put(final Transaction txn, final Iterable<Entity> entities)

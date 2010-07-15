@@ -18,19 +18,19 @@ final class KeyFieldTranslator extends DecoratingTranslator
 	private final StrategyObjectDatastore datastore;
 	private final TypeConverter converters;
 
-	KeyFieldTranslator(StrategyObjectDatastore strategyObjectDatastore, PropertyTranslator chained, TypeConverter converters)
+	KeyFieldTranslator(StrategyObjectDatastore datastore, PropertyTranslator chained, TypeConverter converters)
 	{
 		super(chained);
-		this.datastore = strategyObjectDatastore;
+		this.datastore = datastore;
 		this.converters = converters;
 	}
 
 	public Set<Property> typesafeToProperties(Object instance, Path path, boolean indexed)
 	{
-		assert path.getParts().size() == 1 : "Key field should be in root Entity";
+		assert path.getParts().size() == 1 : "Key field must be in root Entity";
 
 		// key spec may be null if we are in an update as we already have the key
-		if (this.datastore.writeKeySpec != null)
+		if (datastore.encodeKeySpec != null)
 		{
 			if (instance != null)
 			{
@@ -41,12 +41,12 @@ final class KeyFieldTranslator extends DecoratingTranslator
 					if (Number.class.isAssignableFrom(instance.getClass()))
 					{
 						Long converted = converters.convert(instance, Long.class);
-						this.datastore.writeKeySpec.setId(converted);
+						datastore.encodeKeySpec.setId(converted);
 					}
 					else
 					{
 						String keyName = converters.convert(instance, String.class);
-						this.datastore.writeKeySpec.setName(keyName);
+						datastore.encodeKeySpec.setName(keyName);
 					}
 				}
 			}
@@ -59,12 +59,11 @@ final class KeyFieldTranslator extends DecoratingTranslator
 		assert properties.isEmpty();
 
 		// the key value is not stored in the properties but in the key
-		Object keyValue = this.datastore.readKey.getName();
+		Object keyValue = datastore.decodeKey.getName();
 		if (keyValue == null)
 		{
-			keyValue = this.datastore.readKey.getId();
+			keyValue = datastore.decodeKey.getId();
 		}
-		Object keyObject = converters.convert(keyValue, type);
-		return keyObject;
+		return converters.convert(keyValue, type);
 	}
 }

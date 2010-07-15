@@ -13,6 +13,7 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.QueryResultIterator;
+import com.google.appengine.api.datastore.QueryResultList;
 import com.google.appengine.api.datastore.Query.SortDirection;
 import com.vercer.engine.persist.FindCommand.RootFindCommand;
 
@@ -20,7 +21,9 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 {
 	private final Type type;
 	private FetchOptions options;
-	Object ancestor;
+	private Object ancestor;
+	List<Sort> sorts;
+	private boolean keysOnly;
 
 	class Sort
 	{
@@ -33,52 +36,74 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 		SortDirection direction;
 		String field;
 	}
-	List<Sort> sorts;
-	private boolean keysOnly;
 
-	public StandardRootFindCommand(Type type, StrategyObjectDatastore datastore)
+	StandardRootFindCommand(Type type, StrategyObjectDatastore datastore)
 	{
 		super(datastore);
 		this.type = type;
 	}
 
 	@Override
-	protected FetchOptions getFetchOptions()
+	StandardRootFindCommand<T> getRootCommand()
 	{
-		return options;
+		return this;
 	}
 
-	public RootFindCommand<T> withAncestor(Object ancestor)
+	@Override
+	public RootFindCommand<T> ancestor(Object ancestor)
 	{
 		this.ancestor = ancestor;
 		return this;
 	}
-
+	
+	@Override
 	public RootFindCommand<T> fetchNoFields()
 	{
 		keysOnly = true;
 		return this;
 	}
 
+	@Override
 	public RootFindCommand<T> addSort(String field)
 	{
 		return addSort(field, SortDirection.ASCENDING);
 	}
 
+	@Override
+	public RootFindCommand<T> addSort(String field, SortDirection direction)
+	{
+		if (this.sorts == null)
+		{
+			this.sorts = new ArrayList<Sort>(2);
+		}
+		this.sorts.add(new Sort(field, direction));
+		return this;
+	}
+
+	@Override
 	public RootFindCommand<T> continueFrom(Cursor cursor)
 	{
 		if (this.options == null)
 		{
-			this.options = FetchOptions.Builder.withCursor(cursor);
+			this.options = FetchOptions.Builder.withDefaults();
 		}
-		else
+		this.options.startCursor(cursor);
+		return this;
+	}
+	
+	@Override
+	public RootFindCommand<T> finishAt(Cursor cursor)
+	{
+		if (this.options == null)
 		{
-			this.options.cursor(cursor);
+			this.options = FetchOptions.Builder.withDefaults();
 		}
+		this.options.endCursor(cursor);
 		return this;
 	}
 
-	public RootFindCommand<T>  fetchResultsBy(int size)
+	@Override
+	public RootFindCommand<T> fetchNextBy(int size)
 	{
 		if (this.options == null)
 		{
@@ -90,7 +115,22 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 		}
 		return this;
 	}
+	
+	@Override
+	public RootFindCommand<T>  fetchFirst(int size)
+	{
+		if (this.options == null)
+		{
+			this.options = FetchOptions.Builder.withPrefetchSize(size);
+		}
+		else
+		{
+			this.options.prefetchSize(size);
+		}
+		return this;
+	}
 
+	@Override
 	public RootFindCommand<T> startFrom(int offset)
 	{
 		if (this.options == null)
@@ -104,6 +144,7 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 		return this;
 	}
 
+	@Override
 	public RootFindCommand<T> maximumResults(int limit)
 	{
 		if (this.options == null)
@@ -117,21 +158,13 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 		return this;
 	}
 
-	public RootFindCommand<T> addSort(String field, SortDirection direction)
-	{
-		if (this.sorts == null)
-		{
-			this.sorts = new ArrayList<Sort>(2);
-		}
-		this.sorts.add(new Sort(field, direction));
-		return this;
-	}
-
+	@Override
 	public Future<QueryResultIterator<T>> returnResultsLater()
 	{
 		return futureSingleQueryInstanceIterator();
 	}
 
+	@Override
 	public int countResultsNow()
 	{
 		Collection<Query> queries = getValidatedQueries();
@@ -145,6 +178,19 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 		return prepared.countEntities();
 	}
 	
+	@Override
+	public QueryResultList<T> returnAllResultsNow()
+	{
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+	
+	@Override
+	public Future<QueryResultList<T>> returnAllResultsLater()
+	{
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+	
+	@Override
 	public QueryResultIterator<T> returnResultsNow()
 	{
 		if (children == null)
@@ -201,7 +247,7 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 			throw new IllegalStateException("You must set an ancestor if you run a find this in a transaction");
 		}
 
-		Query query = new Query(datastore.typeToKind(type));
+		Query query = new Query(datastore.fieldStrategy.typeToKind(type));
 		applyFilters(query);
 		if (sorts != null)
 		{
@@ -224,5 +270,15 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 			query.setKeysOnly();
 		}
 		return query;
+	}
+
+	public FetchOptions getFetchOptions()
+	{
+		return options;
+	}
+
+	public boolean isKeysOnly()
+	{
+		return keysOnly;
 	}
 }

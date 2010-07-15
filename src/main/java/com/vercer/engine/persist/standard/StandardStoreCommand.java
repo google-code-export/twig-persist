@@ -1,5 +1,6 @@
 package com.vercer.engine.persist.standard;
 
+import java.util.Arrays;
 import java.util.Collection;
 
 import com.vercer.engine.persist.StoreCommand;
@@ -20,5 +21,9 @@ public class StandardStoreCommand extends StandardCommand implements StoreComman
 	{
 		return new StandardMultipleStoreCommand<T>(this, instances);
 	}
-
+	
+	public <T> MultipleStoreCommand<T> instances(T... instances) 
+	{
+		return new StandardMultipleStoreCommand<T>(this, Arrays.asList(instances));
+	};
 }

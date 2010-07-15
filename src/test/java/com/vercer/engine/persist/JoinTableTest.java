@@ -3,8 +3,6 @@ package com.vercer.engine.persist;
 import com.google.appengine.api.datastore.Query;
 import com.vercer.engine.persist.ObjectDatastore;
 import com.vercer.engine.persist.annotation.AnnotationObjectDatastore;
-import junit.framework.Test;
-import junit.framework.TestResult;
 
 import static org.junit.Assert.fail;
 
@@ -13,8 +11,7 @@ public class JoinTableTest extends LocalDatastoreTestCase
 
 	public int countTestCases()
 	{
-		return 0; // To change body of implemented methods use File | Settings |
-					// File Templates.
+		return 0;
 	}
 
 	public static class A
