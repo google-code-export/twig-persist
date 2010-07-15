@@ -43,14 +43,14 @@ public class PrefetchParentIterator extends AbstractIterator<Entity>
 			}
 
 			// do a bulk get of the keys
-			final Map<Key, Entity> map = datastore.serviceGet(keys);
+			final Map<Key, Entity> keyToEntity = keysToEntities(keys);
 
 			// keep the order of the original keys
 			parents = Iterators.transform(keys.iterator(), new Function<Key, Entity>()
 			{
 				public Entity apply(Key from)
 				{
-					return map.get(from);
+					return keyToEntity.get(from);
 				}
 			});
 
@@ -71,4 +71,8 @@ public class PrefetchParentIterator extends AbstractIterator<Entity>
 		}
 	}
 
+	protected Map<Key, Entity> keysToEntities(List<Key> keys)
+	{
+		return datastore.keysToEntities(keys);
+	}
 }

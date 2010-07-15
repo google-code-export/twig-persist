@@ -4,16 +4,13 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.Logger;
 
-import com.google.appengine.api.datastore.AsyncDatastoreHelper;
 import com.google.appengine.api.datastore.AsyncPreparedQuery;
 import com.google.appengine.api.datastore.Cursor;
 import com.google.appengine.api.datastore.Entity;
@@ -25,24 +22,20 @@ import com.google.appengine.api.datastore.Transaction;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.SortPredicate;
 import com.google.appengine.api.utils.FutureWrapper;
-import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ForwardingIterator;
-import com.google.common.collect.Iterators;
 import com.vercer.engine.persist.FindCommand;
 import com.vercer.engine.persist.Property;
 import com.vercer.engine.persist.FindCommand.BranchFindCommand;
+import com.vercer.engine.persist.FindCommand.ChildFindCommand;
 import com.vercer.engine.persist.FindCommand.MergeOperator;
 import com.vercer.engine.persist.FindCommand.ParentsCommand;
 import com.vercer.engine.persist.FindCommand.TypedFindCommand;
-import com.vercer.engine.persist.FindCommand.SplitFindCommand;
-import com.vercer.engine.persist.util.SortedMergeIterator;
+import com.vercer.engine.persist.util.RestrictionToPredicateAdaptor;
 
-public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, C>> extends StandardBaseFindCommand<T, C> implements TypedFindCommand<T, C>, SplitFindCommand<T>
+public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, C>> extends StandardBaseFindCommand<T, C> implements TypedFindCommand<T, C>, BranchFindCommand<T>
 {
-	private static final Logger log = Logger.getLogger(StandardTypedFindCommand.class.getName());
-
 	protected List<StandardBranchFindCommand<T>> children;
 	protected List<Filter> filters;
 	private MergeOperator operator;
@@ -75,7 +68,7 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 
 	protected abstract Query newQuery();
 
-	protected abstract FetchOptions getFetchOptions();
+	abstract StandardRootFindCommand<T> getRootCommand();
 
 	@SuppressWarnings("unchecked")
 	public C addFilter(String field, FilterOperator operator, Object value)
@@ -96,13 +89,17 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 		return (C) this;
 	}
 
-	public SplitFindCommand<T> split(FindCommand.MergeOperator operator)
+	public BranchFindCommand<T> branch(FindCommand.MergeOperator operator)
 	{
+		if (operator != null)
+		{
+			throw new IllegalStateException("Can only branch a command once");
+		}
 		this.operator = operator;
 		return this;
 	}
 	
-	public BranchFindCommand<T> addBranch()
+	public ChildFindCommand<T> addChildCommand()
 	{
 		StandardBranchFindCommand<T> child = new StandardBranchFindCommand<T>(this);
 		if (children == null)
@@ -253,7 +250,7 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 	{
 		final QueryResultIterator<Entity> entities;
 		PreparedQuery prepared = this.datastore.servicePrepare(query);
-		FetchOptions fetchOptions = getFetchOptions();
+		FetchOptions fetchOptions = getRootCommand().getFetchOptions();
 		if (fetchOptions == null)
 		{
 			entities = prepared.asQueryResultIterator();
@@ -319,7 +316,7 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 			Transaction txn = this.datastore.getTransaction();
 			Future<QueryResultIterator<Entity>> futureEntities;
 			AsyncPreparedQuery prepared = new AsyncPreparedQuery(query, txn);
-			FetchOptions fetchOptions = getFetchOptions();
+			FetchOptions fetchOptions = getRootCommand().getFetchOptions();
 			if (fetchOptions == null)
 			{
 				futureEntities = prepared.asFutureQueryResultIterator();
@@ -346,7 +343,7 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 		{
 			PreparedQuery prepared = this.datastore.servicePrepare(query);
 			Iterator<Entity> entities;
-			FetchOptions fetchOptions = getFetchOptions();
+			FetchOptions fetchOptions = getRootCommand().getFetchOptions();
 			if (fetchOptions == null)
 			{
 				entities = prepared.asIterator();
@@ -438,12 +435,12 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 			Collection<Query> queries)
 	{
 		final List<Future<QueryResultIterator<Entity>>> futures = new ArrayList<Future<QueryResultIterator<Entity>>>(queries.size());
-		Transaction txn = this.datastore.getTransaction();
+		Transaction txn = datastore.getTransaction();
 		for (Query query : queries)
 		{
 			AsyncPreparedQuery prepared = new AsyncPreparedQuery(query, txn);
 			Future<QueryResultIterator<Entity>> futureEntities;
-			FetchOptions fetchOptions = getFetchOptions();
+			FetchOptions fetchOptions = getRootCommand().getFetchOptions();
 			if (fetchOptions == null)
 			{
 				futureEntities = prepared.asFutureQueryResultIterator();
@@ -527,44 +524,6 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 				return true;
 			}
 		};
-	}
-
-	Iterator<Entity> mergeEntities(List<Iterator<Entity>> iterators, List<SortPredicate> sorts)
-	{
-		Iterator<Entity> merged;
-		if (sorts != null && !sorts.isEmpty())
-		{
-			Comparator<Entity> comparator = AsyncDatastoreHelper.newEntityComparator(sorts);
-			merged = new SortedMergeIterator<Entity>(comparator, iterators, true);
-		}
-		else
-		{
-			merged = Iterators.concat(iterators.iterator());
-		}
-		return merged;
-	}
-
-
-	<R> Iterator<R> entityToInstanceIterator(Iterator<Entity> entities, boolean keysOnly)
-	{
-		Function<Entity, R> function = new EntityToInstanceFunction<R>(this.propertyPredicate);
-		return Iterators.transform(entities, function);
-	}
-
-	private final class EntityToInstanceFunction<R> implements Function<Entity, R>
-	{
-		private final Predicate<Property> predicate;
-
-		public EntityToInstanceFunction(Predicate<Property> predicate)
-		{
-			this.predicate = predicate;
-		}
-
-		@SuppressWarnings("unchecked")
-		public R apply(Entity entity)
-		{
-			return (R) datastore.entityToInstance(entity, predicate);
-		}
 	}
 
 //	private final class KeyToInstanceFunction<T> implements Function<Entity, T>
@@ -664,7 +623,7 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 
 		public Entity next()
 		{
-			return datastore.keyToInstance(children.next().getKey(), propertyPredicate);
+			return datastore.keyToInstance(children.next().getKey(), new RestrictionToPredicateAdaptor<Property>(propertyPredicate));
 		}
 
 		public void remove()

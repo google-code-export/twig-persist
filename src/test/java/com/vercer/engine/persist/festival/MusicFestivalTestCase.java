@@ -38,6 +38,7 @@ import com.vercer.engine.persist.annotation.Embed;
 import com.vercer.engine.persist.annotation.Id;
 import com.vercer.engine.persist.festival.Album.Track;
 import com.vercer.engine.persist.festival.Band.HairStyle;
+import com.vercer.engine.persist.util.PredicateToRestrictionAdaptor;
 
 public class MusicFestivalTestCase extends LocalDatastoreTestCase
 {
@@ -47,8 +48,7 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 	public void setUp()
 	{
 		super.setUp();
-		DatastoreService service = DatastoreServiceFactory.getDatastoreService();
-		datastore = new AnnotationObjectDatastore(service);
+		datastore = new AnnotationObjectDatastore();
 	}
 
 	public static MusicFestival createFestival() throws ParseException
@@ -191,8 +191,7 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 
 		Key key = datastore.store(musicFestival);
 
-		DatastoreService service = DatastoreServiceFactory.getDatastoreService();
-		AnnotationObjectDatastore typesafe2 = new AnnotationObjectDatastore(service);
+		AnnotationObjectDatastore typesafe2 = new AnnotationObjectDatastore();
 		typesafe2.setActivationDepth(5);
 		Object reloaded = typesafe2.load(key);
 
@@ -216,7 +215,9 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 				return input.getKey().getName().equals("Led Zeppelin");
 			}
 		};
-		Iterator<RockBand> results = datastore.find().type(RockBand.class).filterEntities(predicate).returnResultsNow();
+		
+		PredicateToRestrictionAdaptor<Entity> restriction = new PredicateToRestrictionAdaptor<Entity>(predicate);
+		Iterator<RockBand> results = datastore.find().type(RockBand.class).restrictEntities(restriction).returnResultsNow();
 		assertEquals(Iterators.size(results), 1);
 	}
 

@@ -11,9 +11,8 @@ import com.vercer.util.Strings;
 public class Path implements Comparable<Path>
 {
 	private final static char FIELD = '.';
-	private final static char INDEX = '#';
 	private final static char TYPE = '$';
-	private final static char[] SEPERATORS = { FIELD, TYPE, INDEX };
+	private final static char[] SEPERATORS = { FIELD, TYPE };
 
 	public static final Path EMPTY_PATH = new Path("");
 
@@ -62,13 +61,6 @@ public class Path implements Comparable<Path>
 			return this;
 		}
 		
-		public Builder index(int index)
-		{
-			builder.append(INDEX);
-			builder.append(index);
-			return this;
-		}
-
 		public Builder append(Path tail)
 		{
 			assert tail.isAbsolute() == false;
@@ -130,11 +122,6 @@ public class Path implements Comparable<Path>
 			return text.charAt(0) == TYPE;
 		}
 		
-		public boolean isIndex()
-		{
-			return text.charAt(0) == INDEX;
-		}
-
 		public boolean isRoot()
 		{
 			char c = text.charAt(0);

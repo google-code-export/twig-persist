@@ -8,8 +8,9 @@ import com.google.appengine.api.datastore.Key;
 
 public interface StoreCommand
 {
-	<T> MultipleStoreCommand<T> instances(Collection<T> instances);
 	<T> SingleStoreCommand<T> instance(T instance);
+	<T> MultipleStoreCommand<T> instances(Collection<T> instances);
+	<T> MultipleStoreCommand<T> instances(T... instances);
 
 	interface CommonStoreCommand<T, C extends CommonStoreCommand<T, C>>
 	{
