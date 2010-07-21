@@ -1,9 +1,10 @@
 package com.vercer.engine.persist.annotation;
 
+import com.vercer.engine.persist.standard.StandardObjectDatastore;
 import com.vercer.engine.persist.standard.StrategyObjectDatastore;
 import com.vercer.engine.persist.strategy.FieldStrategy;
 
-public class AnnotationObjectDatastore extends StrategyObjectDatastore
+public class AnnotationObjectDatastore extends StandardObjectDatastore
 {
 	public AnnotationObjectDatastore()
 	{
@@ -27,6 +28,6 @@ public class AnnotationObjectDatastore extends StrategyObjectDatastore
 
 	protected AnnotationObjectDatastore(AnnotationStrategy strategy, FieldStrategy fields)
 	{
-		super(strategy, strategy, strategy, strategy, fields);
+		super(strategy, strategy, strategy, fields);
 	}
 }

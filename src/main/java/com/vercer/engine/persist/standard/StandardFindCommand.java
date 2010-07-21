@@ -4,7 +4,7 @@ import com.vercer.engine.persist.FindCommand;
 
 public class StandardFindCommand extends StandardCommand implements FindCommand
 {
-	public StandardFindCommand(StrategyObjectDatastore datastore)
+	public StandardFindCommand(StandardObjectDatastore datastore)
 	{
 		super(datastore);
 	}

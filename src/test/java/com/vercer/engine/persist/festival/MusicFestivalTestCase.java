@@ -23,8 +23,6 @@ import java.util.concurrent.Future;
 import org.junit.Test;
 
 import com.google.appengine.api.datastore.Blob;
-import com.google.appengine.api.datastore.DatastoreService;
-import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.QueryResultIterator;

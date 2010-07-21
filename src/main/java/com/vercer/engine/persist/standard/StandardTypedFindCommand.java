@@ -61,7 +61,7 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 		Object value;
 	}
 
-	public StandardTypedFindCommand(StrategyObjectDatastore datastore)
+	public StandardTypedFindCommand(StandardObjectDatastore datastore)
 	{
 		super(datastore);
 	}
@@ -91,7 +91,7 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 
 	public BranchFindCommand<T> branch(FindCommand.MergeOperator operator)
 	{
-		if (operator != null)
+		if (this.operator != null)
 		{
 			throw new IllegalStateException("Can only branch a command once");
 		}
@@ -623,7 +623,7 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 
 		public Entity next()
 		{
-			return datastore.keyToInstance(children.next().getKey(), new RestrictionToPredicateAdaptor<Property>(propertyPredicate));
+			return datastore.keyToInstance(children.next().getKey(), propertyPredicate);
 		}
 
 		public void remove()
