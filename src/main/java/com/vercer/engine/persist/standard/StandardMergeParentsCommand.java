@@ -26,25 +26,16 @@ public class StandardMergeParentsCommand<P> extends StandardBaseParentsCommand<P
 		// keys only child queries cannot be sorted as fields are missing
 		if (childCommand.getRootCommand().isKeysOnly())
 		{
-			// make an entity cache with room to hold a round of fetches
-			final int maxSize = getFetchSize() * childEntityIterators.size() ;
-			LinkedHashMap<Key, Entity> keyToEntity = new LinkedHashMap<Key, Entity>((int) (maxSize / 0.75))
-			{
-				private static final long serialVersionUID = 1L;
-
-				@Override
-				protected boolean removeEldestEntry(java.util.Map.Entry<Key, Entity> eldest)
-				{
-					return size() >= maxSize;
-				}
-			};
+			// fetch in bulk parent entities for all child iterators
+			EntitySupplier supplier = new EntitySupplier(datastore);
 			
 			// cannot merge children so must get parent entities first
 			List<Iterator<Entity>> parentEntityIterators = new ArrayList<Iterator<Entity>>(childEntityIterators.size());
-			for (Iterator<Entity> child : childEntityIterators)
+			for (Iterator<Entity> childEntities : childEntityIterators)
 			{
 				// convert children to parents - may be dups so use a cache
-				Iterator<Entity> parentEntities = childEntitiesToParentEntities(child, keyToEntity);
+				childEntities = childCommand.applyEntityFilter(childEntities);
+				Iterator<Entity> parentEntities = new SuppliedPrefetchParentIterator(childEntities, supplier);
 				parentEntities = applyEntityFilter(parentEntities);
 				parentEntityIterators.add(parentEntities);
 			}
@@ -62,7 +53,9 @@ public class StandardMergeParentsCommand<P> extends StandardBaseParentsCommand<P
 			mergedChildEntities = applyEntityFilter(mergedChildEntities);
 			
 			// get parents for all children at the same time - no dups so no cache
-			Iterator<Entity> parentEntities = childEntitiesToParentEntities(mergedChildEntities, null);
+			mergedChildEntities = childCommand.applyEntityFilter(mergedChildEntities);
+			Iterator<Entity> parentEntities = new PrefetchParentIterator(mergedChildEntities, datastore, getFetchSize());
+			parentEntities = applyEntityFilter(parentEntities);
 			return entityToInstanceIterator(parentEntities, false);
 		}
 	}		

@@ -12,6 +12,8 @@ import com.vercer.engine.persist.StoreCommand.SingleStoreCommand;
 
 final class StandardSingleStoreCommand<T> extends StandardBaseStoreCommand<T, SingleStoreCommand<T>> implements SingleStoreCommand<T>
 {
+	private Object id;
+
 	public StandardSingleStoreCommand(StandardStoreCommand command, T instance)
 	{
 		super(command);
@@ -47,7 +49,7 @@ final class StandardSingleStoreCommand<T> extends StandardBaseStoreCommand<T, Si
 		{
 			parentKey = command.datastore.associatedKey(parent);
 		}
-		Entity entity = command.datastore.instanceToEntity(instance, parentKey);
+		Entity entity = command.datastore.instanceToEntity(instance, parentKey, id);
 
 		if (unique)
 		{
@@ -55,6 +57,20 @@ final class StandardSingleStoreCommand<T> extends StandardBaseStoreCommand<T, Si
 		}
 
 		return command.datastore.entityToKey(entity);
+	}
+
+	@Override
+	public SingleStoreCommand<T> id(long id)
+	{
+		this.id = id;
+		return this;
+	}
+
+	@Override
+	public SingleStoreCommand<T> id(String id)
+	{
+		this.id = id;
+		return this;
 	}
 
 }

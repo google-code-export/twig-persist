@@ -3,9 +3,9 @@ package com.vercer.engine.persist.standard;
 
 public class StandardCommand
 {
-	final StrategyObjectDatastore datastore;
+	final StandardObjectDatastore datastore;
 
-	public StandardCommand(StrategyObjectDatastore datastore)
+	public StandardCommand(StandardObjectDatastore datastore)
 	{
 		this.datastore = datastore;
 		if (datastore.getTransaction() != null && datastore.getTransaction().isActive() == false)

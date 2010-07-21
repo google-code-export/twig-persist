@@ -34,20 +34,20 @@ final class KeyFieldTranslator extends DecoratingTranslator
 		{
 			if (instance != null)
 			{
-				// treat 0 the same as null
-				if (!instance.equals(0))
+				// the key name is not stored in the fields but only in key
+				if (Number.class.isAssignableFrom(instance.getClass()))
 				{
-					// the key name is not stored in the fields but only in key
-					if (Number.class.isAssignableFrom(instance.getClass()))
+					// only set the id if it is not 0 otherwise auto-generate
+					long longValue = ((Number) instance).longValue();
+					if (longValue != 0l)
 					{
-						Long converted = converters.convert(instance, Long.class);
-						datastore.encodeKeySpec.setId(converted);
+						datastore.encodeKeySpec.setId(longValue);
 					}
-					else
-					{
-						String keyName = converters.convert(instance, String.class);
-						datastore.encodeKeySpec.setName(keyName);
-					}
+				}
+				else
+				{
+					String keyName = converters.convert(instance, String.class);
+					datastore.encodeKeySpec.setId(keyName);
 				}
 			}
 		}

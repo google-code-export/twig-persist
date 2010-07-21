@@ -10,31 +10,25 @@ public class KeySpecification
 {
 	private String kind;
 	private ObjectReference<Key> parentKeyReference;
-	private String name;
-	private Long id;
+	private Object id;
 
 	public KeySpecification()
 	{
 	}
 
-	public KeySpecification(String kind, Key parentKey, String name)
+	public KeySpecification(String kind, Key parentKey, Object id)
 	{
+		if (!(id == null || id instanceof String || id instanceof Long))
+		{
+			throw new IllegalArgumentException("Id must be a long or String but was " + id);
+		}
+		
 		this.kind = kind;
-		this.name = name;
+		this.id = id;
 		this.parentKeyReference = parentKey == null ? null : new SimpleObjectReference<Key>(parentKey);
 	}
 
-	public String getName()
-	{
-		return name;
-	}
-
-	public void setName(String name)
-	{
-		this.name = name;
-	}
-
-	public Long getId()
+	public Object getId()
 	{
 		return id;
 	}
@@ -61,7 +55,7 @@ public class KeySpecification
 
 	public boolean isComplete()
 	{
-		return kind != null && (name != null || id != null);
+		return kind != null && id != null;
 	}
 
 	public Key toKey()
@@ -70,24 +64,24 @@ public class KeySpecification
 		{
 			if (parentKeyReference == null)
 			{
-				if (id == null)
+				if (id instanceof String)
 				{
-					return KeyFactory.createKey(kind, name);
+					return KeyFactory.createKey(kind, (String) id);
 				}
 				else
 				{
-					return KeyFactory.createKey(kind, id);
+					return KeyFactory.createKey(kind, (Long) id);
 				}
 			}
 			else
 			{
-				if (id == null)
+				if (id instanceof String)
 				{
-					return KeyFactory.createKey(parentKeyReference.get(), kind, name);
+					return KeyFactory.createKey(parentKeyReference.get(), kind, (String) id);
 				}
 				else
 				{
-					return KeyFactory.createKey(parentKeyReference.get(), kind, id);
+					return KeyFactory.createKey(parentKeyReference.get(), kind, (Long) id);
 				}
 			}
 		}
@@ -118,11 +112,6 @@ public class KeySpecification
 			parentKeyReference = specification.parentKeyReference;
 		}
 
-		if (name == null)
-		{
-			name = specification.name;
-		}
-
 		if (id == null)
 		{
 			id = specification.id;
@@ -134,7 +123,7 @@ public class KeySpecification
 		}
 	}
 
-	public void setId(Long id)
+	public void setId(Object id)
 	{
 		this.id = id;
 	}

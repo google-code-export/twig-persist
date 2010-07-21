@@ -7,7 +7,7 @@ import com.vercer.engine.persist.StoreCommand;
 
 public class StandardStoreCommand extends StandardCommand implements StoreCommand
 {
-	public StandardStoreCommand(StrategyObjectDatastore datastore)
+	public StandardStoreCommand(StandardObjectDatastore datastore)
 	{
 		super(datastore);
 	}

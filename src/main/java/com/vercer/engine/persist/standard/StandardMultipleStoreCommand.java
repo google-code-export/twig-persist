@@ -1,5 +1,6 @@
 package com.vercer.engine.persist.standard;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -53,5 +54,24 @@ public class StandardMultipleStoreCommand<T> extends StandardBaseStoreCommand<T,
 				return result;
 			}
 		}.newProxy();
+	}
+
+	@Override
+	public MultipleStoreCommand<T> ids(String... ids)
+	{
+		return ids(Arrays.asList(ids));
+	}
+
+	@Override
+	public MultipleStoreCommand<T> ids(Long... ids)
+	{
+		return ids(Arrays.asList(ids));
+	}
+
+	@Override
+	public MultipleStoreCommand<T> ids(Collection<?> ids)
+	{
+		// TODO
+		throw new UnsupportedOperationException("Not yet implemented");
 	}
 }

@@ -30,60 +30,6 @@ public abstract class StandardBaseParentsCommand<P> extends StandardBaseFindComm
 		throw new UnsupportedOperationException("Not implemented yet - depends on async get");
 	}
 	
-	/**
-	 * @param childEntities
-	 * @param source Allows a cache to be used to 
-	 * @return
-	 */
-	Iterator<Entity> childEntitiesToParentEntities(Iterator<Entity> childEntities, final Map<Key, Entity> cache)
-	{
-		childEntities = childCommand.applyEntityFilter(childEntities);
-		return new PrefetchParentIterator(childEntities, datastore, getFetchSize())
-		{
-			@Override
-			protected Map<Key, Entity> keysToEntities(List<Key> keys)
-			{
-				if (cache == null)
-				{
-					return super.keysToEntities(keys);
-				}
-				else
-				{
-					Map<Key, Entity> result = new HashMap<Key, Entity>(keys.size());
-					List<Key> missing = null;
-					for (Key key : keys)
-					{
-						Entity entity = cache.get(key);
-						if (entity != null)
-						{
-							result.put(key, entity);
-						}
-						else
-						{
-							if (missing == null)
-							{
-								missing = new ArrayList<Key>(keys.size());
-							}
-							missing.add(key);
-						}
-					}
-					
-					if (missing != null)
-					{
-						Map<Key, Entity> entities = super.keysToEntities(missing);
-						Set<Entry<Key,Entity>> entrySet = entities.entrySet();
-						for (Entry<Key, Entity> entry : entrySet)
-						{
-							cache.put(entry.getKey(), entry.getValue());
-						}
-						result.putAll(entities);
-					}
-					return result;
-				}
-			}
-		};
-	}
-
 	protected int getFetchSize()
 	{
 		@SuppressWarnings("deprecation")

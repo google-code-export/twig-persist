@@ -21,12 +21,17 @@ public interface StoreCommand
 
 	interface SingleStoreCommand<T> extends CommonStoreCommand<T, SingleStoreCommand<T>>
 	{
+		SingleStoreCommand<T> id(long id);
+		SingleStoreCommand<T> id(String id);
 		Key returnKeyNow();
 		Future<Key> returnKeyLater();
 	}
 
 	interface MultipleStoreCommand<T> extends CommonStoreCommand<T, MultipleStoreCommand<T>>
 	{
+		MultipleStoreCommand<T> ids(String... ids);
+		MultipleStoreCommand<T> ids(Long... ids);
+		MultipleStoreCommand<T> ids(Collection<?> ids);
 		Map<T, Key> returnKeysNow();
 		Future<Map<T, Key>> returnKeysLater();
 	}

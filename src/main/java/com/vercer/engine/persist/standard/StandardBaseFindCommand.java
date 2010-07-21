@@ -8,7 +8,6 @@ import com.google.appengine.api.datastore.AsyncDatastoreHelper;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Query.SortPredicate;
 import com.google.common.base.Function;
-import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 import com.vercer.engine.persist.Property;
 import com.vercer.engine.persist.Restriction;
@@ -28,9 +27,9 @@ abstract class StandardBaseFindCommand<T, C extends BaseFindCommand<C>> implemen
 {
 	Restriction<Entity> entityPredicate;
 	Restriction<Property> propertyPredicate;
-	final StrategyObjectDatastore datastore;
+	StandardObjectDatastore datastore;
 
-	StandardBaseFindCommand(StrategyObjectDatastore datastore)
+	StandardBaseFindCommand(StandardObjectDatastore datastore)
 	{
 		this.datastore = datastore;
 	}
@@ -85,17 +84,17 @@ abstract class StandardBaseFindCommand<T, C extends BaseFindCommand<C>> implemen
 	
 	<R> Iterator<R> entityToInstanceIterator(Iterator<Entity> entities, boolean keysOnly)
 	{
-		Function<Entity, R> function = new EntityToInstanceFunction<R>(new RestrictionToPredicateAdaptor<Property>(propertyPredicate));
+		Function<Entity, R> function = new EntityToInstanceFunction<R>(propertyPredicate);
 		return Iterators.transform(entities, function);
 	}
 	
 	private final class EntityToInstanceFunction<R> implements Function<Entity, R>
 	{
-		private final Predicate<Property> predicate;
+		private final Restriction<Property> predicate;
 
-		public EntityToInstanceFunction(Predicate<Property> predicate)
+		public EntityToInstanceFunction(Restriction<Property> propertyPredicate)
 		{
-			this.predicate = predicate;
+			this.predicate = propertyPredicate;
 		}
 
 		@SuppressWarnings("unchecked")
