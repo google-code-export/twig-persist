@@ -120,7 +120,6 @@ public class AnnotationStrategy extends DefaultFieldStrategy implements Combined
 		
 		return super.typeToName(type);
 	}
-	
 
 	public boolean polymorphic(Field field)
 	{

@@ -9,7 +9,7 @@ import com.google.common.collect.MapMaker;
 import com.vercer.util.reference.ObjectReference;
 import com.vercer.util.reference.SimpleObjectReference;
 
-public class KeyCache
+public class InstanceKeyCache
 {
 	private static class ActivatableKeyReference extends SimpleObjectReference<Key>
 	{

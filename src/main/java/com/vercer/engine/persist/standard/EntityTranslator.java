@@ -7,6 +7,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +48,7 @@ class EntityTranslator implements PropertyTranslator
 		{
 			@SuppressWarnings("unchecked")
 			List<Key> keys = (List<Key>) value;
-			Map<Key, Object> keysToInstances = this.datastore.keysToInstances(keys, null);
+			Map<Key, Object> keysToInstances = datastore.load().keys(keys).returnResultsNow();
 			List<Object> result = new ArrayList<Object>();
 			
 			// keep order the same as keys
@@ -71,7 +72,7 @@ class EntityTranslator implements PropertyTranslator
 		else
 		{
 			Key key = (Key) value;
-			Object result = this.datastore.keyToInstance(key, null);
+			Object result = this.datastore.load().key(key).returnResultNow();
 			if (result == null)
 			{
 				result = NULL_VALUE;
@@ -98,7 +99,7 @@ class EntityTranslator implements PropertyTranslator
 				{
 					// get keys for each item
 					List<?> instances = (List<?>) instance;
-					Map<?, Key> instancesToKeys = datastore.instancesToKeys(instances, getParentKey());
+					Map<?, Key> instancesToKeys = instancesToKeys(instances, getParentKey());
 					
 					// need to make sure keys are in same order as original instances
 					List<Key> keys = new ArrayList<Key>(instances.size());
@@ -118,14 +119,49 @@ class EntityTranslator implements PropertyTranslator
 			{
 				public Key get()
 				{
-					return datastore.instanceToKey(instance, getParentKey());
+					Key key = datastore.associatedKey(instance);
+					if (key == null)
+					{
+						key = datastore.store().instance(instance).parentKey(getParentKey()).returnKeyNow();
+					}
+					return key;
 				}
 			};
 		}
 
 		return new SinglePropertySet(path, item, indexed);
 	}
+	
+	private <T> Map<T, Key> instancesToKeys(Collection<T> instances, Key parentKey)
+	{
+		Map<T, Key> result = new HashMap<T, Key>(instances.size());
+		List<T> missed = new ArrayList<T>(instances.size());
+		for (T instance : instances)
+		{
+			Key key = datastore.associatedKey(instance);
+			if (key == null)
+			{
+				missed.add(instance);
+			}
+			else
+			{
+				result.put(instance, key);
+			}
+		}
+		
+		if (!missed.isEmpty())
+		{
+			// encode the instances to entities
+			result.putAll(datastore.store().instances(missed).parentKey(parentKey).returnKeysNow());
+		}
+		
+		return result;
+	}
 
+
+	/**
+	 * Override to create parent child relationships
+	 */
 	protected Key getParentKey()
 	{
 		return null;

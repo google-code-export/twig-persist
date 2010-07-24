@@ -2,19 +2,17 @@ package com.vercer.engine.persist.standard;
 
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 
 import com.google.appengine.api.datastore.Entity;
-import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.Query.SortPredicate;
 
-public class StandardMergeParentsCommand<P> extends StandardBaseParentsCommand<P>
+class StandardMultipleParentsCommand<P> extends StandardCommonParentsCommand<P>
 {
 	private final List<Iterator<Entity>> childEntityIterators;
 	private final List<SortPredicate> sorts;
 
-	public StandardMergeParentsCommand(StandardTypedFindCommand<?, ?> command, List<Iterator<Entity>> childEntityIterators, List<SortPredicate> sorts)
+	StandardMultipleParentsCommand(StandardTypedFindCommand<?, ?> command, List<Iterator<Entity>> childEntityIterators, List<SortPredicate> sorts)
 	{
 		super(command);
 		this.childEntityIterators = childEntityIterators;
@@ -27,7 +25,7 @@ public class StandardMergeParentsCommand<P> extends StandardBaseParentsCommand<P
 		if (childCommand.getRootCommand().isKeysOnly())
 		{
 			// fetch in bulk parent entities for all child iterators
-			EntitySupplier supplier = new EntitySupplier(datastore);
+			EntitySupplier supplier = new EntitySupplier(datastore, getFetchSize());
 			
 			// cannot merge children so must get parent entities first
 			List<Iterator<Entity>> parentEntityIterators = new ArrayList<Iterator<Entity>>(childEntityIterators.size());

@@ -1,10 +1,9 @@
 package com.vercer.engine.persist.util;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.PriorityQueue;
 
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
@@ -13,56 +12,53 @@ import com.google.common.collect.PeekingIterator;
 public class SortedMergeIterator<T> extends AbstractIterator<T>
 {
 	private final Comparator<T> comparator;
-	private LinkedList<PeekingIterator<T>> peekings;
-	private final boolean dedup;
+	private PriorityQueue<PeekingIterator<T>> peekings;
+	private T last;
 
-	public SortedMergeIterator(Comparator<T> comparator, Collection<Iterator<T>> iterators, boolean ignoreDuplicates)
+	public SortedMergeIterator(Comparator<T> comparator, Collection<Iterator<T>> iterators)
 	{
 		this.comparator = comparator;
-		this.dedup = ignoreDuplicates;
-		peekings = new LinkedList<PeekingIterator<T>>();
+		peekings = new PriorityQueue<PeekingIterator<T>>(iterators.size(), pc);
 		for (Iterator<T> iterator : iterators)
 		{
 			if (iterator.hasNext())
 			{
+				// make a peeking iterator so we can sort by its top element
 				PeekingIterator<T> peeking = Iterators.peekingIterator(iterator);
-				peekings.add(peeking);
+				peekings.offer(peeking);
 			}
 		}
-		Collections.sort(peekings, pc);
 	}
 
 	@Override
 	protected T computeNext()
 	{
-		if (peekings.isEmpty())
+		// keep getting elements until we have a non-duplicate
+		T next = null;
+		do
 		{
-			return endOfData();
-		}
-
-		T next = removeTop();
-
-		// discard duplicates
-		if (dedup)
-		{
-			while (peekings.size() > 0 && peekings.getFirst().peek().equals(next))
+			PeekingIterator<T> top = peekings.poll();
+			
+			// take the top iterator
+			if (top == null)
 			{
-				removeTop();
+				// time to go home
+				return endOfData();
+			}
+			
+			// take the top element from the top iterator
+			next = top.next();
+			
+			if (top.hasNext())
+			{
+				// re-sort the iterator now its top element has changed
+				peekings.offer(top);
 			}
 		}
+		while (last != null && comparator.compare(next, last) == 0);
 
-		return next;
-	}
-
-	private T removeTop()
-	{
-		PeekingIterator<T> top = peekings.getFirst();
-		T next = top.next(); // step forward the top iterator
-		if (!top.hasNext())
-		{
-			peekings.removeFirst();
-		}
-		Collections.sort(peekings, pc);
+		last = next;
+		
 		return next;
 	}
 

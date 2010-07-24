@@ -123,8 +123,13 @@ public class KeySpecification
 		}
 	}
 
-	public void setId(Object id)
+	public void setId(long id)
 	{
 		this.id = id;
+	}
+	
+	public void setName(String name)
+	{
+		this.id = name;
 	}
 }

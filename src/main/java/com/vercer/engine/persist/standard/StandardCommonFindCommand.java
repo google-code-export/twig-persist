@@ -11,7 +11,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
 import com.vercer.engine.persist.Property;
 import com.vercer.engine.persist.Restriction;
-import com.vercer.engine.persist.FindCommand.BaseFindCommand;
+import com.vercer.engine.persist.FindCommand.CommonFindCommand;
 import com.vercer.engine.persist.util.RestrictionToPredicateAdaptor;
 import com.vercer.engine.persist.util.SortedMergeIterator;
 
@@ -23,15 +23,14 @@ import com.vercer.engine.persist.util.SortedMergeIterator;
  * @param <T> The type of the instance that will be returned
  * @param <C> The concrete type that is returned from chained methods  
  */
-abstract class StandardBaseFindCommand<T, C extends BaseFindCommand<C>> implements BaseFindCommand<C>
+abstract class StandardCommonFindCommand<T, C extends CommonFindCommand<C>> extends StandardDecodeCommand implements CommonFindCommand<C>
 {
 	Restriction<Entity> entityPredicate;
 	Restriction<Property> propertyPredicate;
-	StandardObjectDatastore datastore;
 
-	StandardBaseFindCommand(StandardObjectDatastore datastore)
+	StandardCommonFindCommand(StrategyObjectDatastore datastore)
 	{
-		this.datastore = datastore;
+		super(datastore);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -73,7 +72,7 @@ abstract class StandardBaseFindCommand<T, C extends BaseFindCommand<C>> implemen
 		if (sorts != null && !sorts.isEmpty())
 		{
 			Comparator<Entity> comparator = AsyncDatastoreHelper.newEntityComparator(sorts);
-			merged = new SortedMergeIterator<Entity>(comparator, iterators, true);
+			merged = new SortedMergeIterator<Entity>(comparator, iterators);
 		}
 		else
 		{
@@ -101,7 +100,7 @@ abstract class StandardBaseFindCommand<T, C extends BaseFindCommand<C>> implemen
 		@Override
 		public R apply(Entity entity)
 		{
-			return (R) datastore.entityToInstance(entity, predicate);
+			return (R) entityToInstance(entity, predicate);
 		}
 	}
 }

@@ -4,11 +4,11 @@ import java.util.Iterator;
 
 import com.google.appengine.api.datastore.Entity;
 
-public class StandardSingleParentsCommand<P> extends StandardBaseParentsCommand<P>
+class StandardSingleParentsCommand<P> extends StandardCommonParentsCommand<P>
 {
 	private final Iterator<Entity> childEntities;
 
-	public StandardSingleParentsCommand(StandardTypedFindCommand<?, ?> command, Iterator<Entity> childEntities)
+	StandardSingleParentsCommand(StandardTypedFindCommand<?, ?> command, Iterator<Entity> childEntities)
 	{
 		super(command);
 		this.childEntities = childEntities;

@@ -3,47 +3,32 @@ package com.vercer.engine.persist.standard;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.appengine.api.datastore.Entity;
-import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
-import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.common.base.Function;
-import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import com.vercer.engine.persist.FindCommand;
-import com.vercer.engine.persist.LoadCommand;
 import com.vercer.engine.persist.Path;
 import com.vercer.engine.persist.Property;
 import com.vercer.engine.persist.PropertyTranslator;
-import com.vercer.engine.persist.Restriction;
-import com.vercer.engine.persist.StoreCommand;
 import com.vercer.engine.persist.annotation.Id;
 import com.vercer.engine.persist.conversion.DefaultTypeConverter;
 import com.vercer.engine.persist.conversion.TypeConverter;
 import com.vercer.engine.persist.strategy.ActivationStrategy;
-import com.vercer.engine.persist.strategy.CacheStrategy;
 import com.vercer.engine.persist.strategy.CombinedStrategy;
 import com.vercer.engine.persist.strategy.FieldStrategy;
 import com.vercer.engine.persist.strategy.RelationshipStrategy;
@@ -56,11 +41,7 @@ import com.vercer.engine.persist.translator.MapTranslator;
 import com.vercer.engine.persist.translator.NativeDirectTranslator;
 import com.vercer.engine.persist.translator.ObjectFieldTranslator;
 import com.vercer.engine.persist.translator.PolymorphicTranslator;
-import com.vercer.engine.persist.util.Entities;
-import com.vercer.engine.persist.util.PropertySets;
-import com.vercer.engine.persist.util.RestrictionToPredicateAdaptor;
 import com.vercer.util.Reflection;
-import com.vercer.util.reference.ObjectReference;
 
 /**
  * Stateful layer responsible for caching key-object references and
@@ -71,13 +52,22 @@ import com.vercer.util.reference.ObjectReference;
  */
 public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 {
+	// key details are updated as the current instance is encoded
 	KeySpecification encodeKeySpec;
+	
+	// the key of the currently decoding entity
 	Key decodeKey;
 	
+	// keeps track of which instances are associated with which keys
+	final InstanceKeyCache keyCache;
+	
 	// activation depth cannot be in decode context because it is defined per field
-	private Deque<Integer> activationDepthDeque= new ArrayDeque<Integer>();
-	private boolean indexed;
+	final Deque<Integer> activationDepthDeque= new ArrayDeque<Integer>();
+	
+	// are properties indexed by default
+	boolean indexed;
 
+	// translators are selected for particular fields by a strategy
 	private final PropertyTranslator objectFieldTranslator;
 	private final PropertyTranslator embedTranslator;
 	private final PropertyTranslator polyMorphicComponentTranslator;
@@ -87,20 +77,19 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	private final PropertyTranslator childTranslator;
 	private final ChainedTranslator valueTranslatorChain;
 	private final PropertyTranslator defaultTranslator;
-
-	// TODO refactor this into an InstanceStrategy
-	private final KeyCache keyCache;
-
-	/**
-	 * Flag that indicates we are associating instances with this session so do not store them
-	 */
-	// TODO store key field to do this - remove this flag
-	private boolean associating;
+	
+	private static final Map<Class<?>, Field> keyFields = new ConcurrentHashMap<Class<?>, Field>();
+	
+	// indicates we are associating instances with this session so do not store them
+	boolean associating;
+	
+	// set when all entities should be collected and stored in one call
+	Map<Object, Entity> batched;
+	
+	// set when an instance is to be refreshed rather than instantiated
 	private Object refresh;
 	
-	private Map<Object, Entity> batched;
-
-	private TypeConverter converter;
+	protected final TypeConverter converter;
 
 	// TODO make all these private when commands have no logic
 	protected final RelationshipStrategy relationshipStrategy;
@@ -130,7 +119,7 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 		this.relationshipStrategy = relationshipStrategy;
 		this.storageStrategy = storageStrategy;
 
-		converter = createTypeConverter();
+		this.converter = createTypeConverter();
 
 		// the main translator which converts to and from objects
 		objectFieldTranslator = new StrategyObjectFieldTranslator(converter);
@@ -148,9 +137,219 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 		keyCache = createKeyCache();
 	}
 
-	protected KeyCache createKeyCache()
+	@Override
+	public final StandardFindCommand find()
 	{
-		return new KeyCache();
+		return new StandardFindCommand(this);
+	}
+
+	@Override
+	public final StandardStoreCommand store()
+	{
+		return new StandardStoreCommand(this);
+	}
+
+	@Override
+	public StandardLoadCommand load()
+	{
+		return new StandardLoadCommand(this);
+	}
+	
+	@Override
+	public final Key store(Object instance)
+	{
+		return store().instance(instance).returnKeyNow();
+	}
+
+	@Override
+	public final Key store(Object instance, long id)
+	{
+		return store().instance(instance).id(id).returnKeyNow();
+	}
+
+	@Override
+	public final Key store(Object instance, String id)
+	{
+		return store().instance(instance).id(id).returnKeyNow();
+	}
+
+	@Override
+	public final <T> Map<T, Key> storeAll(Collection<T> instances)
+	{
+		return store().instances(instances).returnKeysNow();
+	}
+
+//	@Override
+//	public final <T> Map<T, Key> storeAll(Collection<? extends T> instances, Object parent)
+//	{
+//		// encode the instances to entities
+//		final Map<T, Entity> entities = instancesToEntities(instances, parent, false);
+//		
+//		// actually put them in the datastore and get their keys
+//		final List<Key> keys = entitiesToKeys(entities.values());
+//		
+//		LinkedHashMap<T, Key> result = Maps.newLinkedHashMap();
+//		Iterator<T> instanceItr = entities.keySet().iterator();
+//		Iterator<Key> keyItr = keys.iterator();
+//		while (instanceItr.hasNext())
+//		{
+//			// iterate instances and keys in parallel
+//			T instance = instanceItr.next();
+//			Key key = keyItr.next();
+//			
+//			// replace the temp key ObjRef with the full key for this instance 
+//			keyCache.cache(key, instance);
+//			
+//			result.put(instance, key);
+//		}
+//		return result;
+//	}
+
+//	public final Key internalStore(Object instance, Object parent, Object id)
+//	{
+//		onBeforeStore(instance);
+//		
+//		Key parentKey = null;
+//		if (parent != null)
+//		{
+//			parentKey = keyCache.getKey(parent);
+//		}
+//		
+//		// cache the empty key details now in case a child references back to us
+//		if (keyCache.getKey(instance) != null)
+//		{
+//			throw new IllegalStateException("Cannot store same instance twice: " + instance);
+//		}
+//		Entity entity = instanceToEntity(instance, parentKey, id);
+//		Key key = entityToKey(entity);
+//		
+//		// replace the temp key ObjRef with the full key for this instance 
+//		keyCache.cache(key, instance);
+//		
+//		setInstanceId(instance, key);
+//		
+//		onAfterStore(instance, key);
+//		
+//		return key;
+//	}
+
+	protected void onAfterStore(Object instance, Key key)
+	{
+	}
+
+	protected void onBeforeStore(Object instance)
+	{
+	}
+
+	public final <T> QueryResultIterator<T> find(Class<T> type)
+	{
+		return find().type(type).returnResultsNow();
+	}
+
+	public final <T> QueryResultIterator<T> find(Class<T> type, String field, Object value)
+	{
+		return find().type(type).addFilter(field, FilterOperator.EQUAL, value).returnResultsNow();
+	}
+	
+	@Override
+	public <T> T load(Key key)
+	{
+		return load().key(key).returnResultNow();
+	}
+	
+	@Override
+	public final <T> T load(Class<T> type, Object id)
+	{
+		return load().type(type).id(id).returnResultNow();
+	}
+
+	@Override
+	public final <I, T> Map<I, T>  loadAll(Class<T> type, Collection<I> ids)
+	{
+		return load().type(type).ids(ids).returnResultsNow();
+	}
+
+	@Override
+	public final void update(Object instance)
+	{	
+		// store but set the internal update flag so
+		store().update(true).instance(instance).returnKeyNow();
+	}
+	
+	@Override
+	public void updateAll(Collection<?> instances)
+	{
+		store().update(true).instances(instances).returnKeysNow();
+	}
+
+	@Override
+	public final void storeOrUpdate(Object instance)
+	{
+		if (associatedKey(instance) != null)
+		{
+			update(instance);
+		}
+		else
+		{
+			store(instance);
+		}
+	}
+
+	@Override
+	public final void delete(Object instance)
+	{
+		Key key= keyCache.getKey(instance);
+		if (key == null)
+		{
+			throw new IllegalArgumentException("Instance " + instance + " is not associated");
+		}
+		deleteKeys(Collections.singleton(key));
+	}
+
+	@Override
+	public final void deleteAll(Collection<?> instances)
+	{
+		deleteKeys(Collections2.transform(instances, cachedInstanceToKeyFunction));
+	}
+
+	@Override
+	public final void refresh(Object instance)
+	{
+		Key key = associatedKey(instance);
+	
+		if (key == null)
+		{
+			throw new IllegalStateException("Instance not associated with session");
+		}
+	
+		// so it is not loaded from the cache
+		disassociate(instance);
+	
+		// load will use this instance instead of creating new
+		refresh = instance;
+	
+		// load from datastore into the refresh instance
+		Object loaded = load().key(key).returnResultNow();
+	
+		if (loaded == null)
+		{
+			throw new IllegalStateException("Instance to be refreshed could not be found");
+		}
+	}
+
+	@Override
+	public void refreshAll(Collection<?> instances)
+	{
+		// TODO optimise!
+		for (Object instance : instances)
+		{
+			refresh(instance);
+		}
+	}
+
+	protected InstanceKeyCache createKeyCache()
+	{
+		return new InstanceKeyCache();
 	}
 	
 	protected PropertyTranslator decoder(Entity entity)
@@ -244,247 +443,6 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 		return result;
 	}
 
-	// TODO put this in a class meta data object
-	private static final Map<Class<?>, Field> keyFields = new ConcurrentHashMap<Class<?>, Field>();
-	
-	// null values are not permitted in a concurrent hash map so need a "missing" value
-	private static final Field NO_KEY_FIELD;
-	static
-	{
-		try
-		{
-			NO_KEY_FIELD = StrategyObjectDatastore.class.getDeclaredField("NO_KEY_FIELD");
-		}
-		catch (Exception e)
-		{
-			throw new IllegalStateException(e);
-		}
-	}
-	
-	/**
-	 * Potentially store an entity in the datastore.
-	 */
-	protected Key entityToKey(Entity entity)
-	{
-		// we could be just pretending to store to process the instance to get its key
-		if (associating)
-		{
-			// do not save the entity because we just want the key
-			Key key = entity.getKey();
-			if (!key.isComplete())
-			{
-				// incomplete keys are no good to us
-				throw new IllegalArgumentException("Associating entity does not have complete key: " + entity);
-			}
-			return key;
-		}
-		else if (batched != null)
-		{
-			// don't store anything yet if we are batching writes
-			Key key = entity.getKey();
-			
-			// referenced entities must have a full key without being stored
-			if (!encodeKeySpec.isComplete())
-			{
-				// incomplete keys are no good to us - we need a key now
-				throw new IllegalArgumentException("Must have complete key in batched mode for entity " + entity);
-			}
-
-			// we will get the key after put
-			return key;
-		}
-		else
-		{
-			// actually put the entity in the datastore
-			return servicePut(entity);
-		}
-	}
-
-	protected List<Key> entitiesToKeys(Iterable<Entity> entities)
-	{
-		// TODO do some of the same stuff as above
-		return servicePut(entities);
-	}
-	
-	@SuppressWarnings("unchecked")
-	final <T> T entityToInstance(Entity entity, Restriction<Property> predicate)
-	{
-		T instance = (T) keyCache.getInstance(entity.getKey());
-		if (instance == null)
-		{
-			// push a new context
-			Key existingDecodeKey = decodeKey;
-			decodeKey = entity.getKey();
-
-			Type type = fieldStrategy.kindToType(entity.getKind());
-
-			Set<Property> properties = PropertySets.create(entity.getProperties(), indexed);
-			
-			// filter out unwanted properties at the lowest level
-			if (predicate != null)
-			{
-				properties = Sets.filter(properties, new RestrictionToPredicateAdaptor<Property>(predicate));
-			}
-
-			// order the properties for efficient separation by field
-			properties = new TreeSet<Property>(properties);
-
-			instance = (T) decoder(entity).propertiesToTypesafe(properties, Path.EMPTY_PATH, type);
-			if (instance == null)
-			{
-				throw new IllegalStateException("Could not translate entity " + entity);
-			}
-
-			// pop the context
-			decodeKey = existingDecodeKey;
-		}
-
-		return instance;
-	}
-	
-
-	final <T> Iterator<T> entitiesToInstances(final Iterator<Entity> entities, final Restriction<Property> filter)
-	{
-		return new Iterator<T>()
-		{
-			@Override
-			public boolean hasNext()
-			{
-				return entities.hasNext();
-			}
-
-			@SuppressWarnings("unchecked")
-			@Override
-			public T next()
-			{
-				return (T) entityToInstance(entities.next(), filter);
-			}
-
-			@Override
-			public void remove()
-			{
-				entities.remove();
-			}
-		};
-	}
-
-
-	@SuppressWarnings("unchecked")
-	<T> T keyToInstance(Key key, Restriction<Property> filter)
-	{
-		T instance = (T) keyCache.getInstance(key);
-		if (instance == null)
-		{
-			Entity entity = keyToEntity(key);
-			if (entity == null)
-			{
-				instance = null;
-			}
-			else
-			{
-				instance = (T) entityToInstance(entity, filter);
-			}
-		}
-
-		return instance;
-	}
-	
-	@SuppressWarnings("unchecked")
-	final <T> Map<Key, T> keysToInstances(List<Key> keys, Restriction<Property> filter)
-	{
-		Map<Key, T> result = new HashMap<Key, T>(keys.size());
-		List<Key> missing = null;
-		for (Key key : keys)
-		{
-			T instance = (T) keyCache.getInstance(key);
-			if (instance != null)
-			{
-				result.put(key, instance);
-			}
-			else
-			{
-				if (missing == null)
-				{
-					missing = new ArrayList<Key>(keys.size());
-				}
-				missing.add(key);
-			}
-		}
-		
-		if (!missing.isEmpty())
-		{
-			Map<Key, Entity> entities = keysToEntities(missing);
-			if (!entities.isEmpty())
-			{
-				Set<Entry<Key, Entity>> entries = entities.entrySet();
-				for (Entry<Key, Entity> entry : entries)
-				{
-					T instance = (T) entityToInstance(entry.getValue(), filter);
-					result.put(entry.getKey(), instance);
-				}
-			}
-		}
-
-		return result;
-	}
-
-	// TODO make private once cache strategy working
-	protected Entity keyToEntity(Key key)
-	{
-		if (getActivationDepth() > 0)
-		{
-			try
-			{
-				return serviceGet(key);
-			}
-			catch (EntityNotFoundException e)
-			{
-				return null;
-			}
-		}
-		else
-		{
-			// don't load entity if it will not be activated - but need one for key
-			return new Entity(key);
-		}
-	}
-	
-	protected Map<Key, Entity> keysToEntities(Collection<Key> keys)
-	{
-		// only load entity if we will activate instance
-		if (getActivationDepth() > 0)
-		{
-			return serviceGet(keys);
-		}
-		else
-		{
-			// we must return empty entities with the correct kind to instantiate
-			HashMap<Key, Entity> result = new HashMap<Key, Entity>();
-			for (Key key : keys)
-			{
-				result.put(key, new Entity(key));
-			}
-			return result;
-		}
-	}
-	
-	// TODO make almost every method private once commands contain no logic
-	final Entity createEntity()
-	{
-		if (encodeKeySpec.isComplete())
-		{
-			// we have a complete key with id specified 
-			return new Entity(encodeKeySpec.toKey());
-		}
-		else
-		{
-			// we have no id specified so must create entity for auto-generated id
-			ObjectReference<Key> parentKeyReference = encodeKeySpec.getParentKeyReference();
-			Key parentKey = parentKeyReference == null ? null : parentKeyReference.get();
-			return Entities.createEntity(encodeKeySpec.getKind(), null, parentKey);
-		}
-	}
-
 	protected boolean propertiesIndexedByDefault()
 	{
 		return true;
@@ -511,7 +469,7 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	@Override
 	public final void associate(Object instance)
 	{
-		// convert the instance so we can get its key and children
+		// encode the instance so we can get its id and parent to make a key
 		associating = true;
 		store(instance);
 		associating = false;
@@ -521,301 +479,6 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	public final Key associatedKey(Object instance)
 	{
 		return keyCache.getKey(instance);
-	}
-
-	@Override
-	public final <T> T load(Class<T> type, Object id, Object parent)
-	{
-		Object converted;
-		if (Number.class.isAssignableFrom(id.getClass()))
-		{
-			converted = converter.convert(id, Long.class);
-		}
-		else
-		{
-			converted = converter.convert(id, String.class);
-		}
-
-		Key parentKey = null;
-		if (parent != null)
-		{
-			parentKey = keyCache.getKey(parent);
-		}
-		return internalLoad(type, converted, parentKey);
-	}
-
-	@Override
-	public final <I, T> Map<I, T>  loadAll(Class<? extends T> type, Collection<I> ids)
-	{
-		Map<I, T> result = new HashMap<I, T>(ids.size()); 
-		for (I id : ids)
-		{
-			// TODO optimise this
-			T loaded = load(type, id);
-			result.put(id, loaded);
-		}
-
-		return result;
-	}
-
-	@Override
-	public final void update(Object instance)
-	{
-		Key key = keyCache.getKey(instance);
-		if (key == null)
-		{
-			throw new IllegalArgumentException("Can only update instances loaded from this session");
-		}
-		internalUpdate(instance, key);
-	}
-
-	@Override
-	public final void storeOrUpdate(Object instance)
-	{
-		if (associatedKey(instance) != null)
-		{
-			update(instance);
-		}
-		else
-		{
-			store(instance);
-		}
-	}
-
-	@Override
-	public final void storeOrUpdate(Object instance, Object parent)
-	{
-		if (associatedKey(instance) != null)
-		{
-			update(instance);
-		}
-		else
-		{
-			store(instance, parent);
-		}
-	}
-
-	@Override
-	public final void delete(Object instance)
-	{
-		Key key= keyCache.getKey(instance);
-		if (key == null)
-		{
-			throw new IllegalArgumentException("Instance " + instance + " is not associated");
-		}
-		deleteKeys(Collections.singleton(key));
-	}
-
-	@Override
-	public final void deleteAll(Collection<?> instances)
-	{
-		deleteKeys(Collections2.transform(instances, cachedInstanceToKeyFunction));
-	}
-
-	/**
-	 * Either gets exiting key from cache or first stores the instance then returns the key
-	 */
-	Key instanceToKey(Object instance, Key parentKey)
-	{
-		Key key = keyCache.getKey(instance);
-		if (key == null)
-		{
-			key = internalStore(instance, parentKey, null);
-		}
-		return key;
-	}
-	
-	<T> Map<T, Key> instancesToKeys(Collection<T> instances, Object parent)
-	{
-		Map<T, Key> result = new HashMap<T, Key>(instances.size());
-		List<T> missed = new ArrayList<T>(instances.size());
-		for (T instance : instances)
-		{
-			Key key = keyCache.getKey(instance);
-			if (key == null)
-			{
-				missed.add(instance);
-			}
-			else
-			{
-				result.put(instance, key);
-			}
-		}
-		
-		if (!missed.isEmpty())
-		{
-			result.putAll(storeAll(missed, parent));
-		}
-		
-		return result;
-	}
-
-	@Override
-	public Key store(Object instance, long id)
-	{
-		return internalStore(instance, null, id);
-	}
-	
-	@Override
-	public Key store(Object instance, String id)
-	{
-		return internalStore(instance, null, id);
-	}
-	
-	@Override
-	public final Key store(Object instance, Object parent)
-	{
-		return internalStore(instance, parent, null);
-	}
-
-	public final Key internalStore(Object instance, Object parent, Object id)
-	{
-		Key parentKey = null;
-		if (parent != null)
-		{
-			parentKey = keyCache.getKey(parent);
-		}
-		
-		// cache the empty key details now in case a child references back to us
-		if (keyCache.getKey(instance) != null)
-		{
-			throw new IllegalStateException("Cannot store same instance twice: " + instance);
-		}
-		Entity entity = instanceToEntity(instance, parentKey, id);
-		Key key = entityToKey(entity);
-		
-		// replace the temp key ObjRef with the full key for this instance 
-		keyCache.cache(key, instance);
-		
-		setInstanceId(instance, key);
-		
-		return key;
-	}
-
-	@SuppressWarnings("deprecation")
-	private void setInstanceId(Object instance, Key key)
-	{
-		// TODO share fields with ObjectFieldTranslator
-		Field idField = null;
-		if (keyFields.containsKey(instance.getClass()))
-		{
-			idField = keyFields.get(instance.getClass());
-		}
-		else
-		{
-			List<Field> fields = Reflection.getAccessibleFields(instance.getClass());
-			for (Field field : fields)
-			{
-				if (field.isAnnotationPresent(com.vercer.engine.persist.annotation.Key.class) ||
-					field.isAnnotationPresent(Id.class))
-				{
-					idField = field;
-					break;
-				}
-			}
-			
-			if (idField == null)
-			{
-				idField = NO_KEY_FIELD;
-			}
-			keyFields.put(instance.getClass(), idField);
-		}
-		
-		try
-		{
-			// if there is a key field
-			if (idField != NO_KEY_FIELD)
-			{
-				// see if its current value is null or 0
-				Object current = idField.get(instance);
-				if (current == null || current instanceof Number && ((Number) current).longValue() == 0)
-				{
-					Class<?> type = idField.getType();
-					Object idOrName = key.getId();
-					
-					// the key name could have been set explicitly when storing 
-					if (idOrName == null)
-					{
-						idOrName = key.getName();
-					}
-					
-					// convert the long or String to the declared key type
-					Object converted = converter.convert(idOrName, type);
-					idField.set(instance, converted);
-				}
-			}
-		}
-		catch (Exception e)
-		{
-			throw new IllegalStateException(e);
-		}
-	}
-	
-	@Override
-	public final <T> Map<T, Key> storeAll(Collection<? extends T> instances)
-	{
-		return storeAll(instances, (Key) null);
-	}
-
-	@Override
-	public final <T> Map<T, Key> storeAll(Collection<? extends T> instances, Object parent)
-	{
-		// encode the instances to entities
-		final Map<T, Entity> entities = instancesToEntities(instances, parent, false);
-		
-		// actually put them in the datastore and get their keys
-		final List<Key> keys = entitiesToKeys(entities.values());
-		
-		LinkedHashMap<T, Key> result = Maps.newLinkedHashMap();
-		Iterator<T> instanceItr = entities.keySet().iterator();
-		Iterator<Key> keyItr = keys.iterator();
-		while (instanceItr.hasNext())
-		{
-			// iterate instances and keys in parallel
-			T instance = instanceItr.next();
-			Key key = keyItr.next();
-			
-			// replace the temp key ObjRef with the full key for this instance 
-			keyCache.cache(key, instance);
-			
-			result.put(instance, key);
-		}
-		return result;
-	}
-
-	@Override
-	public final void refresh(Object instance)
-	{
-		Key key = associatedKey(instance);
-
-		if (key == null)
-		{
-			throw new IllegalStateException("Instance not associated with session");
-		}
-
-		// so it is not loaded from the cache
-		disassociate(instance);
-
-		// load will use this instance instead of creating new
-		refresh = instance;
-
-		// load from datastore into the refresh instance
-		Object loaded = load(key);
-
-		if (loaded == null)
-		{
-			throw new IllegalStateException("Instance to be refreshed could not be found");
-		}
-	}
-	
-	@Override
-	public void refreshAll(Collection<?> instances)
-	{
-		// TODO optimise!
-		for (Object instance : instances)
-		{
-			refresh(instance);
-		}
 	}
 
 	@Override
@@ -866,7 +529,7 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 		return defaultTranslator;
 	}
 	
-	protected final KeyCache getKeyCache()
+	protected final InstanceKeyCache getKeyCache()
 	{
 		return keyCache;
 	}
@@ -900,215 +563,41 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 		this.indexed = indexed;
 	}
 
-	final Entity instanceToEntity(Object instance, Key parentKey, Object id)
-	{
-		String kind = fieldStrategy.typeToKind(instance.getClass());
-		
-		// push a new encode context
-		KeySpecification existingEncodeKeySpec = encodeKeySpec;
-		encodeKeySpec = new KeySpecification(kind, parentKey, id);
-
-		keyCache.cacheKeyReferenceForInstance(instance, encodeKeySpec.toObjectReference());
-			
-		// translate fields to properties - sets parent and id on key
-		PropertyTranslator encoder = encoder(instance);
-		Set<Property> properties = encoder.typesafeToProperties(instance, Path.EMPTY_PATH, indexed);
-		if (properties == null)
-		{
-			throw new IllegalStateException("Could not translate instance: " + instance);
-		}
-
-		// the key will now be set with id and parent
-		Entity entity = createEntity();
-
-		transferProperties(entity, properties);
-		
-		// we can store all entities for a single batch put
-		if (batched != null)
-		{
-			batched.put(instance, entity);
-		}
-		// pop the encode context
-		encodeKeySpec = existingEncodeKeySpec;
-		
-		return entity;
-	}
-
-	@SuppressWarnings("unchecked")
-	final <T> Map<T, Entity> instancesToEntities(Collection<? extends T> instances, Object parent, boolean batch)
-	{
-		Key parentKey = null;
-		if (parent != null)
-		{
-			parentKey= keyCache.getKey(parent);
-		}
-		
-		Map<T, Entity> entities = new LinkedHashMap<T, Entity>(instances.size());
-		if (batch)
-		{
-			batched = (Map<Object, Entity>) entities;
-		}
-
-		// TODO optimise
-		for (T instance : instances)
-		{
-			// cannot define a key name
-			Entity entity = instanceToEntity(instance, parentKey, null);
-			entities.put(instance, entity);
-		}
-		
-		if (batch)
-		{
-			batched = null;
-		}
-		
-		return entities;
-	}
-	
-	private void transferProperties(Entity entity, Collection<Property> properties)
-	{
-		for (Property property : properties)
-		{
-			// dereference object references
-			Object value = property.getValue();
-			value = dereferencePropertyValue(value);
-
-			if (property.isIndexed())
-			{
-				entity.setProperty(property.getPath().toString(), value);
-			}
-			else
-			{
-				entity.setUnindexedProperty(property.getPath().toString(), value);
-			}
-		}
-	}
-
-	public static Object dereferencePropertyValue(Object value)
-	{
-		if (value instanceof ObjectReference<?>)
-		{
-			value = ((ObjectReference<?>)value).get();
-		}
-		else if (value instanceof List<?>)
-		{
-			// we know the value is a mutable list from ListTranslator
-			@SuppressWarnings("unchecked")
-			List<Object> values = (List<Object>) value;
-			for (int i = 0; i < values.size(); i++)
-			{
-				Object item = values.get(i);
-				if (item instanceof ObjectReference<?>)
-				{
-					// dereference the value and set it in-place
-					Object dereferenced = ((ObjectReference<?>) item).get();
-					values.set(i, dereferenced);  // replace the reference
-				}
-			}
-		}
-		return value;
-	}
-	
-	@Override
-	public final Key store(Object instance)
-	{
-		return store(instance, null);
-	}
-
-	@Override
-	public final <T> T load(Class<T> type, Object key)
-	{
-		return load(type, key, null);
-	}
-
-	protected final <T> T internalLoad(Class<T> type, Object converted, Key parent)
-	{
-		assert activationDepthDeque.size() == 1;
-		
-		String kind = fieldStrategy.typeToKind(type);
-
-		Key key;
-		if (parent == null)
-		{
-			if (converted instanceof Long)
-			{
-				key = KeyFactory.createKey(kind, (Long) converted);
-			}
-			else
-			{
-				key = KeyFactory.createKey(kind, (String) converted);
-			}
-		}
-		else
-		{
-			if (converted instanceof Long)
-			{
-				key = KeyFactory.createKey(parent, kind, (Long) converted);
-			}
-			else
-			{
-				key = KeyFactory.createKey(parent, kind, (String) converted);
-			}
-		}
-
-		// needed to avoid sun generics bug "no unique maximal instance exists..."
-		@SuppressWarnings("unchecked")
-		T result = (T) keyToInstance(key, null);
-		return result;
-	}
-
-	public final <T> QueryResultIterator<T> find(Class<T> type)
-	{
-		return find().type(type).returnResultsNow();
-	}
-
-	public final <T> QueryResultIterator<T> find(Class<T> type, String field, Object value)
-	{
-		return find().type(type).addFilter(field, FilterOperator.EQUAL, value).returnResultsNow();
-	}
-
 	final Query createQuery(Type type)
 	{
 		return new Query(fieldStrategy.typeToKind(type));
 	}
 
-	public final <T> T load(Key key)
-	{
-		@SuppressWarnings("unchecked")
-		T result = (T) keyToInstance(key, null);
-		return result;
-	}
-
-	final void internalUpdate(Object instance, Key key)
-	{
-		Entity entity = new Entity(key);
-		
-		// push a new encode context just to double check values and stop NPEs
-		assert encodeKeySpec == null;
-		encodeKeySpec = new KeySpecification();
-
-		// translate fields to properties - sets parent and id on key
-		Set<Property> properties = encoder(instance).typesafeToProperties(instance, Path.EMPTY_PATH, indexed);
-		if (properties == null)
-		{
-			throw new IllegalStateException("Could not translate instance: " + instance);
-		}
-
-		transferProperties(entity, properties);
-		
-		// we can store all entities for a single batch put
-		if (batched != null)
-		{
-			batched.put(instance, entity);
-		}
-		
-		// pop the encode context
-		encodeKeySpec = null;
-		
-		Key putKey = entityToKey(entity);
-		
-		assert putKey.equals(key);
-	}
+//	final void internalUpdate(Object instance, Key key)
+//	{
+//		Entity entity = new Entity(key);
+//		
+//		// push a new encode context just to double check values and stop NPEs
+//		assert encodeKeySpec == null;
+//		encodeKeySpec = new KeySpecification();
+//
+//		// translate fields to properties - sets parent and id on key
+//		Set<Property> properties = encoder(instance).typesafeToProperties(instance, Path.EMPTY_PATH, indexed);
+//		if (properties == null)
+//		{
+//			throw new IllegalStateException("Could not translate instance: " + instance);
+//		}
+//
+//		transferProperties(entity, properties);
+//		
+//		// we can store all entities for a single batch put
+//		if (batched != null)
+//		{
+//			batched.put(instance, entity);
+//		}
+//		
+//		// pop the encode context
+//		encodeKeySpec = null;
+//		
+//		Key putKey = entityToKey(entity);
+//		
+//		assert putKey.equals(key);
+//	}
 
 	public final void deleteAll(Type type)
 	{
@@ -1203,10 +692,10 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 		@Override
 		protected void onBeforeTranslate(Field field, Set<Property> childProperties)
 		{
-				if (activationDepthDeque.peek() > 0)
-				{
-					activationDepthDeque.push(StrategyObjectDatastore.this.activationStrategy.activationDepth(field, activationDepthDeque.peek() - 1));
-				}
+			if (activationDepthDeque.peek() > 0)
+			{
+				activationDepthDeque.push(StrategyObjectDatastore.this.activationStrategy.activationDepth(field, activationDepthDeque.peek() - 1));
+			}
 		}
 	
 		@Override
@@ -1223,6 +712,57 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 				super.activate(properties, instance, path);
 			}
 		}
+	}	
+	@SuppressWarnings("deprecation") Field keyField(Class<?> type)
+	{
+		Field result = null;
+		if (keyFields.containsKey(type))
+		{
+			result = keyFields.get(type);
+		}
+		else
+		{
+			List<Field> fields = Reflection.getAccessibleFields(type);
+			for (Field field : fields)
+			{
+				if (field.isAnnotationPresent(com.vercer.engine.persist.annotation.Key.class) ||
+					field.isAnnotationPresent(Id.class))
+				{
+					result = field;
+					break;
+				}
+			}
+			
+			// null cannot be stored in a concurrent hash map
+			if (result == null)
+			{
+				result = NO_KEY_FIELD;
+			}
+			keyFields.put(type, result);
+		}
+		
+		if (result == NO_KEY_FIELD)
+		{
+			return null;
+		}
+		else
+		{
+			return result;
+		}
+	}
+	
+	// null values are not permitted in a concurrent hash map so need a "missing" value
+	private static final Field NO_KEY_FIELD;
+	static
+	{
+		try
+		{
+			NO_KEY_FIELD = StrategyObjectDatastore.class.getDeclaredField("NO_KEY_FIELD");
+		}
+		catch (Exception e)
+		{
+			throw new IllegalStateException(e);
+		}
 	}
 
 	private static final Function<Entity, Key> entityToKeyFunction = new Function<Entity, Key>()
@@ -1232,10 +772,4 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 			return arg0.getKey();
 		}
 	};
-
-	@Override
-	public LoadCommand load()
-	{
-		throw new UnsupportedOperationException("Not yet implemented");
-	}
 }

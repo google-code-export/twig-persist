@@ -1,24 +1,16 @@
 package com.vercer.engine.persist.standard;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Map.Entry;
 import java.util.concurrent.Future;
 
-import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.FetchOptions;
-import com.google.appengine.api.datastore.Key;
 import com.vercer.engine.persist.FindCommand.ParentsCommand;
 
-public abstract class StandardBaseParentsCommand<P> extends StandardBaseFindCommand<P, ParentsCommand<P>> implements ParentsCommand<P>
+abstract class StandardCommonParentsCommand<P> extends StandardCommonFindCommand<P, ParentsCommand<P>> implements ParentsCommand<P>
 {
 	protected final StandardTypedFindCommand<?, ?> childCommand;
 
-	public StandardBaseParentsCommand(StandardTypedFindCommand<?, ?> command)
+	StandardCommonParentsCommand(StandardTypedFindCommand<?, ?> command)
 	{
 		super(command.datastore);
 		this.childCommand = command;

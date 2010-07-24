@@ -26,15 +26,13 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ForwardingIterator;
 import com.vercer.engine.persist.FindCommand;
-import com.vercer.engine.persist.Property;
 import com.vercer.engine.persist.FindCommand.BranchFindCommand;
 import com.vercer.engine.persist.FindCommand.ChildFindCommand;
 import com.vercer.engine.persist.FindCommand.MergeOperator;
 import com.vercer.engine.persist.FindCommand.ParentsCommand;
 import com.vercer.engine.persist.FindCommand.TypedFindCommand;
-import com.vercer.engine.persist.util.RestrictionToPredicateAdaptor;
 
-public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, C>> extends StandardBaseFindCommand<T, C> implements TypedFindCommand<T, C>, BranchFindCommand<T>
+abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, C>> extends StandardCommonFindCommand<T, C> implements TypedFindCommand<T, C>, BranchFindCommand<T>
 {
 	protected List<StandardBranchFindCommand<T>> children;
 	protected List<Filter> filters;
@@ -61,7 +59,7 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 		Object value;
 	}
 
-	public StandardTypedFindCommand(StandardObjectDatastore datastore)
+	StandardTypedFindCommand(StrategyObjectDatastore datastore)
 	{
 		super(datastore);
 	}
@@ -184,7 +182,7 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 				}
 				else
 				{
-					return new StandardMergeParentsCommand<P>(this, childIterators, sorts);
+					return new StandardMultipleParentsCommand<P>(this, childIterators, sorts);
 				}
 			}
 			catch (Exception e)
@@ -607,29 +605,29 @@ public abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, 
 			return entities.getCursor();
 		}
 	}
-	public class ParentEntityIterator implements Iterator<Entity>
-	{
-		private final Iterator<Entity> children;
-
-		public ParentEntityIterator(Iterator<Entity> entities)
-		{
-			this.children = entities;
-		}
-
-		public boolean hasNext()
-		{
-			return children.hasNext();
-		}
-
-		public Entity next()
-		{
-			return datastore.keyToInstance(children.next().getKey(), propertyPredicate);
-		}
-
-		public void remove()
-		{
-			throw new UnsupportedOperationException();
-		}
-	}
+//	public class ParentEntityIterator implements Iterator<Entity>
+//	{
+//		private final Iterator<Entity> children;
+//
+//		public ParentEntityIterator(Iterator<Entity> entities)
+//		{
+//			this.children = entities;
+//		}
+//
+//		public boolean hasNext()
+//		{
+//			return children.hasNext();
+//		}
+//
+//		public Entity next()
+//		{
+//			return datastore.keyToInstance(children.next().getKey(), propertyPredicate);
+//		}
+//
+//		public void remove()
+//		{
+//			throw new UnsupportedOperationException();
+//		}
+//	}
 
 }

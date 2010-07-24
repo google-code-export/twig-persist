@@ -10,5 +10,4 @@ import java.lang.annotation.Target;
 public @interface Index
 {
 	boolean value() default true;
-	boolean declared() default true;
 }

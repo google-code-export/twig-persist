@@ -10,19 +10,25 @@ import com.google.appengine.api.utils.FutureWrapper;
 import com.google.common.collect.Iterables;
 import com.vercer.engine.persist.StoreCommand.SingleStoreCommand;
 
-final class StandardSingleStoreCommand<T> extends StandardBaseStoreCommand<T, SingleStoreCommand<T>> implements SingleStoreCommand<T>
+final class StandardSingleStoreCommand<T> extends StandardCommonStoreCommand<T, StandardSingleStoreCommand<T>> implements SingleStoreCommand<T, StandardSingleStoreCommand<T>>
 {
-	private Object id;
-
-	public StandardSingleStoreCommand(StandardStoreCommand command, T instance)
+	StandardSingleStoreCommand(StandardStoreCommand command, T instance)
 	{
 		super(command);
 		instances = Collections.singletonList(instance);
+		if (!command.update && command.datastore.associatedKey(instance) != null)
+		{
+			throw new IllegalArgumentException("Cannot store associated instance. Use update instead.");
+		}
+		else if (command.update && command.datastore.associatedKey(instance) == null)
+		{
+			throw new IllegalArgumentException("Cannot update non-associated instance. Use store instead.");
+		}
 	}
 
 	public Future<Key> returnKeyLater()
 	{
-		Future<Map<T, Key>> resultsLater = storeResultsLater();
+		Future<Map<T, Key>> resultsLater = storeInstancesLater();
 		return new FutureWrapper<Map<T, Key>, Key>(resultsLater)
 		{
 			@Override
@@ -43,34 +49,36 @@ final class StandardSingleStoreCommand<T> extends StandardBaseStoreCommand<T, Si
 	{
 		T instance = Iterables.getOnlyElement(instances);
 
-		// cannot just call store because we may need to check the key
-		Key parentKey = null;
-		if (parent != null)
+		Object id = null;
+		if (ids != null)
 		{
-			parentKey = command.datastore.associatedKey(parent);
+			id = Iterables.getOnlyElement(ids);
 		}
-		Entity entity = command.datastore.instanceToEntity(instance, parentKey, id);
+		Entity entity = instanceToEntity(instance, parentKey, id);
 
 		if (unique)
 		{
 			checkUniqueKeys(Collections.singleton(entity));
 		}
-
-		return command.datastore.entityToKey(entity);
+		Key key = entityToKey(entity);
+		
+		datastore.associate(instance, key);
+		setInstanceId(instance, key);
+		
+		return key;
 	}
-
+	
 	@Override
-	public SingleStoreCommand<T> id(long id)
+	public StandardSingleStoreCommand<T> id(long id)
 	{
-		this.id = id;
+		this.ids = Collections.singletonList(id);
 		return this;
 	}
 
 	@Override
-	public SingleStoreCommand<T> id(String id)
+	public StandardSingleStoreCommand<T> id(String id)
 	{
-		this.id = id;
+		this.ids = Collections.singletonList(id);
 		return this;
 	}
-
 }

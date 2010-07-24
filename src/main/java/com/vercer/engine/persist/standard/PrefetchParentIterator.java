@@ -11,7 +11,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
 
-public class PrefetchParentIterator extends AbstractIterator<Entity>
+class PrefetchParentIterator extends AbstractIterator<Entity>
 {
 	private final Iterator<Entity> children;
 	private Iterator<Entity> parents;
@@ -73,6 +73,6 @@ public class PrefetchParentIterator extends AbstractIterator<Entity>
 
 	protected Map<Key, Entity> keysToEntities(List<Key> keys)
 	{
-		return datastore.keysToEntities(keys);
+		return datastore.serviceGet(keys);
 	}
 }

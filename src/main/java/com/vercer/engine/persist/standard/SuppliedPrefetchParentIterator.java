@@ -9,7 +9,7 @@ import com.google.appengine.api.datastore.Key;
 import com.google.common.collect.AbstractIterator;
 import com.vercer.engine.persist.standard.EntitySupplier.EntitySink;
 
-public class SuppliedPrefetchParentIterator extends AbstractIterator<Entity> implements EntitySink
+class SuppliedPrefetchParentIterator extends AbstractIterator<Entity> implements EntitySink
 {
 	private final Iterator<Entity> children;
 	private final EntitySupplier supplier;

@@ -17,14 +17,15 @@ public class EntitySupplier
 		Key order();
 	}
 
-	private static final int BATCH_SIZE = 25;
-	private final StandardObjectDatastore datastore;
+	private final StrategyObjectDatastore datastore;
 	private List<EntitySink> sinks = new ArrayList<EntitySink>();
 	private Map<Key, Entity> keysToEntities;
+	private final int chunk;
 	
-	public EntitySupplier(StandardObjectDatastore datastore)
+	public EntitySupplier(StrategyObjectDatastore datastore, int chunk)
 	{
 		this.datastore = datastore;
+		this.chunk = chunk;
 	}
 	
 	public void register(EntitySink sink)
@@ -34,10 +35,10 @@ public class EntitySupplier
 	
 	public void demand()
 	{
-		Set<Key> orders = new HashSet<Key>(BATCH_SIZE);
+		Set<Key> orders = new HashSet<Key>(chunk);
 		int index = 0;
 		boolean added = false;
-		while (orders.size() < BATCH_SIZE)
+		while (orders.size() < chunk)
 		{
 			EntitySink sink = sinks.get(index);
 			Key order = sink.order();
@@ -57,7 +58,7 @@ public class EntitySupplier
 			}
 		}
 		
-		keysToEntities = datastore.keysToEntities(orders);
+		keysToEntities = datastore.serviceGet(orders);
 		
 		for (EntitySink sink : sinks)
 		{
