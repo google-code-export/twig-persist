@@ -1,7 +1,5 @@
 package com.vercer.engine.persist.standard;
 
-import com.vercer.engine.persist.FindCommand;
-import com.vercer.engine.persist.StoreCommand;
 import com.vercer.engine.persist.strategy.ActivationStrategy;
 import com.vercer.engine.persist.strategy.CombinedStrategy;
 import com.vercer.engine.persist.strategy.FieldStrategy;
@@ -22,17 +20,5 @@ public class StandardObjectDatastore extends StrategyObjectDatastore
 			FieldStrategy fieldStrategy)
 	{
 		super(relationshipStrategy, storageStrategy, activationStrategy, fieldStrategy);
-	}
-
-	@Override
-	public final FindCommand find()
-	{
-		return new StandardFindCommand(this);
-	}
-
-	@Override
-	public final StoreCommand store()
-	{
-		return new StandardStoreCommand(this);
 	}
 }

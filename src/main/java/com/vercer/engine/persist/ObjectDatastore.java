@@ -3,38 +3,65 @@ package com.vercer.engine.persist;
 import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.Future;
 
 import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.appengine.api.datastore.Transaction;
+import com.vercer.engine.persist.StoreCommand.MultipleStoreCommand;
+import com.vercer.engine.persist.StoreCommand.SingleStoreCommand;
 
 public interface ObjectDatastore extends Activator
 {
-	// fluent style methods
+	/**
+	 * <p>Starts a method chain to store instances in the datastore. This is a
+	 * more flexible approach than the convenience store methods which do not offer
+	 * all the options available here. The method chain must be terminated with 
+	 * one of the .return* methods which actually send the data to the datastore.</p>
+	 * 
+	 * <p>The methods {@link SingleStoreCommand#returnKeyLater()} and {@link MultipleStoreCommand#returnKeysLater()}
+	 * do not block and return a {@link Future} object immediately which allows your 
+	 * application to continue to do other work in parallel while waiting for the datastore to store
+	 * your data. If you require the Keys from these operations you should call {@link Future#get()}
+	 * which will block until the datastore has stored the entities and returned the Keys. 
+	 * Any exceptions that occurred during the execution of the command will be re-thrown when
+	 * you make this call.</p>
+	 * 
+	 * <p>If a non-blocking async command is still running when you have finished processing the
+	 * servlet request, the response will not be returned to the client until the async command is
+	 * finished and any exceptions dealt with.</p> 	
+	 * 
+	 * @return StoreCommand for precise control of storing instances
+	 */
 	StoreCommand store();
+	
+	/**
+	 * @return
+	 */
 	FindCommand find();
+	
+	/**
+	 * @return
+	 */
 	LoadCommand load();
 
 	// convenience store methods
+	
 	Key store(Object instance);
 	Key store(Object instance, String id);
 	Key store(Object instance, long id);
-	Key store(Object instance, Object parent);
-	
-	<T> Map<T, Key> storeAll(Collection<? extends T> instances);
-	<T> Map<T, Key> storeAll(Collection<? extends T> instances, Object parent);
+	<T> Map<T, Key> storeAll(Collection<T> instances);
 
 	// updating
 	void update(Object instance);
+	void updateAll(Collection<?> instances);
 	void storeOrUpdate(Object instance);
-	void storeOrUpdate(Object instance, Object parent);
 
 	// convenience load methods
 	<T> T load(Key key);
-	<T> T load(Class<T> type, Object key);
-	<T> T load(Class<T> type, Object key, Object parent);
-	<I, T> Map<I, T> loadAll(Class<? extends T> type, Collection<I> ids);
+	<T> T load(Class<T> type, Object id);
+	<I, T> Map<I, T> loadAll(Class<T> type, Collection<I> ids);
 	
 	// convenience find methods
 	<T> QueryResultIterator<T> find(Class<T> type);
@@ -50,9 +77,18 @@ public interface ObjectDatastore extends Activator
 	void setActivationDepth(int depth);
 	
 	/**
-	 * Refresh an associated instance with the latest version from the datastore 
+	 * Refresh an associated instance with the latest version from the datastore
+	 * @param instance The instance to refresh from datastore
+	 * @throws IllegalArgumentException if the instance is not associated 
 	 */
 	void refresh(Object instance);
+	
+	
+	/**
+	 * Refreshes all associated instances with the latest version from the datastore
+	 * @param instances The instances to refresh from the datastore
+	 * @throws IllegalArgumentException if any of the instances is not associated
+	 */
 	void refreshAll(Collection<?> instances);
 	
 	// cache control operations
@@ -68,15 +104,15 @@ public interface ObjectDatastore extends Activator
 	void associate(Object instance);
 	
 	/**
-	 * Adds this instance and any other referenced instances to the internal
+	 * Adds this instance but not other referenced instances to the internal
 	 * key cache so they are known by this datastore as persistent instances.
-	 * If an id field is also defined it will override the key parameter.
+	 * If an id field is also defined it will be ignored and the given key
+	 * used instead.
 	 * 
 	 * @param instance The root of the object graph to add to the key cache
 	 * @param key The Key which is associated with this instance
 	 */
 	void associate(Object instance, Key key);
-	
 	
 	/**
 	 * Removes only this instance from the key cache and not any referenced
@@ -90,7 +126,6 @@ public interface ObjectDatastore extends Activator
 	 * @param instance The instance to remove from the key cache
 	 */
 	void disassociate(Object instance);
-	
 	
 	/**
 	 * Like {@link #disassociate(Object)} but removes every instance and key which

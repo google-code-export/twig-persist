@@ -2,21 +2,17 @@ package com.vercer.engine.persist.standard;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
-import com.google.common.collect.Maps;
 import com.vercer.engine.persist.StoreCommand.MultipleStoreCommand;
-import com.vercer.util.LazyProxy;
 
-public class StandardMultipleStoreCommand<T> extends StandardBaseStoreCommand<T, MultipleStoreCommand<T>> implements MultipleStoreCommand<T>
+class StandardMultipleStoreCommand<T> extends StandardCommonStoreCommand<T, StandardMultipleStoreCommand<T>> implements MultipleStoreCommand<T, StandardMultipleStoreCommand<T>>
 {
-	public StandardMultipleStoreCommand(StandardStoreCommand command, Collection<T> instances)
+	StandardMultipleStoreCommand(StandardStoreCommand command, Collection<T> instances)
 	{
 		super(command);
 		this.instances = instances;
@@ -24,54 +20,37 @@ public class StandardMultipleStoreCommand<T> extends StandardBaseStoreCommand<T,
 
 	public Future<Map<T, Key>> returnKeysLater()
 	{
-		return storeResultsLater();
+		return storeInstancesLater();
 	}
 
 	public Map<T, Key> returnKeysNow()
 	{
-		final Map<T, Entity> entities = command.datastore.instancesToEntities(instances, parent, batch);
+		// convert into entities ready to store
+		Map<T, Entity> entities = instancesToEntities();
 
-		if (unique)
-		{
-			checkUniqueKeys(entities.values());
-		}
-
-		final List<Key> put = command.datastore.entitiesToKeys(entities.values());
-
-		// use a lazy map because often keys ignored
-		return new LazyProxy<Map<T, Key>>(Map.class)
-		{
-			@Override
-			protected Map<T, Key> newInstance()
-			{
-				LinkedHashMap<T, Key> result = Maps.newLinkedHashMap();
-				Iterator<T> instances = entities.keySet().iterator();
-				Iterator<Key> keys = put.iterator();
-				while (instances.hasNext())
-				{
-					result.put(instances.next(), keys.next());
-				}
-				return result;
-			}
-		}.newProxy();
+		// actually put the entities in the datastore
+		List<Key> keys = entitiesToKeys(entities.values());
+		
+		// make a map to return
+		return createKeyMapAndUpdateCache(entities, keys);
 	}
 
 	@Override
-	public MultipleStoreCommand<T> ids(String... ids)
+	public StandardMultipleStoreCommand<T> ids(String... ids)
 	{
 		return ids(Arrays.asList(ids));
 	}
 
 	@Override
-	public MultipleStoreCommand<T> ids(Long... ids)
+	public StandardMultipleStoreCommand<T> ids(Long... ids)
 	{
 		return ids(Arrays.asList(ids));
 	}
 
 	@Override
-	public MultipleStoreCommand<T> ids(Collection<?> ids)
+	public StandardMultipleStoreCommand<T> ids(List<?> ids)
 	{
-		// TODO
-		throw new UnsupportedOperationException("Not yet implemented");
+		this.ids = ids;
+		return this;
 	}
 }

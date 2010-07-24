@@ -5,25 +5,33 @@ import java.util.Collection;
 
 import com.vercer.engine.persist.StoreCommand;
 
-public class StandardStoreCommand extends StandardCommand implements StoreCommand
+class StandardStoreCommand extends StandardCommand implements StoreCommand
 {
-	public StandardStoreCommand(StandardObjectDatastore datastore)
+	protected boolean update;
+
+	StandardStoreCommand(StrategyObjectDatastore datastore)
 	{
 		super(datastore);
 	}
 
-	public <T> SingleStoreCommand<T> instance(T instance)
+	public <T> StandardSingleStoreCommand<T> instance(T instance)
 	{
 		return new StandardSingleStoreCommand<T>(this, instance);
 	}
 
-	public <T> MultipleStoreCommand<T> instances(Collection<T> instances)
+	public <T> StandardMultipleStoreCommand<T> instances(Collection<T> instances)
 	{
 		return new StandardMultipleStoreCommand<T>(this, instances);
 	}
 	
-	public <T> MultipleStoreCommand<T> instances(T... instances) 
+	public <T> StandardMultipleStoreCommand<T> instances(T... instances) 
 	{
 		return new StandardMultipleStoreCommand<T>(this, Arrays.asList(instances));
-	};
+	}
+
+	StandardStoreCommand update(boolean update)
+	{
+		this.update = update;
+		return this;
+	}
 }

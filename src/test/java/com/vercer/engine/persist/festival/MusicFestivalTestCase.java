@@ -31,6 +31,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.vercer.engine.persist.LocalDatastoreTestCase;
+import com.vercer.engine.persist.ObjectDatastore;
 import com.vercer.engine.persist.annotation.AnnotationObjectDatastore;
 import com.vercer.engine.persist.annotation.Embed;
 import com.vercer.engine.persist.annotation.Id;
@@ -40,7 +41,7 @@ import com.vercer.engine.persist.util.PredicateToRestrictionAdaptor;
 
 public class MusicFestivalTestCase extends LocalDatastoreTestCase
 {
-	private AnnotationObjectDatastore datastore;
+	private ObjectDatastore datastore;
 
 	@Override
 	public void setUp()

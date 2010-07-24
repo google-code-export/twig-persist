@@ -1,6 +1,5 @@
 package com.vercer.engine.persist.translator;
 
-import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.AbstractSet;
@@ -15,15 +14,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
 
-import com.google.appengine.api.datastore.Blob;
 import com.google.common.collect.Lists;
 import com.vercer.engine.persist.Path;
 import com.vercer.engine.persist.Property;
 import com.vercer.engine.persist.PropertyTranslator;
-import com.vercer.engine.persist.Path.Part;
-import com.vercer.engine.persist.conversion.DefaultTypeConverter.BlobToAnything;
-import com.vercer.engine.persist.conversion.DefaultTypeConverter.SerializableToBlob;
-import com.vercer.engine.persist.standard.StrategyObjectDatastore;
 import com.vercer.engine.persist.util.SimpleProperty;
 import com.vercer.engine.persist.util.SinglePropertySet;
 import com.vercer.engine.persist.util.generic.GenericTypeReflector;
@@ -117,7 +111,7 @@ public class ListTranslator extends DecoratingTranslator
 		return objects;
 	}
 
-	public Set<Property> typesafeToProperties(Object object, Path path, final boolean indexed)
+	public Set<Property> typesafeToProperties(Object object, Path path, boolean indexed)
 	{
 		if (object instanceof List<?>)
 		{
@@ -128,7 +122,7 @@ public class ListTranslator extends DecoratingTranslator
 				return Collections.emptySet();
 			}
 
-			final Map<Path, List<Object>> lists = new HashMap<Path, List<Object>>(8);
+			final Map<Path, List<Property>> lists = new HashMap<Path, List<Property>>(8);
 
 			int count = 0;
 			for (Object item : list)
@@ -145,13 +139,12 @@ public class ListTranslator extends DecoratingTranslator
 
 					for (Property property : properties)
 					{
-						Object value = property.getValue();
 						Path itemPath = property.getPath();
 
-						List<Object> values = lists.get(itemPath);
+						List<Property> values = lists.get(itemPath);
 						if (values == null)
 						{
-							values = new ArrayList<Object>(4);
+							values = new ArrayList<Property>(4);
 
 							lists.put(itemPath, values);
 						}
@@ -161,13 +154,13 @@ public class ListTranslator extends DecoratingTranslator
 						{
 							values.add(null);
 						}
-						values.add(value);
+						values.add(property);
 					}
 				}
 				else
 				{
-					Collection<List<Object>> values = lists.values();
-					for (List<Object> value : values)
+					Collection<List<Property>> values = lists.values();
+					for (List<Property> value : values)
 					{
 						value.add(null);
 					}
@@ -179,7 +172,15 @@ public class ListTranslator extends DecoratingTranslator
 			if (lists.size() == 1)
 			{
 				Path childPath = lists.keySet().iterator().next();
-				List<?> values = lists.get(childPath);
+				List<Property> properties = lists.get(childPath);
+				List<Object> values = new ArrayList<Object>(properties.size());
+				for (Property property : properties)
+				{
+					values.add(property.getValue());
+					
+					// should be the same for all properties
+					indexed = property.isIndexed();
+				}
 				return new SinglePropertySet(childPath, values, indexed);
 			}
 			else
@@ -191,7 +192,7 @@ public class ListTranslator extends DecoratingTranslator
 					{
 						return new Iterator<Property>()
 						{
-							Iterator<Entry<Path, List<Object>>> iterator = lists.entrySet().iterator();
+							Iterator<Entry<Path, List<Property>>> iterator = lists.entrySet().iterator();
 
 							public boolean hasNext()
 							{
@@ -200,8 +201,24 @@ public class ListTranslator extends DecoratingTranslator
 
 							public Property next()
 							{
-								Entry<Path, List<Object>> next = iterator.next();
-								return new SimpleProperty(next.getKey(), next.getValue(), indexed);
+								Entry<Path, List<Property>> next = iterator.next();
+								
+								// extract the values
+								List<Property> properties = next.getValue();
+								boolean indexed = false;
+								List<Object> values = new ArrayList<Object>(properties.size());
+								for (Property property : properties)
+								{
+									Object value = null;
+									if (property != null)
+									{
+										value = property.getValue();
+										// should be the same for all properties
+										indexed = property.isIndexed();
+									}
+									values.add(value);
+								}
+								return new SimpleProperty(next.getKey(), values, indexed);
 							}
 
 							public void remove()

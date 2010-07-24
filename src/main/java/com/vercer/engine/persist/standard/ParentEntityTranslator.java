@@ -38,7 +38,7 @@ final class ParentEntityTranslator implements PropertyTranslator
 			throw new IllegalStateException("No parent for key: " + datastore.decodeKey);
 		}
 
-		return this.datastore.keyToInstance(parentKey, null);
+		return this.datastore.load().key(parentKey).returnResultNow();
 	}
 
 	public Set<Property> typesafeToProperties(final Object instance, final Path prefix, final boolean indexed)
@@ -47,7 +47,7 @@ final class ParentEntityTranslator implements PropertyTranslator
 		{
 			public Key get()
 			{
-				return ParentEntityTranslator.this.datastore.instanceToKey(instance, null);
+				return instanceToKey(instance);
 			}
 		};
 
@@ -60,5 +60,15 @@ final class ParentEntityTranslator implements PropertyTranslator
 
 		// no fields are stored for parent
 		return Collections.emptySet();
+	}
+
+	protected Key instanceToKey(Object instance)
+	{
+		Key key = datastore.associatedKey(instance);
+		if (key == null)
+		{
+			key = datastore.store().instance(instance).returnKeyNow();
+		}
+		return key;
 	}
 }

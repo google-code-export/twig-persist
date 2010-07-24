@@ -1,7 +1,6 @@
 package com.vercer.engine.persist.annotation;
 
 import com.vercer.engine.persist.standard.StandardObjectDatastore;
-import com.vercer.engine.persist.standard.StrategyObjectDatastore;
 import com.vercer.engine.persist.strategy.FieldStrategy;
 
 public class AnnotationObjectDatastore extends StandardObjectDatastore

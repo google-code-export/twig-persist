@@ -37,7 +37,7 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 		String field;
 	}
 
-	StandardRootFindCommand(Type type, StandardObjectDatastore datastore)
+	StandardRootFindCommand(Type type, StrategyObjectDatastore datastore)
 	{
 		super(datastore);
 		this.type = type;
@@ -87,7 +87,7 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 		{
 			this.options = FetchOptions.Builder.withDefaults();
 		}
-		this.options.cursor(cursor);
+		this.options.startCursor(cursor);
 		return this;
 	}
 	
@@ -98,7 +98,7 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 		{
 			this.options = FetchOptions.Builder.withDefaults();
 		}
-		this.options.cursor(cursor);
+		this.options.endCursor(cursor);
 		return this;
 	}
 

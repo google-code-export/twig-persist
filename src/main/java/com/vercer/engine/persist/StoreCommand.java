@@ -1,6 +1,7 @@
 package com.vercer.engine.persist;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
@@ -8,9 +9,9 @@ import com.google.appengine.api.datastore.Key;
 
 public interface StoreCommand
 {
-	<T> SingleStoreCommand<T> instance(T instance);
-	<T> MultipleStoreCommand<T> instances(Collection<T> instances);
-	<T> MultipleStoreCommand<T> instances(T... instances);
+	<T> SingleStoreCommand<T, ?> instance(T instance);
+	<T> MultipleStoreCommand<T, ?> instances(Collection<T> instances);
+	<T> MultipleStoreCommand<T, ?> instances(T... instances);
 
 	interface CommonStoreCommand<T, C extends CommonStoreCommand<T, C>>
 	{
@@ -19,19 +20,19 @@ public interface StoreCommand
 		C ensureUniqueKey();
 	}
 
-	interface SingleStoreCommand<T> extends CommonStoreCommand<T, SingleStoreCommand<T>>
+	interface SingleStoreCommand<T, C extends SingleStoreCommand<T, C>> extends CommonStoreCommand<T, C>
 	{
-		SingleStoreCommand<T> id(long id);
-		SingleStoreCommand<T> id(String id);
+		C id(long id);
+		C id(String id);
 		Key returnKeyNow();
 		Future<Key> returnKeyLater();
 	}
 
-	interface MultipleStoreCommand<T> extends CommonStoreCommand<T, MultipleStoreCommand<T>>
+	interface MultipleStoreCommand<T, C extends MultipleStoreCommand<T, C>> extends CommonStoreCommand<T, C>
 	{
-		MultipleStoreCommand<T> ids(String... ids);
-		MultipleStoreCommand<T> ids(Long... ids);
-		MultipleStoreCommand<T> ids(Collection<?> ids);
+		C ids(String... ids);
+		C ids(Long... ids);
+		C ids(List<?> ids);
 		Map<T, Key> returnKeysNow();
 		Future<Map<T, Key>> returnKeysLater();
 	}

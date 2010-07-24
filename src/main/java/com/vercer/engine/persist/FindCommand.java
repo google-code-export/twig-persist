@@ -18,13 +18,13 @@ public interface FindCommand
 	
 	<T> RootFindCommand<T> type(Class<T> type);
 
-	interface BaseFindCommand<C extends BaseFindCommand<C>>
+	interface CommonFindCommand<C extends CommonFindCommand<C>>
 	{
 		C restrictEntities(Restriction<Entity> restriction);
 		C restrictProperties(Restriction<Property> restriction);
 	}
 
-	interface TypedFindCommand<T, C extends TypedFindCommand<T, C>> extends BaseFindCommand<C>
+	interface TypedFindCommand<T, C extends TypedFindCommand<T, C>> extends CommonFindCommand<C>
 	{
 		C addFilter(String field, FilterOperator operator, Object value);
 		C addRangeFilter(String field, Object from, Object to);
@@ -108,7 +108,7 @@ public interface FindCommand
 		<P> Future<ParentsCommand<P>> returnParentsCommandLater();
 	}
 	
-	interface ParentsCommand<P> extends BaseFindCommand<ParentsCommand<P>>
+	interface ParentsCommand<P> extends CommonFindCommand<ParentsCommand<P>>
 	{
 		Iterator<P> returnParentsNow();
 //		Future<Iterator<P>> returnParentsLater();
