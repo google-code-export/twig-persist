@@ -5,9 +5,8 @@ import java.util.Collection;
 import com.google.appengine.api.datastore.Key;
 import com.vercer.engine.persist.LoadCommand;
 
-class StandardLoadCommand extends StandardCommand implements LoadCommand
+public class StandardLoadCommand extends StandardCommand implements LoadCommand
 {
-
 	StandardLoadCommand(StrategyObjectDatastore datastore)
 	{
 		super(datastore);

@@ -1,5 +1,6 @@
 package com.vercer.engine.persist.standard;
 
+import java.util.Arrays;
 import java.util.Collection;
 
 import com.vercer.engine.persist.LoadCommand.MultipleTypedLoadCommand;
@@ -22,47 +23,14 @@ public class StandardTypedLoadCommand<T> extends StandardDecodeCommand implement
 	}
 
 	@Override
-	public <K> MultipleTypedLoadCommand<T, K> ids(Collection<K> ids)
+	public <I> StandardMultipleTypedLoadCommand<T, I> ids(Collection<I> ids)
 	{
-		// TODO Auto-generated method stub
-		return null;
+		return new StandardMultipleTypedLoadCommand<T, I>(this, ids);
 	}
 
 	@Override
-	public <K> MultipleTypedLoadCommand<T, K> ids(K... ids)
+	public <K> StandardMultipleTypedLoadCommand<T, K> ids(K... ids)
 	{
-		// TODO Auto-generated method stub
-		return null;
+		return ids(Arrays.asList(ids));
 	}
-//	
-//	protected final <T> T internalLoad(Class<T> type, Object id)
-//	{
-//		assert activationDepthDeque.size() == 1;
-//
-//		Object converted;
-//		if (Number.class.isAssignableFrom(id.getClass()))
-//		{
-//			converted = converter.convert(id, Long.class);
-//		}
-//		else
-//		{
-//			converted = converter.convert(id, String.class);
-//		}
-//		String kind = fieldStrategy.typeToKind(type);
-//
-//		Key key;
-//		if (converted instanceof Long)
-//		{
-//			key = KeyFactory.createKey(kind, (Long) converted);
-//		}
-//		else
-//		{
-//			key = KeyFactory.createKey(kind, (String) converted);
-//		}
-//
-//		// needed to avoid sun generics bug "no unique maximal instance exists..."
-//		@SuppressWarnings("unchecked")
-//		T result = (T) keyToInstance(key, null);
-//		return result;
-//	}
 }
