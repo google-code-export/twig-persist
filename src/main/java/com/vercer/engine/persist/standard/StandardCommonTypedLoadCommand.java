@@ -1,20 +1,26 @@
 package com.vercer.engine.persist.standard;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Type;
+
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.KeyFactory;
 import com.vercer.engine.persist.Property;
 import com.vercer.engine.persist.Restriction;
 import com.vercer.engine.persist.LoadCommand.CommonTypedLoadCommand;
 
 class StandardCommonTypedLoadCommand<T, C extends StandardCommonTypedLoadCommand<T, C>> extends StandardDecodeCommand implements CommonTypedLoadCommand<T, C>
 {
+	final StandardTypedLoadCommand<T> command;
 	Restriction<Entity> entityRestriction;
 	Restriction<Property> propertyRestriction;
 	Key parentKey;
 
-	StandardCommonTypedLoadCommand(StrategyObjectDatastore datastore)
+	StandardCommonTypedLoadCommand(StandardTypedLoadCommand<T> command)
 	{
-		super(datastore);
+		super(command.datastore);
+		this.command = command;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -42,5 +48,55 @@ class StandardCommonTypedLoadCommand<T, C extends StandardCommonTypedLoadCommand
 			throw new IllegalArgumentException("Parent is not associated: " + parent);
 		}
 		return (C) this;
+	}
+
+	Key idToKey(Object id, Field keyField, String kind)
+	{
+		Type keyType;
+		if (keyField != null)
+		{
+			keyType = datastore.fieldStrategy.typeOf(keyField);
+		}
+		else
+		{
+			// no key field so id must have been set explicitly when stored
+			assert id instanceof Long || id instanceof String;
+			keyType = id.getClass();
+		}
+		
+		// convert the id to the same type as was stored
+		Object converted = datastore.converter.convert(id, keyType);
+
+		Key key;
+		
+		// the key name is not stored in the fields but only in key
+		if (converted instanceof Number)
+		{
+			// only set the id if it is not 0 otherwise auto-generate
+			long longValue = ((Number) converted).longValue();
+			if (parentKey == null)
+			{
+				key = KeyFactory.createKey(kind, longValue);
+			}
+			else
+			{
+				key = KeyFactory.createKey(parentKey, kind, longValue);
+			}
+		}
+		else
+		{
+			// make into string
+			String keyName = datastore.converter.convert(converted, String.class);
+
+			if (parentKey == null)
+			{
+				key = KeyFactory.createKey(kind, keyName);
+			}
+			else
+			{
+				key = KeyFactory.createKey(parentKey, kind, keyName);
+			}
+		}
+		return key;
 	}
 }

@@ -28,9 +28,9 @@ public interface ObjectDatastore extends Activator
 	 * Any exceptions that occurred during the execution of the command will be re-thrown when
 	 * you make this call.</p>
 	 * 
-	 * <p>If a non-blocking async command is still running when you have finished processing the
+	 * <p>If a non-blocking asynchronous command is still running when you have finished processing the
 	 * servlet request, the response will not be returned to the client until the async command is
-	 * finished and any exceptions dealt with.</p> 	
+	 * finished so that any exceptions can be displayed.</p> 	
 	 * 
 	 * @return StoreCommand for precise control of storing instances
 	 */
