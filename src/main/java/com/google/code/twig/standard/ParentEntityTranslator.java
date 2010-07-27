@@ -35,7 +35,7 @@ final class ParentEntityTranslator implements PropertyTranslator
 
 		if (parentKey == null)
 		{
-			throw new IllegalStateException("No parent for key: " + datastore.decodeKey);
+			return NULL_VALUE;
 		}
 
 		return this.datastore.load().key(parentKey).returnResultNow();
