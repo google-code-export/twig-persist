@@ -1,4 +1,4 @@
-package com.vercer.engine.persist.translator;
+package com.google.code.twig.translator;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -7,9 +7,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import com.vercer.engine.persist.Path;
-import com.vercer.engine.persist.Property;
-import com.vercer.engine.persist.PropertyTranslator;
+import com.google.code.twig.Path;
+import com.google.code.twig.Property;
+import com.google.code.twig.PropertyTranslator;
 
 public class ChainedTranslator implements PropertyTranslator
 {
@@ -57,7 +57,7 @@ public class ChainedTranslator implements PropertyTranslator
 
 	public Object propertiesToTypesafe(Set<Property> properties, Path prefix, Type type)
 	{
-		for (PropertyTranslator translator: translators)
+		for (PropertyTranslator translator : translators)
 		{
 			Object result = translator.propertiesToTypesafe(properties, prefix, type);
 			if (result != null)

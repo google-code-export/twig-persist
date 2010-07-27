@@ -1,16 +1,16 @@
 /**
  *
  */
-package com.vercer.engine.persist.standard;
+package com.google.code.twig.standard;
 
 import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.Set;
 
 import com.google.appengine.api.datastore.Key;
-import com.vercer.engine.persist.Path;
-import com.vercer.engine.persist.Property;
-import com.vercer.engine.persist.PropertyTranslator;
+import com.google.code.twig.Path;
+import com.google.code.twig.Property;
+import com.google.code.twig.PropertyTranslator;
 import com.vercer.util.reference.ReadOnlyObjectReference;
 
 final class ParentEntityTranslator implements PropertyTranslator

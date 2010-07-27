@@ -1,4 +1,4 @@
-package com.vercer.engine.persist.standard;
+package com.google.code.twig.standard;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -7,19 +7,19 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.Map.Entry;
 
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
+import com.google.code.twig.Path;
+import com.google.code.twig.Property;
+import com.google.code.twig.Restriction;
+import com.google.code.twig.util.PropertySets;
+import com.google.code.twig.util.RestrictionToPredicateAdaptor;
 import com.google.common.collect.Sets;
-import com.vercer.engine.persist.Path;
-import com.vercer.engine.persist.Property;
-import com.vercer.engine.persist.Restriction;
-import com.vercer.engine.persist.util.PropertySets;
-import com.vercer.engine.persist.util.RestrictionToPredicateAdaptor;
 
 class StandardDecodeCommand extends StandardCommand
 {

@@ -1,4 +1,4 @@
-package com.vercer.engine.persist.conversion;
+package com.google.code.twig.conversion;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.vercer.engine.persist.util.generic.GenericTypeReflector;
+import com.google.code.twig.util.generic.GenericTypeReflector;
 import com.vercer.util.Pair;
 
 public class CombinedTypeConverter implements TypeConverter
@@ -17,7 +17,7 @@ public class CombinedTypeConverter implements TypeConverter
 	private final Map<Pair<Type, Type>, SpecificTypeConverter<?, ?>> cache = new HashMap<Pair<Type,Type>, SpecificTypeConverter<?,?>>();
 
 	/* (non-Javadoc)
-	 * @see com.vercer.engine.persist.conversion.TypeConverter#convert(java.lang.Object, java.lang.reflect.Type)
+	 * @see com.google.code.twig.conversion.TypeConverter#convert(java.lang.Object, java.lang.reflect.Type)
 	 */
 	@SuppressWarnings("unchecked")
 	public <T> T convert(Object source, Type type)

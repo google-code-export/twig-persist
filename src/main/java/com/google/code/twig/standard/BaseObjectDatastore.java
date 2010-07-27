@@ -1,4 +1,4 @@
-package com.vercer.engine.persist.standard;
+package com.google.code.twig.standard;
 
 import java.util.Collection;
 import java.util.List;
@@ -13,7 +13,7 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Transaction;
-import com.vercer.engine.persist.ObjectDatastore;
+import com.google.code.twig.ObjectDatastore;
 
 public abstract class BaseObjectDatastore implements ObjectDatastore
 {

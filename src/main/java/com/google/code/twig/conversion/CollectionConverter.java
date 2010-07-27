@@ -1,7 +1,7 @@
 /**
  *
  */
-package com.vercer.engine.persist.conversion;
+package com.google.code.twig.conversion;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.GenericArrayType;
@@ -13,7 +13,7 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 
-import com.vercer.engine.persist.util.generic.GenericTypeReflector;
+import com.google.code.twig.util.generic.GenericTypeReflector;
 
 /**
  * Handles conversions from any Collection type or Array to either a HashSet,
@@ -36,6 +36,7 @@ public class CollectionConverter implements TypeConverter
 		this.delegate = delegate;
 	}
 
+	@Override
 	public <T> T convert(Object source, Type type)
 	{
 		// attempt to convert input into an array
@@ -101,18 +102,20 @@ public class CollectionConverter implements TypeConverter
 					item = delegate.convert(item, componentType);
 					if (item == null)
 					{
-						throw new IllegalStateException("Could not convert list item " + item + " to " + componentType);
+						throw new IllegalStateException("Could not convert list item " + item
+								+ " to " + componentType);
 					}
 				}
 				convertedItems.add(item);
 			}
 
-			return this.<T>createCollectionInstance(erased, componentType, convertedItems);
+			return this.<T> createCollectionInstance(erased, componentType, convertedItems);
 		}
 	}
 
-	@SuppressWarnings("unchecked")
-	protected <T> T createCollectionInstance(Class<?> erased, Type componentType, List<Object> convertedItems)
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	protected <T> T createCollectionInstance(Class<?> erased, Type componentType,
+			List<Object> convertedItems)
 	{
 		// convert the list of items to the required collection type
 		if (erased.isAssignableFrom(HashSet.class))

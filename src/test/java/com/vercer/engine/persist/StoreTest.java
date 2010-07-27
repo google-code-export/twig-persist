@@ -1,4 +1,4 @@
-package com.vercer.engine.persist;
+package com.google.code.twig;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -6,9 +6,9 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 import com.google.appengine.repackaged.com.google.common.collect.Lists;
-import com.vercer.engine.persist.annotation.AnnotationObjectDatastore;
-import com.vercer.engine.persist.annotation.Id;
-import com.vercer.engine.persist.annotation.Store;
+import com.google.code.twig.annotation.AnnotationObjectDatastore;
+import com.google.code.twig.annotation.Id;
+import com.google.code.twig.annotation.Store;
 
 public class StoreTest extends LocalDatastoreTestCase {
         public static class ExampleModel {

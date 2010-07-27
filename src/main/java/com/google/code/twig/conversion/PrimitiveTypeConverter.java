@@ -1,4 +1,4 @@
-package com.vercer.engine.persist.conversion;
+package com.google.code.twig.conversion;
 
 import java.lang.reflect.Type;
 import java.util.HashMap;
@@ -6,7 +6,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import com.vercer.engine.persist.util.generic.GenericTypeReflector;
+import com.google.code.twig.util.generic.GenericTypeReflector;
 
 public class PrimitiveTypeConverter implements TypeConverter
 {

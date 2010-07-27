@@ -1,9 +1,5 @@
-package com.vercer.engine.persist.strategy;
+package com.google.code.twig.strategy;
 
-import java.util.Collection;
-
-import com.google.appengine.api.datastore.Entity;
-import com.google.appengine.api.datastore.Key;
 
 public interface CacheStrategy
 {

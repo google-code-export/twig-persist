@@ -1,4 +1,4 @@
-package com.vercer.engine.persist.conversion;
+package com.google.code.twig.conversion;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -15,9 +15,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.appengine.api.datastore.Blob;
 import com.google.appengine.api.datastore.Text;
-import com.vercer.engine.persist.util.generic.GenericTypeReflector;
-import com.vercer.engine.persist.util.io.NoDescriptorObjectInputStream;
-import com.vercer.engine.persist.util.io.NoDescriptorObjectOutputStream;
+import com.google.code.twig.util.generic.GenericTypeReflector;
+import com.google.code.twig.util.io.NoDescriptorObjectInputStream;
+import com.google.code.twig.util.io.NoDescriptorObjectOutputStream;
 import com.vercer.util.Pair;
 
 public class DefaultTypeConverter extends CombinedTypeConverter

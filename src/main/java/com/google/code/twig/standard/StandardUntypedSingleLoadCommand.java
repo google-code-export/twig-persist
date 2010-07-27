@@ -1,8 +1,8 @@
-package com.vercer.engine.persist.standard;
+package com.google.code.twig.standard;
 
 import com.google.appengine.api.datastore.Key;
 
-class StandardUntypedSingleLoadCommand extends StandardDecodeCommand
+public class StandardUntypedSingleLoadCommand extends StandardDecodeCommand
 {
 	private final Key key;
 

@@ -1,4 +1,4 @@
-package com.vercer.engine.persist.util;
+package com.google.code.twig.util;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -6,9 +6,9 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import com.vercer.engine.persist.Path;
-import com.vercer.engine.persist.Property;
-import com.vercer.engine.persist.Path.Part;
+import com.google.code.twig.Path;
+import com.google.code.twig.Path.Part;
+import com.google.code.twig.Property;
 import com.vercer.util.collections.ArraySortedSet;
 
 public class PropertySets

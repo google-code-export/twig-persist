@@ -1,10 +1,9 @@
-package com.vercer.engine.persist.standard;
+package com.google.code.twig.standard;
 
 import java.util.Arrays;
 import java.util.Collection;
 
-import com.vercer.engine.persist.LoadCommand.MultipleTypedLoadCommand;
-import com.vercer.engine.persist.LoadCommand.TypedLoadCommand;
+import com.google.code.twig.LoadCommand.TypedLoadCommand;
 
 public class StandardTypedLoadCommand<T> extends StandardDecodeCommand implements TypedLoadCommand<T>
 {

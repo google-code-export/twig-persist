@@ -1,4 +1,4 @@
-package com.vercer.engine.persist.standard;
+package com.google.code.twig.standard;
 
 import java.util.Comparator;
 import java.util.Iterator;
@@ -7,13 +7,13 @@ import java.util.List;
 import com.google.appengine.api.datastore.AsyncDatastoreHelper;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Query.SortPredicate;
+import com.google.code.twig.FindCommand.CommonFindCommand;
+import com.google.code.twig.Property;
+import com.google.code.twig.Restriction;
+import com.google.code.twig.util.RestrictionToPredicateAdaptor;
+import com.google.code.twig.util.SortedMergeIterator;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
-import com.vercer.engine.persist.Property;
-import com.vercer.engine.persist.Restriction;
-import com.vercer.engine.persist.FindCommand.CommonFindCommand;
-import com.vercer.engine.persist.util.RestrictionToPredicateAdaptor;
-import com.vercer.engine.persist.util.SortedMergeIterator;
 
 /**
  * Contains functionality common to all both TypedFindCommand and ParentsCommand

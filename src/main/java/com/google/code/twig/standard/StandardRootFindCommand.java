@@ -1,4 +1,4 @@
-package com.vercer.engine.persist.standard;
+package com.google.code.twig.standard;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -12,12 +12,13 @@ import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.appengine.api.datastore.QueryResultList;
-import com.google.appengine.api.datastore.Query.SortDirection;
-import com.vercer.engine.persist.FindCommand.RootFindCommand;
+import com.google.code.twig.FindCommand.RootFindCommand;
 
-final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootFindCommand<T>> implements RootFindCommand<T>
+final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootFindCommand<T>>
+		implements RootFindCommand<T>
 {
 	private final Type type;
 	private FetchOptions options;
@@ -33,6 +34,7 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 			this.direction = direction;
 			this.field = field;
 		}
+
 		SortDirection direction;
 		String field;
 	}
@@ -55,7 +57,7 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 		this.ancestor = ancestor;
 		return this;
 	}
-	
+
 	@Override
 	public RootFindCommand<T> fetchNoFields()
 	{
@@ -90,7 +92,7 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 		this.options.startCursor(cursor);
 		return this;
 	}
-	
+
 	@Override
 	public RootFindCommand<T> finishAt(Cursor cursor)
 	{
@@ -115,9 +117,9 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 		}
 		return this;
 	}
-	
+
 	@Override
-	public RootFindCommand<T>  fetchFirst(int size)
+	public RootFindCommand<T> fetchFirst(int size)
 	{
 		if (this.options == null)
 		{
@@ -177,19 +179,19 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 		PreparedQuery prepared = this.datastore.servicePrepare(query);
 		return prepared.countEntities();
 	}
-	
+
 	@Override
 	public QueryResultList<T> returnAllResultsNow()
 	{
 		throw new UnsupportedOperationException("Not yet implemented");
 	}
-	
+
 	@Override
 	public Future<QueryResultList<T>> returnAllResultsLater()
 	{
 		throw new UnsupportedOperationException("Not yet implemented");
 	}
-	
+
 	@Override
 	public QueryResultIterator<T> returnResultsNow()
 	{
@@ -201,24 +203,28 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 		{
 			try
 			{
-				final Iterator<T> result = this.<T>futureMultiQueryInstanceIterator().get();
+				final Iterator<T> result = this.<T> futureMultiQueryInstanceIterator().get();
 				return new QueryResultIterator<T>()
 				{
+					@Override
 					public Cursor getCursor()
 					{
 						throw new IllegalStateException("Cannot use cursor with merged queries");
 					}
 
+					@Override
 					public boolean hasNext()
 					{
 						return result.hasNext();
 					}
 
+					@Override
 					public T next()
 					{
 						return result.next();
 					}
 
+					@Override
 					public void remove()
 					{
 						result.remove();
@@ -244,7 +250,8 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 	{
 		if (this.ancestor == null && this.datastore.getTransaction() != null)
 		{
-			throw new IllegalStateException("You must set an ancestor if you run a find this in a transaction");
+			throw new IllegalStateException(
+					"You must set an ancestor if you run a find this in a transaction");
 		}
 
 		Query query = new Query(datastore.fieldStrategy.typeToKind(type));

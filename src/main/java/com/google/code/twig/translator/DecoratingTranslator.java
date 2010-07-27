@@ -1,6 +1,6 @@
-package com.vercer.engine.persist.translator;
+package com.google.code.twig.translator;
 
-import com.vercer.engine.persist.PropertyTranslator;
+import com.google.code.twig.PropertyTranslator;
 
 public abstract class DecoratingTranslator implements PropertyTranslator
 {

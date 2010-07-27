@@ -1,14 +1,14 @@
-package com.vercer.engine.persist.translator;
+package com.google.code.twig.translator;
 
 import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.Set;
 
-import com.vercer.engine.persist.Path;
-import com.vercer.engine.persist.Property;
-import com.vercer.engine.persist.PropertyTranslator;
-import com.vercer.engine.persist.util.SimpleProperty;
-import com.vercer.engine.persist.util.generic.GenericTypeReflector;
+import com.google.code.twig.Path;
+import com.google.code.twig.Property;
+import com.google.code.twig.PropertyTranslator;
+import com.google.code.twig.util.SimpleProperty;
+import com.google.code.twig.util.generic.GenericTypeReflector;
 
 public class EnumTranslator implements PropertyTranslator
 {
@@ -21,6 +21,7 @@ public class EnumTranslator implements PropertyTranslator
 		{
 			Property property = properties.iterator().next();
 			String name = (String) property.getValue();
+			@SuppressWarnings("rawtypes")
 			Class<? extends Enum> ce = (Class<? extends Enum>) clazz;
 			return Enum.valueOf(ce, name);
 		}

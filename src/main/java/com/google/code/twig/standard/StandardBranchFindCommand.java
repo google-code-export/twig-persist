@@ -1,7 +1,7 @@
-package com.vercer.engine.persist.standard;
+package com.google.code.twig.standard;
 
 import com.google.appengine.api.datastore.Query;
-import com.vercer.engine.persist.FindCommand.ChildFindCommand;
+import com.google.code.twig.FindCommand.ChildFindCommand;
 
 final class StandardBranchFindCommand<T> extends StandardTypedFindCommand<T, ChildFindCommand<T>> implements ChildFindCommand<T>
 {

@@ -1,4 +1,4 @@
-package com.vercer.engine.persist.translator;
+package com.google.code.twig.translator;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -7,14 +7,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import com.vercer.engine.persist.Path;
-import com.vercer.engine.persist.Property;
-import com.vercer.engine.persist.PropertyTranslator;
-import com.vercer.engine.persist.Path.Part;
-import com.vercer.engine.persist.conversion.TypeConverter;
-import com.vercer.engine.persist.util.PropertySets;
-import com.vercer.engine.persist.util.PropertySets.PrefixPropertySet;
-import com.vercer.engine.persist.util.generic.GenericTypeReflector;
+import com.google.code.twig.Path;
+import com.google.code.twig.Path.Part;
+import com.google.code.twig.Property;
+import com.google.code.twig.PropertyTranslator;
+import com.google.code.twig.conversion.TypeConverter;
+import com.google.code.twig.util.PropertySets;
+import com.google.code.twig.util.PropertySets.PrefixPropertySet;
+import com.google.code.twig.util.generic.GenericTypeReflector;
 import com.vercer.util.collections.MergeSet;
 
 public class MapTranslator extends DecoratingTranslator
@@ -26,7 +26,7 @@ public class MapTranslator extends DecoratingTranslator
 		super(delegate);
 		this.converter = converter;
 	}
-	
+
 	@Override
 	public Object propertiesToTypesafe(Set<Property> properties, Path path, Type type)
 	{
@@ -41,7 +41,7 @@ public class MapTranslator extends DecoratingTranslator
 		{
 			return NULL_VALUE;
 		}
-		
+
 		// group the properties by prefix to create each item
 		Collection<PrefixPropertySet> ppss = PropertySets.prefixPropertySets(properties, path);
 
@@ -49,7 +49,7 @@ public class MapTranslator extends DecoratingTranslator
 		Type exact = GenericTypeReflector.getExactSuperType(type, Map.class);
 		Type keyType = ((ParameterizedType) exact).getActualTypeArguments()[0];
 		Type valueType = ((ParameterizedType) exact).getActualTypeArguments()[1];
-		
+
 		// type erasure means we can use object as the generic parameters
 		Map<Object, Object> result = new HashMap<Object, Object>(ppss.size());
 		for (PrefixPropertySet pps : ppss)
@@ -57,10 +57,11 @@ public class MapTranslator extends DecoratingTranslator
 			// the key must be converted from a String
 			Part partAfterPrefix = pps.getPrefix().firstPartAfterPrefix(path);
 			Object key = converter.convert(partAfterPrefix.getName(), keyType);
-			
+
 			// decode the value properties using the generic type info
-			Object value = chained.propertiesToTypesafe(pps.getProperties(), pps.getPrefix(), valueType);
-			
+			Object value = chained.propertiesToTypesafe(pps.getProperties(), pps.getPrefix(),
+					valueType);
+
 			result.put(key, value);
 		}
 		return result;
@@ -74,26 +75,27 @@ public class MapTranslator extends DecoratingTranslator
 			// pass it on down the line
 			return chained.typesafeToProperties(instance, path, indexed);
 		}
-		
+
 		Map<?, ?> map = (Map<?, ?>) instance;
 		Set<?> keys = map.keySet();
 		Set<Property> merged = new MergeSet<Property>(map.size());
-		for (Object key: keys)
+		for (Object key : keys)
 		{
 			Object value = map.get(key);
-			String keyString = converter.convert(key, String.class); 
+			String keyString = converter.convert(key, String.class);
 			Path childPath = Path.builder(path).field(keyString).build();
 			Set<Property> properties = chained.typesafeToProperties(value, childPath, indexed);
-			
+
 			if (properties == null)
 			{
-				// we could not handle a value so pass the whole map down the chain
+				// we could not handle a value so pass the whole map down the
+				// chain
 				return chained.typesafeToProperties(instance, path, indexed);
 			}
-			
+
 			merged.addAll(properties);
 		}
-		
+
 		return merged;
 	}
 

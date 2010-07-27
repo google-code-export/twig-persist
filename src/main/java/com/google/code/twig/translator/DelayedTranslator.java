@@ -1,12 +1,12 @@
-package com.vercer.engine.persist.translator;
+package com.google.code.twig.translator;
 
 import java.lang.reflect.Type;
 import java.util.Set;
 
-import com.vercer.engine.persist.Path;
-import com.vercer.engine.persist.Property;
-import com.vercer.engine.persist.PropertyTranslator;
-import com.vercer.engine.persist.util.SinglePropertySet;
+import com.google.code.twig.Path;
+import com.google.code.twig.Property;
+import com.google.code.twig.PropertyTranslator;
+import com.google.code.twig.util.SinglePropertySet;
 import com.vercer.util.reference.ObjectReference;
 import com.vercer.util.reference.ReadOnlyObjectReference;
 

@@ -3,7 +3,7 @@
  * Reformatted and moved to fit package structure
  */
 
-package com.vercer.engine.persist.util.generic;
+package com.google.code.twig.util.generic;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;

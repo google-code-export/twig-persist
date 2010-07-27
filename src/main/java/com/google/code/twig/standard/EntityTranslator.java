@@ -1,7 +1,7 @@
 /**
  * 
  */
-package com.vercer.engine.persist.standard;
+package com.google.code.twig.standard;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -15,11 +15,11 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 import com.google.appengine.api.datastore.Key;
-import com.vercer.engine.persist.Path;
-import com.vercer.engine.persist.Property;
-import com.vercer.engine.persist.PropertyTranslator;
-import com.vercer.engine.persist.util.PropertySets;
-import com.vercer.engine.persist.util.SinglePropertySet;
+import com.google.code.twig.Path;
+import com.google.code.twig.Property;
+import com.google.code.twig.PropertyTranslator;
+import com.google.code.twig.util.PropertySets;
+import com.google.code.twig.util.SinglePropertySet;
 import com.vercer.util.reference.ObjectReference;
 import com.vercer.util.reference.ReadOnlyObjectReference;
 

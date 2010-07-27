@@ -1,14 +1,14 @@
 /**
  * 
  */
-package com.vercer.engine.persist;
+package com.google.code.twig;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 
 import com.google.appengine.api.datastore.Blob;
-import com.vercer.engine.persist.annotation.Type;
+import com.google.code.twig.annotation.Type;
 
 public class TypeWithCollections
 {

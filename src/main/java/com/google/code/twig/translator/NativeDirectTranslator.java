@@ -1,12 +1,12 @@
 /**
  *
  */
-package com.vercer.engine.persist.translator;
+package com.google.code.twig.translator;
 
 import java.lang.reflect.Type;
 
 import com.google.appengine.api.datastore.DataTypeUtils;
-import com.vercer.engine.persist.util.generic.GenericTypeReflector;
+import com.google.code.twig.util.generic.GenericTypeReflector;
 
 public final class NativeDirectTranslator extends DirectTranslator
 {

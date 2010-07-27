@@ -1,15 +1,15 @@
 /**
  *
  */
-package com.vercer.engine.persist.festival;
+package com.google.code.twig.festival;
 
 import java.util.Arrays;
 import java.util.Date;
 
 import com.google.appengine.api.datastore.Text;
-import com.vercer.engine.persist.annotation.Embed;
-import com.vercer.engine.persist.annotation.Id;
-import com.vercer.engine.persist.annotation.Type;
+import com.google.code.twig.annotation.Embed;
+import com.google.code.twig.annotation.Id;
+import com.google.code.twig.annotation.Type;
 
 public class Album
 {

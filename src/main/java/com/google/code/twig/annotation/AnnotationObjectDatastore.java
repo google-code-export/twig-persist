@@ -1,7 +1,7 @@
-package com.vercer.engine.persist.annotation;
+package com.google.code.twig.annotation;
 
-import com.vercer.engine.persist.standard.StandardObjectDatastore;
-import com.vercer.engine.persist.strategy.FieldStrategy;
+import com.google.code.twig.standard.StandardObjectDatastore;
+import com.google.code.twig.strategy.FieldStrategy;
 
 public class AnnotationObjectDatastore extends StandardObjectDatastore
 {

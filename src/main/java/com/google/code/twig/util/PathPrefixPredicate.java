@@ -1,11 +1,11 @@
 /**
  *
  */
-package com.vercer.engine.persist.util;
+package com.google.code.twig.util;
 
+import com.google.code.twig.Path;
+import com.google.code.twig.Property;
 import com.google.common.base.Predicate;
-import com.vercer.engine.persist.Path;
-import com.vercer.engine.persist.Property;
 
 public final class PathPrefixPredicate implements Predicate<Property>
 {

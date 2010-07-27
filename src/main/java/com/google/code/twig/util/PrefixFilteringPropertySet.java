@@ -1,13 +1,13 @@
-package com.vercer.engine.persist.util;
+package com.google.code.twig.util;
 
 import java.util.AbstractSet;
 import java.util.Iterator;
 import java.util.Set;
 
+import com.google.code.twig.Path;
+import com.google.code.twig.Property;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
-import com.vercer.engine.persist.Path;
-import com.vercer.engine.persist.Property;
 
 public class PrefixFilteringPropertySet extends AbstractSet<Property>
 {

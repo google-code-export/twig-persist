@@ -1,4 +1,4 @@
-package com.vercer.engine.persist.translator;
+package com.google.code.twig.translator;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -16,14 +16,14 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.vercer.engine.persist.Path;
-import com.vercer.engine.persist.Property;
-import com.vercer.engine.persist.PropertyTranslator;
-import com.vercer.engine.persist.conversion.TypeConverter;
-import com.vercer.engine.persist.util.PropertySets;
-import com.vercer.engine.persist.util.SimpleProperty;
-import com.vercer.engine.persist.util.PropertySets.PrefixPropertySet;
-import com.vercer.engine.persist.util.generic.GenericTypeReflector;
+import com.google.code.twig.Path;
+import com.google.code.twig.Property;
+import com.google.code.twig.PropertyTranslator;
+import com.google.code.twig.conversion.TypeConverter;
+import com.google.code.twig.util.PropertySets;
+import com.google.code.twig.util.PropertySets.PrefixPropertySet;
+import com.google.code.twig.util.SimpleProperty;
+import com.google.code.twig.util.generic.GenericTypeReflector;
 import com.vercer.util.Reflection;
 import com.vercer.util.collections.MergeSet;
 

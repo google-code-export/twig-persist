@@ -1,4 +1,4 @@
-package com.vercer.engine.persist.standard;
+package com.google.code.twig.standard;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -8,7 +8,7 @@ import java.util.concurrent.Future;
 
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
-import com.vercer.engine.persist.StoreCommand.MultipleStoreCommand;
+import com.google.code.twig.StoreCommand.MultipleStoreCommand;
 
 class StandardMultipleStoreCommand<T> extends StandardCommonStoreCommand<T, StandardMultipleStoreCommand<T>> implements MultipleStoreCommand<T, StandardMultipleStoreCommand<T>>
 {
