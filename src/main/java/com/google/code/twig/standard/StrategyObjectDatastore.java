@@ -23,6 +23,7 @@ import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.annotation.Id;
+import com.google.code.twig.conversion.CombinedTypeConverter;
 import com.google.code.twig.conversion.DefaultTypeConverter;
 import com.google.code.twig.conversion.TypeConverter;
 import com.google.code.twig.strategy.ActivationStrategy;
@@ -93,13 +94,10 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 
 	protected final TypeConverter converter;
 
-	// TODO make all these private when commands have no logic
 	protected final RelationshipStrategy relationshipStrategy;
 	protected final FieldStrategy fieldStrategy;
 	protected final ActivationStrategy activationStrategy;
 	protected final StorageStrategy storageStrategy;
-
-	// protected final CacheStrategy cacheStrategy;
 
 	public StrategyObjectDatastore(CombinedStrategy strategy)
 	{
@@ -108,14 +106,13 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 
 	public StrategyObjectDatastore(RelationshipStrategy relationshipStrategy,
 			StorageStrategy storageStrategy,
-			// CacheStrategy cacheStrategy,
-			ActivationStrategy activationStrategy, FieldStrategy fieldStrategy)
+			ActivationStrategy activationStrategy,
+			FieldStrategy fieldStrategy)
 	{
 		// push the default depth onto the stack
 		activationDepthDeque.push(Integer.MAX_VALUE);
 
 		this.activationStrategy = activationStrategy;
-		// this.cacheStrategy = cacheStrategy;
 		this.fieldStrategy = fieldStrategy;
 		this.relationshipStrategy = relationshipStrategy;
 		this.storageStrategy = storageStrategy;
@@ -182,70 +179,13 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 		return store().instances(instances).returnKeysNow();
 	}
 
-	// @Override
-	// public final <T> Map<T, Key> storeAll(Collection<? extends T> instances,
-	// Object parent)
-	// {
-	// // encode the instances to entities
-	// final Map<T, Entity> entities = instancesToEntities(instances, parent,
-	// false);
-	//
-	// // actually put them in the datastore and get their keys
-	// final List<Key> keys = entitiesToKeys(entities.values());
-	//
-	// LinkedHashMap<T, Key> result = Maps.newLinkedHashMap();
-	// Iterator<T> instanceItr = entities.keySet().iterator();
-	// Iterator<Key> keyItr = keys.iterator();
-	// while (instanceItr.hasNext())
-	// {
-	// // iterate instances and keys in parallel
-	// T instance = instanceItr.next();
-	// Key key = keyItr.next();
-	//
-	// // replace the temp key ObjRef with the full key for this instance
-	// keyCache.cache(key, instance);
-	//
-	// result.put(instance, key);
-	// }
-	// return result;
-	// }
-
-	// public final Key internalStore(Object instance, Object parent, Object id)
-	// {
-	// onBeforeStore(instance);
-	//
-	// Key parentKey = null;
-	// if (parent != null)
-	// {
-	// parentKey = keyCache.getKey(parent);
-	// }
-	//
-	// // cache the empty key details now in case a child references back to us
-	// if (keyCache.getKey(instance) != null)
-	// {
-	// throw new IllegalStateException("Cannot store same instance twice: " +
-	// instance);
-	// }
-	// Entity entity = instanceToEntity(instance, parentKey, id);
-	// Key key = entityToKey(entity);
-	//
-	// // replace the temp key ObjRef with the full key for this instance
-	// keyCache.cache(key, instance);
-	//
-	// setInstanceId(instance, key);
-	//
-	// onAfterStore(instance, key);
-	//
-	// return key;
-	// }
-
-	protected void onAfterStore(Object instance, Key key)
-	{
-	}
-
-	protected void onBeforeStore(Object instance)
-	{
-	}
+//	protected void onAfterStore(Object instance, Key key)
+//	{
+//	}
+//
+//	protected void onBeforeStore(Object instance)
+//	{
+//	}
 
 	public final <T> QueryResultIterator<T> find(Class<T> type)
 	{
@@ -346,7 +286,7 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	@Override
 	public void refreshAll(Collection<?> instances)
 	{
-		// TODO optimise!
+		// TODO optimise! add to a stack then pop instances off the stack
 		for (Object instance : instances)
 		{
 			refresh(instance);
@@ -395,12 +335,6 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 			{
 				translator = independantTranslator;
 			}
-
-			// if (cacheStrategy.cache(field))
-			// {
-			//
-			// }
-
 			return translator;
 		}
 		else if (relationshipStrategy.key(field))
@@ -425,14 +359,14 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	}
 
 	/**
-	 * @return The translator which is used if no others are configured
+	 * @return The translator which is used if no others handle the instance
 	 */
 	protected PropertyTranslator getFallbackTranslator()
 	{
 		return getIndependantTranslator();
 	}
 
-	protected TypeConverter createTypeConverter()
+	protected CombinedTypeConverter createTypeConverter()
 	{
 		return new DefaultTypeConverter();
 	}
@@ -574,40 +508,6 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	{
 		return new Query(fieldStrategy.typeToKind(type));
 	}
-
-	// final void internalUpdate(Object instance, Key key)
-	// {
-	// Entity entity = new Entity(key);
-	//
-	// // push a new encode context just to double check values and stop NPEs
-	// assert encodeKeySpec == null;
-	// encodeKeySpec = new KeySpecification();
-	//
-	// // translate fields to properties - sets parent and id on key
-	// Set<Property> properties =
-	// encoder(instance).typesafeToProperties(instance, Path.EMPTY_PATH,
-	// indexed);
-	// if (properties == null)
-	// {
-	// throw new IllegalStateException("Could not translate instance: " +
-	// instance);
-	// }
-	//
-	// transferProperties(entity, properties);
-	//
-	// // we can store all entities for a single batch put
-	// if (batched != null)
-	// {
-	// batched.put(instance, entity);
-	// }
-	//
-	// // pop the encode context
-	// encodeKeySpec = null;
-	//
-	// Key putKey = entityToKey(entity);
-	//
-	// assert putKey.equals(key);
-	// }
 
 	public final void deleteAll(Type type)
 	{
