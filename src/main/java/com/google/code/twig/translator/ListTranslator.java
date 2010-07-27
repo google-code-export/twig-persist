@@ -1,4 +1,4 @@
-package com.vercer.engine.persist.translator;
+package com.google.code.twig.translator;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -11,16 +11,16 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
+import com.google.code.twig.Path;
+import com.google.code.twig.Property;
+import com.google.code.twig.PropertyTranslator;
+import com.google.code.twig.util.SimpleProperty;
+import com.google.code.twig.util.SinglePropertySet;
+import com.google.code.twig.util.generic.GenericTypeReflector;
 import com.google.common.collect.Lists;
-import com.vercer.engine.persist.Path;
-import com.vercer.engine.persist.Property;
-import com.vercer.engine.persist.PropertyTranslator;
-import com.vercer.engine.persist.util.SimpleProperty;
-import com.vercer.engine.persist.util.SinglePropertySet;
-import com.vercer.engine.persist.util.generic.GenericTypeReflector;
 
 public class ListTranslator extends DecoratingTranslator
 {

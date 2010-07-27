@@ -1,4 +1,4 @@
-package com.vercer.engine.persist;
+package com.google.code.twig;
 
 
 import java.util.Collection;
@@ -8,11 +8,11 @@ import junit.framework.Assert;
 import org.junit.Test;
 
 import com.google.appengine.api.datastore.Key;
-import com.vercer.engine.persist.TypeWithCollections.TypeWithEnum;
-import com.vercer.engine.persist.TypeWithCollections.TypeWithEnum.MyEnum;
-import com.vercer.engine.persist.annotation.AnnotationObjectDatastore;
-import com.vercer.engine.persist.conversion.CombinedTypeConverter;
-import com.vercer.engine.persist.conversion.DefaultTypeConverter;
+import com.google.code.twig.TypeWithCollections.TypeWithEnum;
+import com.google.code.twig.TypeWithCollections.TypeWithEnum.MyEnum;
+import com.google.code.twig.annotation.AnnotationObjectDatastore;
+import com.google.code.twig.conversion.CombinedTypeConverter;
+import com.google.code.twig.conversion.DefaultTypeConverter;
 
 
 public class SerializeCollectionsTest extends LocalDatastoreTestCase

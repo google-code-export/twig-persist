@@ -1,4 +1,4 @@
-package com.vercer.engine.persist.translators;
+package com.google.code.twig.translators;
 
 
 import static org.junit.Assert.assertEquals;
@@ -13,12 +13,12 @@ import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.vercer.engine.persist.Path;
-import com.vercer.engine.persist.Property;
-import com.vercer.engine.persist.PropertyTranslator;
-import com.vercer.engine.persist.translator.DirectTranslator;
-import com.vercer.engine.persist.translator.ListTranslator;
-import com.vercer.engine.persist.util.SimpleProperty;
+import com.google.code.twig.Path;
+import com.google.code.twig.Property;
+import com.google.code.twig.PropertyTranslator;
+import com.google.code.twig.translator.DirectTranslator;
+import com.google.code.twig.translator.ListTranslator;
+import com.google.code.twig.util.SimpleProperty;
 
 public class CollectionPropertyTranslatorTest
 {

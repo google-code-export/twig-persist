@@ -1,4 +1,4 @@
-package com.vercer.engine.persist.util.io;
+package com.google.code.twig.util.io;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;

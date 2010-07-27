@@ -1,9 +1,9 @@
-package com.vercer.engine.persist.standard;
+package com.google.code.twig.standard;
 
 import java.util.Arrays;
 import java.util.Collection;
 
-import com.vercer.engine.persist.StoreCommand;
+import com.google.code.twig.StoreCommand;
 
 class StandardStoreCommand extends StandardCommand implements StoreCommand
 {

@@ -1,8 +1,8 @@
-package com.vercer.engine.persist;
+package com.google.code.twig;
 
 import com.google.appengine.api.datastore.Query;
-import com.vercer.engine.persist.ObjectDatastore;
-import com.vercer.engine.persist.annotation.AnnotationObjectDatastore;
+import com.google.code.twig.ObjectDatastore;
+import com.google.code.twig.annotation.AnnotationObjectDatastore;
 
 import static org.junit.Assert.fail;
 

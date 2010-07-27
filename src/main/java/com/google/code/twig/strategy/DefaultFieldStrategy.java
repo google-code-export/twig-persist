@@ -1,4 +1,4 @@
-package com.vercer.engine.persist.strategy;
+package com.google.code.twig.strategy;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
@@ -6,12 +6,11 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.vercer.engine.persist.conversion.PrimitiveTypeConverter;
-import com.vercer.engine.persist.util.generic.GenericTypeReflector;
+import com.google.code.twig.conversion.PrimitiveTypeConverter;
+import com.google.code.twig.util.generic.GenericTypeReflector;
 
 /**
  * @author John Patterson <john@vercer.com>
@@ -94,7 +93,7 @@ public class DefaultFieldStrategy implements FieldStrategy
 
 	/**
 	 *
-	 * @see com.vercer.engine.persist.strategy.FieldStrategy#name(java.lang.reflect.Field)
+	 * @see com.google.code.twig.strategy.FieldStrategy#name(java.lang.reflect.Field)
 	 */
 	public final String name(Field field)
 	{
@@ -147,7 +146,7 @@ public class DefaultFieldStrategy implements FieldStrategy
 	 * Replaces all Collection types and Arrays with List. Converts all elements of
 	 * the collection to the component type.
 	 *
-	 * @see com.vercer.engine.persist.strategy.FieldStrategy#typeOf(java.lang.reflect.Field)
+	 * @see com.google.code.twig.strategy.FieldStrategy#typeOf(java.lang.reflect.Field)
 	 */
 	public Type typeOf(Field field)
 	{

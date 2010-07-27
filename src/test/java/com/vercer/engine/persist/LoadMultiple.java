@@ -1,4 +1,4 @@
-package com.vercer.engine.persist;
+package com.google.code.twig;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -7,8 +7,8 @@ import junit.framework.Assert;
 
 import org.junit.Test;
 
-import com.vercer.engine.persist.annotation.AnnotationObjectDatastore;
-import com.vercer.engine.persist.annotation.Id;
+import com.google.code.twig.annotation.AnnotationObjectDatastore;
+import com.google.code.twig.annotation.Id;
 
 public class LoadMultiple extends LocalDatastoreTestCase
 {

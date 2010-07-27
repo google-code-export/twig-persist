@@ -1,4 +1,4 @@
-package com.vercer.engine.persist;
+package com.google.code.twig;
 
 import java.lang.reflect.Type;
 import java.util.Collection;
@@ -9,8 +9,8 @@ import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.appengine.api.datastore.Transaction;
-import com.vercer.engine.persist.StoreCommand.MultipleStoreCommand;
-import com.vercer.engine.persist.StoreCommand.SingleStoreCommand;
+import com.google.code.twig.StoreCommand.MultipleStoreCommand;
+import com.google.code.twig.StoreCommand.SingleStoreCommand;
 
 public interface ObjectDatastore extends Activator
 {

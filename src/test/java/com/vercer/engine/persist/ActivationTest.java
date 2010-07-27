@@ -1,4 +1,4 @@
-package com.vercer.engine.persist;
+package com.google.code.twig;
 
 import java.io.Serializable;
 import java.util.List;
@@ -9,8 +9,8 @@ import org.junit.Test;
 
 import com.google.appengine.api.datastore.Key;
 import com.google.common.collect.Lists;
-import com.vercer.engine.persist.annotation.Activate;
-import com.vercer.engine.persist.annotation.AnnotationObjectDatastore;
+import com.google.code.twig.annotation.Activate;
+import com.google.code.twig.annotation.AnnotationObjectDatastore;
 
 public class ActivationTest extends LocalDatastoreTestCase
 {

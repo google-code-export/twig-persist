@@ -1,12 +1,13 @@
-package com.vercer.engine.persist.standard;
+package com.google.code.twig.standard;
 
 import java.util.Iterator;
 import java.util.concurrent.Future;
+import com.google.code.twig.FindCommand.ParentsCommand;
 
 import com.google.appengine.api.datastore.FetchOptions;
-import com.vercer.engine.persist.FindCommand.ParentsCommand;
 
-abstract class StandardCommonParentsCommand<P> extends StandardCommonFindCommand<P, ParentsCommand<P>> implements ParentsCommand<P>
+abstract class StandardCommonParentsCommand<P> extends
+		StandardCommonFindCommand<P, ParentsCommand<P>> implements ParentsCommand<P>
 {
 	protected final StandardTypedFindCommand<?, ?> childCommand;
 
@@ -21,7 +22,7 @@ abstract class StandardCommonParentsCommand<P> extends StandardCommonFindCommand
 		// TODO depends on async get being implemented
 		throw new UnsupportedOperationException("Not implemented yet - depends on async get");
 	}
-	
+
 	protected int getFetchSize()
 	{
 		@SuppressWarnings("deprecation")
@@ -31,7 +32,8 @@ abstract class StandardCommonParentsCommand<P> extends StandardCommonFindCommand
 		{
 			if (fetchOptions.getChunkSize() != fetchOptions.getPrefetchSize())
 			{
-				throw new IllegalArgumentException("Must have same fetchFirst and fetchNextBy to get parents");
+				throw new IllegalArgumentException(
+						"Must have same fetchFirst and fetchNextBy to get parents");
 			}
 			fetch = fetchOptions.getChunkSize();
 		}

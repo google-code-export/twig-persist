@@ -1,4 +1,4 @@
-package com.vercer.engine.persist.festival;
+package com.google.code.twig.festival;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
@@ -30,14 +30,14 @@ import com.google.appengine.api.datastore.Transaction;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
-import com.vercer.engine.persist.LocalDatastoreTestCase;
-import com.vercer.engine.persist.ObjectDatastore;
-import com.vercer.engine.persist.annotation.AnnotationObjectDatastore;
-import com.vercer.engine.persist.annotation.Embed;
-import com.vercer.engine.persist.annotation.Id;
-import com.vercer.engine.persist.festival.Album.Track;
-import com.vercer.engine.persist.festival.Band.HairStyle;
-import com.vercer.engine.persist.util.PredicateToRestrictionAdaptor;
+import com.google.code.twig.LocalDatastoreTestCase;
+import com.google.code.twig.ObjectDatastore;
+import com.google.code.twig.annotation.AnnotationObjectDatastore;
+import com.google.code.twig.annotation.Embed;
+import com.google.code.twig.annotation.Id;
+import com.google.code.twig.festival.Album.Track;
+import com.google.code.twig.festival.Band.HairStyle;
+import com.google.code.twig.util.PredicateToRestrictionAdaptor;
 
 public class MusicFestivalTestCase extends LocalDatastoreTestCase
 {

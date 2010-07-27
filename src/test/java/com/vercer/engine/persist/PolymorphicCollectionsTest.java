@@ -1,4 +1,4 @@
-package com.vercer.engine.persist;
+package com.google.code.twig;
 
 import java.util.Date;
 
@@ -7,9 +7,9 @@ import junit.framework.Assert;
 import org.junit.Test;
 
 import com.google.appengine.api.datastore.QueryResultIterator;
-import com.vercer.engine.persist.annotation.AnnotationObjectDatastore;
-import com.vercer.engine.persist.annotation.Embed;
-import com.vercer.engine.persist.annotation.Key;
+import com.google.code.twig.annotation.AnnotationObjectDatastore;
+import com.google.code.twig.annotation.Embed;
+import com.google.code.twig.annotation.Key;
 
 @SuppressWarnings("deprecation")
 class Driver {

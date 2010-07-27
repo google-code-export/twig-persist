@@ -2,7 +2,7 @@
  * Copied from Gentyref project http://code.google.com/p/gentyref/
  * Code was reformatted and moved to fit package structure
  */
-package com.vercer.engine.persist.util.generic;
+package com.google.code.twig.util.generic;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.GenericArrayType;

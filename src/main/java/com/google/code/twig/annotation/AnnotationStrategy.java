@@ -1,11 +1,11 @@
-package com.vercer.engine.persist.annotation;
+package com.google.code.twig.annotation;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
-import com.vercer.engine.persist.strategy.CombinedStrategy;
-import com.vercer.engine.persist.strategy.DefaultFieldStrategy;
-import com.vercer.engine.persist.util.generic.GenericTypeReflector;
+import com.google.code.twig.strategy.CombinedStrategy;
+import com.google.code.twig.strategy.DefaultFieldStrategy;
+import com.google.code.twig.util.generic.GenericTypeReflector;
 
 public class AnnotationStrategy extends DefaultFieldStrategy implements CombinedStrategy
 {

@@ -1,7 +1,7 @@
-package com.vercer.engine.persist.util;
+package com.google.code.twig.util;
 
+import com.google.code.twig.Restriction;
 import com.google.common.base.Predicate;
-import com.vercer.engine.persist.Restriction;
 
 public class PredicateToRestrictionAdaptor<T> implements Restriction<T> 
 {

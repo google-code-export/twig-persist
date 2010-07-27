@@ -1,11 +1,11 @@
-package com.vercer.engine.persist.util;
+package com.google.code.twig.util;
 
 import java.util.AbstractSet;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import com.vercer.engine.persist.Path;
-import com.vercer.engine.persist.Property;
+import com.google.code.twig.Path;
+import com.google.code.twig.Property;
 
 public class SinglePropertySet extends AbstractSet<Property>
 {

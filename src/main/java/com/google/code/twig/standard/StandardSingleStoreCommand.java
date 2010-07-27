@@ -1,4 +1,4 @@
-package com.vercer.engine.persist.standard;
+package com.google.code.twig.standard;
 
 import java.util.Collections;
 import java.util.Map;
@@ -7,8 +7,8 @@ import java.util.concurrent.Future;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.utils.FutureWrapper;
+import com.google.code.twig.StoreCommand.SingleStoreCommand;
 import com.google.common.collect.Iterables;
-import com.vercer.engine.persist.StoreCommand.SingleStoreCommand;
 
 final class StandardSingleStoreCommand<T> extends StandardCommonStoreCommand<T, StandardSingleStoreCommand<T>> implements SingleStoreCommand<T, StandardSingleStoreCommand<T>>
 {

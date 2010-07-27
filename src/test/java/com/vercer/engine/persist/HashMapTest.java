@@ -1,4 +1,4 @@
-package com.vercer.engine.persist;
+package com.google.code.twig;
 
 import static org.junit.Assert.assertEquals;
 
@@ -12,10 +12,10 @@ import org.junit.Test;
 import com.google.appengine.api.datastore.Blob;
 import com.google.appengine.tools.development.testing.LocalDatastoreServiceTestConfig;
 import com.google.appengine.tools.development.testing.LocalServiceTestHelper;
-import com.vercer.engine.persist.annotation.AnnotationObjectDatastore;
-import com.vercer.engine.persist.annotation.Embed;
-import com.vercer.engine.persist.annotation.Id;
-import com.vercer.engine.persist.annotation.Type;
+import com.google.code.twig.annotation.AnnotationObjectDatastore;
+import com.google.code.twig.annotation.Embed;
+import com.google.code.twig.annotation.Id;
+import com.google.code.twig.annotation.Type;
 
 public class HashMapTest
 {

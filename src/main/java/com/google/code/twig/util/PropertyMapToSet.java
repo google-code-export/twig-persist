@@ -1,15 +1,15 @@
 /**
  *
  */
-package com.vercer.engine.persist.util;
+package com.google.code.twig.util;
 
 import java.util.AbstractSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.vercer.engine.persist.Path;
-import com.vercer.engine.persist.Property;
+import com.google.code.twig.Path;
+import com.google.code.twig.Property;
 
 public final class PropertyMapToSet extends AbstractSet<Property>
 {

@@ -1,12 +1,12 @@
-package com.vercer.engine.persist.standard;
+package com.google.code.twig.standard;
 
 import java.util.Collection;
 import java.util.List;
 
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
-import com.vercer.engine.persist.Property;
-import com.vercer.engine.persist.util.Entities;
+import com.google.code.twig.Property;
+import com.google.code.twig.util.Entities;
 import com.vercer.util.reference.ObjectReference;
 
 class StandardEncodeCommand extends StandardCommand

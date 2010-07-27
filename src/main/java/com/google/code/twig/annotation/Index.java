@@ -1,4 +1,4 @@
-package com.vercer.engine.persist.annotation;
+package com.google.code.twig.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

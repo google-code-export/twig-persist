@@ -1,10 +1,10 @@
-package com.vercer.engine.persist.standard;
+package com.google.code.twig.standard;
 
-import com.vercer.engine.persist.strategy.ActivationStrategy;
-import com.vercer.engine.persist.strategy.CombinedStrategy;
-import com.vercer.engine.persist.strategy.FieldStrategy;
-import com.vercer.engine.persist.strategy.RelationshipStrategy;
-import com.vercer.engine.persist.strategy.StorageStrategy;
+import com.google.code.twig.strategy.ActivationStrategy;
+import com.google.code.twig.strategy.CombinedStrategy;
+import com.google.code.twig.strategy.FieldStrategy;
+import com.google.code.twig.strategy.RelationshipStrategy;
+import com.google.code.twig.strategy.StorageStrategy;
 
 public class StandardObjectDatastore extends StrategyObjectDatastore
 {

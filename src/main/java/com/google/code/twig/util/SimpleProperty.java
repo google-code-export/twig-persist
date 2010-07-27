@@ -1,7 +1,7 @@
-package com.vercer.engine.persist.util;
+package com.google.code.twig.util;
 
-import com.vercer.engine.persist.Path;
-import com.vercer.engine.persist.Property;
+import com.google.code.twig.Path;
+import com.google.code.twig.Property;
 import com.vercer.util.Reflection;
 
 public class SimpleProperty implements Property
@@ -44,8 +44,8 @@ public class SimpleProperty implements Property
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + (indexed ? 1231 : 1237);
-		result = prime * result + ((path == null) ? 0 : path.hashCode());
-		result = prime * result + ((value == null) ? 0 : value.hashCode());
+		result = prime * result + (path == null ? 0 : path.hashCode());
+		result = prime * result + (value == null ? 0 : value.hashCode());
 		return result;
 	}
 
@@ -94,7 +94,7 @@ public class SimpleProperty implements Property
 		return true;
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public int compareTo(Property o)
 	{
 		int pathComparison = path.compareTo(o.getPath());

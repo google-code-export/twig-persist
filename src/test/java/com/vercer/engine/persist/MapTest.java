@@ -1,4 +1,4 @@
-package com.vercer.engine.persist;
+package com.google.code.twig;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -9,7 +9,7 @@ import junit.framework.Assert;
 import org.junit.Test;
 
 import com.google.appengine.api.datastore.Key;
-import com.vercer.engine.persist.annotation.AnnotationObjectDatastore;
+import com.google.code.twig.annotation.AnnotationObjectDatastore;
 
 public class MapTest extends LocalDatastoreTestCase
 {

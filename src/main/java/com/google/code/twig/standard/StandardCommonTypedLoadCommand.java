@@ -1,4 +1,4 @@
-package com.vercer.engine.persist.standard;
+package com.google.code.twig.standard;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
@@ -6,9 +6,9 @@ import java.lang.reflect.Type;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
-import com.vercer.engine.persist.Property;
-import com.vercer.engine.persist.Restriction;
-import com.vercer.engine.persist.LoadCommand.CommonTypedLoadCommand;
+import com.google.code.twig.LoadCommand.CommonTypedLoadCommand;
+import com.google.code.twig.Property;
+import com.google.code.twig.Restriction;
 
 class StandardCommonTypedLoadCommand<T, C extends StandardCommonTypedLoadCommand<T, C>> extends StandardDecodeCommand implements CommonTypedLoadCommand<T, C>
 {

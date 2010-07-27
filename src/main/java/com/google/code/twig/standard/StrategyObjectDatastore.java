@@ -1,4 +1,4 @@
-package com.vercer.engine.persist.standard;
+package com.google.code.twig.standard;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
@@ -17,53 +17,54 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.Query;
-import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.appengine.api.datastore.Query.FilterOperator;
+import com.google.appengine.api.datastore.QueryResultIterator;
+import com.google.code.twig.Path;
+import com.google.code.twig.Property;
+import com.google.code.twig.PropertyTranslator;
+import com.google.code.twig.annotation.Id;
+import com.google.code.twig.conversion.DefaultTypeConverter;
+import com.google.code.twig.conversion.TypeConverter;
+import com.google.code.twig.strategy.ActivationStrategy;
+import com.google.code.twig.strategy.CombinedStrategy;
+import com.google.code.twig.strategy.FieldStrategy;
+import com.google.code.twig.strategy.RelationshipStrategy;
+import com.google.code.twig.strategy.StorageStrategy;
+import com.google.code.twig.translator.ChainedTranslator;
+import com.google.code.twig.translator.CoreStringTypesTranslator;
+import com.google.code.twig.translator.EnumTranslator;
+import com.google.code.twig.translator.ListTranslator;
+import com.google.code.twig.translator.MapTranslator;
+import com.google.code.twig.translator.NativeDirectTranslator;
+import com.google.code.twig.translator.ObjectFieldTranslator;
+import com.google.code.twig.translator.PolymorphicTranslator;
+import com.google.code.twig.util.EntityToKeyFunction;
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Iterators;
-import com.vercer.engine.persist.Path;
-import com.vercer.engine.persist.Property;
-import com.vercer.engine.persist.PropertyTranslator;
-import com.vercer.engine.persist.annotation.Id;
-import com.vercer.engine.persist.conversion.DefaultTypeConverter;
-import com.vercer.engine.persist.conversion.TypeConverter;
-import com.vercer.engine.persist.strategy.ActivationStrategy;
-import com.vercer.engine.persist.strategy.CombinedStrategy;
-import com.vercer.engine.persist.strategy.FieldStrategy;
-import com.vercer.engine.persist.strategy.RelationshipStrategy;
-import com.vercer.engine.persist.strategy.StorageStrategy;
-import com.vercer.engine.persist.translator.ChainedTranslator;
-import com.vercer.engine.persist.translator.CoreStringTypesTranslator;
-import com.vercer.engine.persist.translator.EnumTranslator;
-import com.vercer.engine.persist.translator.ListTranslator;
-import com.vercer.engine.persist.translator.MapTranslator;
-import com.vercer.engine.persist.translator.NativeDirectTranslator;
-import com.vercer.engine.persist.translator.ObjectFieldTranslator;
-import com.vercer.engine.persist.translator.PolymorphicTranslator;
 import com.vercer.util.Reflection;
 
 /**
- * Stateful layer responsible for caching key-object references and
- * creating a PropertyTranslator that can be configured using Strategy
- * instances.
- *
+ * Stateful layer responsible for caching key-object references and creating a
+ * PropertyTranslator that can be configured using Strategy instances.
+ * 
  * @author John Patterson <john@vercer.com>
  */
 public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 {
 	// key details are updated as the current instance is encoded
 	KeySpecification encodeKeySpec;
-	
+
 	// the key of the currently decoding entity
 	Key decodeKey;
-	
+
 	// keeps track of which instances are associated with which keys
 	final InstanceKeyCache keyCache;
-	
-	// activation depth cannot be in decode context because it is defined per field
-	final Deque<Integer> activationDepthDeque= new ArrayDeque<Integer>();
-	
+
+	// activation depth cannot be in decode context because it is defined per
+	// field
+	final Deque<Integer> activationDepthDeque = new ArrayDeque<Integer>();
+
 	// are properties indexed by default
 	boolean indexed;
 
@@ -77,18 +78,19 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	private final PropertyTranslator childTranslator;
 	private final ChainedTranslator valueTranslatorChain;
 	private final PropertyTranslator defaultTranslator;
-	
+
 	private static final Map<Class<?>, Field> keyFields = new ConcurrentHashMap<Class<?>, Field>();
-	
-	// indicates we are associating instances with this session so do not store them
+
+	// indicates we are associating instances with this session so do not store
+	// them
 	boolean associating;
-	
+
 	// set when all entities should be collected and stored in one call
 	Map<Object, Entity> batched;
-	
+
 	// set when an instance is to be refreshed rather than instantiated
 	private Object refresh;
-	
+
 	protected final TypeConverter converter;
 
 	// TODO make all these private when commands have no logic
@@ -96,25 +98,24 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	protected final FieldStrategy fieldStrategy;
 	protected final ActivationStrategy activationStrategy;
 	protected final StorageStrategy storageStrategy;
-//	protected final CacheStrategy cacheStrategy;
+
+	// protected final CacheStrategy cacheStrategy;
 
 	public StrategyObjectDatastore(CombinedStrategy strategy)
 	{
 		this(strategy, strategy, strategy, strategy);
 	}
 
-	public StrategyObjectDatastore(
-			RelationshipStrategy relationshipStrategy,
+	public StrategyObjectDatastore(RelationshipStrategy relationshipStrategy,
 			StorageStrategy storageStrategy,
-//			CacheStrategy cacheStrategy,
-			ActivationStrategy activationStrategy,
-			FieldStrategy fieldStrategy)
+			// CacheStrategy cacheStrategy,
+			ActivationStrategy activationStrategy, FieldStrategy fieldStrategy)
 	{
 		// push the default depth onto the stack
 		activationDepthDeque.push(Integer.MAX_VALUE);
-		
+
 		this.activationStrategy = activationStrategy;
-//		this.cacheStrategy = cacheStrategy;
+		// this.cacheStrategy = cacheStrategy;
 		this.fieldStrategy = fieldStrategy;
 		this.relationshipStrategy = relationshipStrategy;
 		this.storageStrategy = storageStrategy;
@@ -131,8 +132,10 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 		keyFieldTranslator = new KeyFieldTranslator(this, valueTranslatorChain, converter);
 		childTranslator = new ChildEntityTranslator(this);
 		embedTranslator = new ListTranslator(new MapTranslator(objectFieldTranslator, converter));
-		polyMorphicComponentTranslator = new ListTranslator(new MapTranslator(new PolymorphicTranslator(objectFieldTranslator, fieldStrategy), converter));
-		defaultTranslator = new ListTranslator(new MapTranslator(new ChainedTranslator(valueTranslatorChain, getFallbackTranslator()), converter));
+		polyMorphicComponentTranslator = new ListTranslator(new MapTranslator(
+				new PolymorphicTranslator(objectFieldTranslator, fieldStrategy), converter));
+		defaultTranslator = new ListTranslator(new MapTranslator(new ChainedTranslator(
+				valueTranslatorChain, getFallbackTranslator()), converter));
 
 		keyCache = createKeyCache();
 	}
@@ -154,7 +157,7 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	{
 		return new StandardLoadCommand(this);
 	}
-	
+
 	@Override
 	public final Key store(Object instance)
 	{
@@ -179,59 +182,62 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 		return store().instances(instances).returnKeysNow();
 	}
 
-//	@Override
-//	public final <T> Map<T, Key> storeAll(Collection<? extends T> instances, Object parent)
-//	{
-//		// encode the instances to entities
-//		final Map<T, Entity> entities = instancesToEntities(instances, parent, false);
-//		
-//		// actually put them in the datastore and get their keys
-//		final List<Key> keys = entitiesToKeys(entities.values());
-//		
-//		LinkedHashMap<T, Key> result = Maps.newLinkedHashMap();
-//		Iterator<T> instanceItr = entities.keySet().iterator();
-//		Iterator<Key> keyItr = keys.iterator();
-//		while (instanceItr.hasNext())
-//		{
-//			// iterate instances and keys in parallel
-//			T instance = instanceItr.next();
-//			Key key = keyItr.next();
-//			
-//			// replace the temp key ObjRef with the full key for this instance 
-//			keyCache.cache(key, instance);
-//			
-//			result.put(instance, key);
-//		}
-//		return result;
-//	}
+	// @Override
+	// public final <T> Map<T, Key> storeAll(Collection<? extends T> instances,
+	// Object parent)
+	// {
+	// // encode the instances to entities
+	// final Map<T, Entity> entities = instancesToEntities(instances, parent,
+	// false);
+	//
+	// // actually put them in the datastore and get their keys
+	// final List<Key> keys = entitiesToKeys(entities.values());
+	//
+	// LinkedHashMap<T, Key> result = Maps.newLinkedHashMap();
+	// Iterator<T> instanceItr = entities.keySet().iterator();
+	// Iterator<Key> keyItr = keys.iterator();
+	// while (instanceItr.hasNext())
+	// {
+	// // iterate instances and keys in parallel
+	// T instance = instanceItr.next();
+	// Key key = keyItr.next();
+	//
+	// // replace the temp key ObjRef with the full key for this instance
+	// keyCache.cache(key, instance);
+	//
+	// result.put(instance, key);
+	// }
+	// return result;
+	// }
 
-//	public final Key internalStore(Object instance, Object parent, Object id)
-//	{
-//		onBeforeStore(instance);
-//		
-//		Key parentKey = null;
-//		if (parent != null)
-//		{
-//			parentKey = keyCache.getKey(parent);
-//		}
-//		
-//		// cache the empty key details now in case a child references back to us
-//		if (keyCache.getKey(instance) != null)
-//		{
-//			throw new IllegalStateException("Cannot store same instance twice: " + instance);
-//		}
-//		Entity entity = instanceToEntity(instance, parentKey, id);
-//		Key key = entityToKey(entity);
-//		
-//		// replace the temp key ObjRef with the full key for this instance 
-//		keyCache.cache(key, instance);
-//		
-//		setInstanceId(instance, key);
-//		
-//		onAfterStore(instance, key);
-//		
-//		return key;
-//	}
+	// public final Key internalStore(Object instance, Object parent, Object id)
+	// {
+	// onBeforeStore(instance);
+	//
+	// Key parentKey = null;
+	// if (parent != null)
+	// {
+	// parentKey = keyCache.getKey(parent);
+	// }
+	//
+	// // cache the empty key details now in case a child references back to us
+	// if (keyCache.getKey(instance) != null)
+	// {
+	// throw new IllegalStateException("Cannot store same instance twice: " +
+	// instance);
+	// }
+	// Entity entity = instanceToEntity(instance, parentKey, id);
+	// Key key = entityToKey(entity);
+	//
+	// // replace the temp key ObjRef with the full key for this instance
+	// keyCache.cache(key, instance);
+	//
+	// setInstanceId(instance, key);
+	//
+	// onAfterStore(instance, key);
+	//
+	// return key;
+	// }
 
 	protected void onAfterStore(Object instance, Key key)
 	{
@@ -250,13 +256,13 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	{
 		return find().type(type).addFilter(field, FilterOperator.EQUAL, value).returnResultsNow();
 	}
-	
+
 	@Override
 	public <T> T load(Key key)
 	{
 		return load().key(key).returnResultNow();
 	}
-	
+
 	@Override
 	public final <T> T load(Class<T> type, Object id)
 	{
@@ -264,18 +270,18 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	}
 
 	@Override
-	public final <I, T> Map<I, T>  loadAll(Class<T> type, Collection<I> ids)
+	public final <I, T> Map<I, T> loadAll(Class<T> type, Collection<I> ids)
 	{
 		return load().type(type).ids(ids).returnResultsNow();
 	}
 
 	@Override
 	public final void update(Object instance)
-	{	
+	{
 		// store but set the internal update flag so
 		store().update(true).instance(instance).returnKeyNow();
 	}
-	
+
 	@Override
 	public void updateAll(Collection<?> instances)
 	{
@@ -298,7 +304,7 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	@Override
 	public final void delete(Object instance)
 	{
-		Key key= keyCache.getKey(instance);
+		Key key = keyCache.getKey(instance);
 		if (key == null)
 		{
 			throw new IllegalArgumentException("Instance " + instance + " is not associated");
@@ -316,21 +322,21 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	public final void refresh(Object instance)
 	{
 		Key key = associatedKey(instance);
-	
+
 		if (key == null)
 		{
 			throw new IllegalStateException("Instance not associated with session");
 		}
-	
+
 		// so it is not loaded from the cache
 		disassociate(instance);
-	
+
 		// load will use this instance instead of creating new
 		refresh = instance;
-	
+
 		// load from datastore into the refresh instance
 		Object loaded = load().key(key).returnResultNow();
-	
+
 		if (loaded == null)
 		{
 			throw new IllegalStateException("Instance to be refreshed could not be found");
@@ -351,7 +357,7 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	{
 		return new InstanceKeyCache();
 	}
-	
+
 	protected PropertyTranslator decoder(Entity entity)
 	{
 		return objectFieldTranslator;
@@ -361,7 +367,7 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	{
 		return objectFieldTranslator;
 	}
-	
+
 	protected PropertyTranslator decoder(Field field, Set<Property> properties)
 	{
 		return translator(field);
@@ -389,12 +395,12 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 			{
 				translator = independantTranslator;
 			}
-			
-//			if (cacheStrategy.cache(field))
-//			{
-//				
-//			}
-			
+
+			// if (cacheStrategy.cache(field))
+			// {
+			//
+			// }
+
 			return translator;
 		}
 		else if (relationshipStrategy.key(field))
@@ -528,7 +534,7 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	{
 		return defaultTranslator;
 	}
-	
+
 	protected final InstanceKeyCache getKeyCache()
 	{
 		return keyCache;
@@ -536,6 +542,7 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 
 	private final Function<Object, Key> cachedInstanceToKeyFunction = new Function<Object, Key>()
 	{
+		@Override
 		public Key apply(Object instance)
 		{
 			return keyCache.getKey(instance);
@@ -568,36 +575,39 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 		return new Query(fieldStrategy.typeToKind(type));
 	}
 
-//	final void internalUpdate(Object instance, Key key)
-//	{
-//		Entity entity = new Entity(key);
-//		
-//		// push a new encode context just to double check values and stop NPEs
-//		assert encodeKeySpec == null;
-//		encodeKeySpec = new KeySpecification();
-//
-//		// translate fields to properties - sets parent and id on key
-//		Set<Property> properties = encoder(instance).typesafeToProperties(instance, Path.EMPTY_PATH, indexed);
-//		if (properties == null)
-//		{
-//			throw new IllegalStateException("Could not translate instance: " + instance);
-//		}
-//
-//		transferProperties(entity, properties);
-//		
-//		// we can store all entities for a single batch put
-//		if (batched != null)
-//		{
-//			batched.put(instance, entity);
-//		}
-//		
-//		// pop the encode context
-//		encodeKeySpec = null;
-//		
-//		Key putKey = entityToKey(entity);
-//		
-//		assert putKey.equals(key);
-//	}
+	// final void internalUpdate(Object instance, Key key)
+	// {
+	// Entity entity = new Entity(key);
+	//
+	// // push a new encode context just to double check values and stop NPEs
+	// assert encodeKeySpec == null;
+	// encodeKeySpec = new KeySpecification();
+	//
+	// // translate fields to properties - sets parent and id on key
+	// Set<Property> properties =
+	// encoder(instance).typesafeToProperties(instance, Path.EMPTY_PATH,
+	// indexed);
+	// if (properties == null)
+	// {
+	// throw new IllegalStateException("Could not translate instance: " +
+	// instance);
+	// }
+	//
+	// transferProperties(entity, properties);
+	//
+	// // we can store all entities for a single batch put
+	// if (batched != null)
+	// {
+	// batched.put(instance, entity);
+	// }
+	//
+	// // pop the encode context
+	// encodeKeySpec = null;
+	//
+	// Key putKey = entityToKey(entity);
+	//
+	// assert putKey.equals(key);
+	// }
 
 	public final void deleteAll(Type type)
 	{
@@ -631,43 +641,43 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 		{
 			super(converters);
 		}
-	
+
 		@Override
 		protected boolean indexed(Field field)
 		{
 			return StrategyObjectDatastore.this.storageStrategy.index(field);
 		}
-	
+
 		@Override
 		protected boolean stored(Field field)
 		{
 			return StrategyObjectDatastore.this.storageStrategy.store(field);
 		}
-	
+
 		@Override
 		protected Type typeFromField(Field field)
 		{
 			return StrategyObjectDatastore.this.fieldStrategy.typeOf(field);
 		}
-	
+
 		@Override
 		protected String fieldToPartName(Field field)
 		{
 			return StrategyObjectDatastore.this.fieldStrategy.name(field);
 		}
-	
+
 		@Override
 		protected PropertyTranslator encoder(Field field, Object instance)
 		{
 			return StrategyObjectDatastore.this.encoder(field, instance);
 		}
-	
+
 		@Override
 		protected PropertyTranslator decoder(Field field, Set<Property> properties)
 		{
 			return StrategyObjectDatastore.this.decoder(field, properties);
 		}
-	
+
 		@Override
 		protected Object createInstance(Class<?> clazz)
 		{
@@ -678,32 +688,34 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 				instance = super.createInstance(clazz);
 			}
 			refresh = null;
-	
-			// need to cache the instance immediately so instances can reference it
+
+			// need to cache the instance immediately so instances can reference
+			// it
 			if (keyCache.getInstance(decodeKey) == null)
 			{
 				// only cache first time - not for embedded components
 				keyCache.cache(decodeKey, instance);
 			}
-	
+
 			return instance;
 		}
-	
+
 		@Override
 		protected void onBeforeTranslate(Field field, Set<Property> childProperties)
 		{
 			if (activationDepthDeque.peek() > 0)
 			{
-				activationDepthDeque.push(StrategyObjectDatastore.this.activationStrategy.activationDepth(field, activationDepthDeque.peek() - 1));
+				activationDepthDeque.push(StrategyObjectDatastore.this.activationStrategy
+						.activationDepth(field, activationDepthDeque.peek() - 1));
 			}
 		}
-	
+
 		@Override
 		protected void onAfterTranslate(Field field, Object value)
 		{
 			activationDepthDeque.pop();
 		}
-	
+
 		@Override
 		protected void activate(Set<Property> properties, Object instance, Path path)
 		{
@@ -712,8 +724,10 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 				super.activate(properties, instance, path);
 			}
 		}
-	}	
-	@SuppressWarnings("deprecation") Field keyField(Class<?> type)
+	}
+
+	@SuppressWarnings("deprecation")
+	Field keyField(Class<?> type)
 	{
 		Field result = null;
 		if (keyFields.containsKey(type))
@@ -725,14 +739,14 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 			List<Field> fields = Reflection.getAccessibleFields(type);
 			for (Field field : fields)
 			{
-				if (field.isAnnotationPresent(com.vercer.engine.persist.annotation.Key.class) ||
-					field.isAnnotationPresent(Id.class))
+				if (field.isAnnotationPresent(com.google.code.twig.annotation.Key.class)
+						|| field.isAnnotationPresent(Id.class))
 				{
 					result = field;
 					break;
 				}
 			}
-			
+
 			// null cannot be stored in a concurrent hash map
 			if (result == null)
 			{
@@ -740,7 +754,7 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 			}
 			keyFields.put(type, result);
 		}
-		
+
 		if (result == NO_KEY_FIELD)
 		{
 			return null;
@@ -750,8 +764,9 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 			return result;
 		}
 	}
-	
-	// null values are not permitted in a concurrent hash map so need a "missing" value
+
+	// null values are not permitted in a concurrent hash map so need a
+	// "missing" value
 	private static final Field NO_KEY_FIELD;
 	static
 	{
@@ -765,11 +780,5 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 		}
 	}
 
-	private static final Function<Entity, Key> entityToKeyFunction = new Function<Entity, Key>()
-	{
-		public Key apply(Entity arg0)
-		{
-			return arg0.getKey();
-		}
-	};
+	private static final Function<Entity, Key> entityToKeyFunction = new EntityToKeyFunction();
 }

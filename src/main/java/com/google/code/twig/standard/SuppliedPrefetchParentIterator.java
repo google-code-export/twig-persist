@@ -1,4 +1,4 @@
-package com.vercer.engine.persist.standard;
+package com.google.code.twig.standard;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -6,8 +6,8 @@ import java.util.List;
 
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
+import com.google.code.twig.standard.EntitySupplier.EntitySink;
 import com.google.common.collect.AbstractIterator;
-import com.vercer.engine.persist.standard.EntitySupplier.EntitySink;
 
 class SuppliedPrefetchParentIterator extends AbstractIterator<Entity> implements EntitySink
 {

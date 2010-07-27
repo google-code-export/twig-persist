@@ -1,4 +1,4 @@
-package com.vercer.engine.persist.translator;
+package com.google.code.twig.translator;
 
 import java.lang.reflect.Type;
 import java.net.MalformedURLException;
@@ -9,12 +9,12 @@ import java.util.Currency;
 import java.util.Locale;
 import java.util.Set;
 
-import com.vercer.engine.persist.Path;
-import com.vercer.engine.persist.Property;
-import com.vercer.engine.persist.PropertyTranslator;
-import com.vercer.engine.persist.util.PropertySets;
-import com.vercer.engine.persist.util.SinglePropertySet;
-import com.vercer.engine.persist.util.generic.GenericTypeReflector;
+import com.google.code.twig.Path;
+import com.google.code.twig.Property;
+import com.google.code.twig.PropertyTranslator;
+import com.google.code.twig.util.PropertySets;
+import com.google.code.twig.util.SinglePropertySet;
+import com.google.code.twig.util.generic.GenericTypeReflector;
 
 public class CoreStringTypesTranslator implements PropertyTranslator
 {
@@ -80,7 +80,8 @@ public class CoreStringTypesTranslator implements PropertyTranslator
 		if (instance instanceof Locale)
 		{
 			Locale locale = (Locale) instance;
-			String text = locale.getLanguage() + "_" + locale.getCountry() + "_" + locale.getVariant();
+			String text = locale.getLanguage() + "_" + locale.getCountry() + "_"
+					+ locale.getVariant();
 			return new SinglePropertySet(path, text, indexed);
 		}
 		else if (instance instanceof Class<?>)

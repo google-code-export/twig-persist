@@ -1,4 +1,4 @@
-package com.vercer.engine.persist.standard;
+package com.google.code.twig.standard;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -17,20 +17,20 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
-import com.google.appengine.api.datastore.QueryResultIterator;
-import com.google.appengine.api.datastore.Transaction;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.SortPredicate;
+import com.google.appengine.api.datastore.QueryResultIterator;
+import com.google.appengine.api.datastore.Transaction;
 import com.google.appengine.api.utils.FutureWrapper;
+import com.google.code.twig.FindCommand;
+import com.google.code.twig.FindCommand.BranchFindCommand;
+import com.google.code.twig.FindCommand.ChildFindCommand;
+import com.google.code.twig.FindCommand.MergeOperator;
+import com.google.code.twig.FindCommand.ParentsCommand;
+import com.google.code.twig.FindCommand.TypedFindCommand;
 import com.google.common.base.Predicate;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ForwardingIterator;
-import com.vercer.engine.persist.FindCommand;
-import com.vercer.engine.persist.FindCommand.BranchFindCommand;
-import com.vercer.engine.persist.FindCommand.ChildFindCommand;
-import com.vercer.engine.persist.FindCommand.MergeOperator;
-import com.vercer.engine.persist.FindCommand.ParentsCommand;
-import com.vercer.engine.persist.FindCommand.TypedFindCommand;
 
 abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, C>> extends StandardCommonFindCommand<T, C> implements TypedFindCommand<T, C>, BranchFindCommand<T>
 {
@@ -207,7 +207,7 @@ abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, C>> ext
 			@Override
 			protected ParentsCommand<P> wrap(Iterator<Entity> childEntities) throws Exception
 			{
-				return new StandardSingleParentsCommand(StandardTypedFindCommand.this, childEntities);
+				return new StandardSingleParentsCommand<P>(StandardTypedFindCommand.this, childEntities);
 			}
 		};
 	}

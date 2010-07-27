@@ -1,4 +1,4 @@
-package com.vercer.engine.persist.translator;
+package com.google.code.twig.translator;
 
 import java.io.Serializable;
 import java.lang.reflect.Type;
@@ -6,13 +6,13 @@ import java.util.Collections;
 import java.util.Set;
 
 import com.google.appengine.api.datastore.Blob;
-import com.vercer.engine.persist.Path;
-import com.vercer.engine.persist.Property;
-import com.vercer.engine.persist.PropertyTranslator;
-import com.vercer.engine.persist.conversion.DefaultTypeConverter;
-import com.vercer.engine.persist.conversion.DefaultTypeConverter.BlobToAnything;
-import com.vercer.engine.persist.conversion.DefaultTypeConverter.SerializableToBlob;
-import com.vercer.engine.persist.util.SimpleProperty;
+import com.google.code.twig.Path;
+import com.google.code.twig.Property;
+import com.google.code.twig.PropertyTranslator;
+import com.google.code.twig.conversion.DefaultTypeConverter;
+import com.google.code.twig.conversion.DefaultTypeConverter.BlobToAnything;
+import com.google.code.twig.conversion.DefaultTypeConverter.SerializableToBlob;
+import com.google.code.twig.util.SimpleProperty;
 
 
 public class SerializingTranslator implements PropertyTranslator
