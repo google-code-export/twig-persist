@@ -21,12 +21,10 @@ import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.SortPredicate;
 import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.appengine.api.datastore.Transaction;
-import com.google.appengine.api.utils.FutureWrapper;
 import com.google.code.twig.FindCommand;
 import com.google.code.twig.FindCommand.BranchFindCommand;
 import com.google.code.twig.FindCommand.ChildFindCommand;
 import com.google.code.twig.FindCommand.MergeOperator;
-import com.google.code.twig.FindCommand.ParentsCommand;
 import com.google.code.twig.FindCommand.TypedFindCommand;
 import com.google.common.base.Predicate;
 import com.google.common.collect.AbstractIterator;
@@ -146,72 +144,6 @@ abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, C>> ext
 		}
 	}
 
-	public <P> Iterator<P> returnParentsNow()
-	{
-		return this.<P>returnParentsCommandNow().returnParentsNow();
-	}
-
-	public <P> ParentsCommand<P> returnParentsCommandNow()
-	{
-		Collection<Query> queries = queries();
-		if (queries.size() == 1)
-		{
-			Iterator<Entity> childEntities = nowSingleQueryEntities(queries.iterator().next());
-			childEntities = applyEntityFilter(childEntities);
-			return new StandardSingleParentsCommand<P>(this, childEntities);
-		}
-		else
-		{
-			try
-			{
-				List<Iterator<Entity>> childIterators = new ArrayList<Iterator<Entity>>(queries.size());
-				List<Future<QueryResultIterator<Entity>>> futures = multiQueriesToFutureEntityIterators(queries);
-				for (Future<QueryResultIterator<Entity>> future : futures)
-				{
-					childIterators.add(future.get());
-				}
-
-				Query query = queries.iterator().next();
-				List<SortPredicate> sorts = query.getSortPredicates();
-				if (query.isKeysOnly() == false)
-				{
-					// we should have the property values from the sort to merge
-					Iterator<Entity> childEntities = mergeEntities(childIterators, sorts);
-					childEntities = applyEntityFilter(childEntities);
-					return new StandardSingleParentsCommand<P>(this, childEntities);
-				}
-				else
-				{
-					return new StandardMultipleParentsCommand<P>(this, childIterators, sorts);
-				}
-			}
-			catch (Exception e)
-			{
-				throw new IllegalStateException(e);
-			}
-		}
-	}
-
-	@SuppressWarnings("unchecked")
-	public <P> Future<ParentsCommand<P>> returnParentsCommandLater()
-	{
-		Future<Iterator<Entity>> futureEntityIterator = (Future<Iterator<Entity>>) futureEntityIterator();
-		return new FutureWrapper<Iterator<Entity>, ParentsCommand<P>>(futureEntityIterator)
-		{
-			@Override
-			protected Throwable convertException(Throwable arg0)
-			{
-				return arg0;
-			}
-
-			@Override
-			protected ParentsCommand<P> wrap(Iterator<Entity> childEntities) throws Exception
-			{
-				return new StandardSingleParentsCommand<P>(StandardTypedFindCommand.this, childEntities);
-			}
-		};
-	}
-
 	Future<? extends Iterator<Entity>> futureEntityIterator()
 	{
 		Collection<Query> queries = queries();
@@ -244,7 +176,7 @@ abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, C>> ext
 		return new BasicQueryResultIterator<R>(instances, entities);
 	}
 
-	private QueryResultIterator<Entity> nowSingleQueryEntities(Query query)
+	protected QueryResultIterator<Entity> nowSingleQueryEntities(Query query)
 	{
 		final QueryResultIterator<Entity> entities;
 		PreparedQuery prepared = this.datastore.servicePrepare(query);
@@ -429,7 +361,7 @@ abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, C>> ext
 		return futureEntityIteratorsToFutureMergedIterator(futures, sorts);
 	}
 
-	private List<Future<QueryResultIterator<Entity>>> multiQueriesToFutureEntityIterators(
+	protected List<Future<QueryResultIterator<Entity>>> multiQueriesToFutureEntityIterators(
 			Collection<Query> queries)
 	{
 		final List<Future<QueryResultIterator<Entity>>> futures = new ArrayList<Future<QueryResultIterator<Entity>>>(queries.size());

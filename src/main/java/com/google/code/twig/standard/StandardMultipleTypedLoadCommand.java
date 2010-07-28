@@ -11,25 +11,26 @@ import com.google.code.twig.LoadCommand.MultipleTypedLoadCommand;
 import com.google.common.base.Function;
 import com.google.common.collect.Maps;
 
-public class StandardMultipleTypedLoadCommand<T, I> extends StandardCommonTypedLoadCommand<T, StandardMultipleTypedLoadCommand<T, I>>
-		implements MultipleTypedLoadCommand<T, I, StandardMultipleTypedLoadCommand<T, I>>
+public class StandardMultipleTypedLoadCommand<T, I> 
+	extends StandardCommonTypedLoadCommand<T, StandardMultipleTypedLoadCommand<T, I>>
+	implements MultipleTypedLoadCommand<T, I, StandardMultipleTypedLoadCommand<T, I>>
 {
-	private final Collection<I> ids;
+	private final Collection<? extends I> ids;
 
-	StandardMultipleTypedLoadCommand(StandardTypedLoadCommand<T> command, Collection<I> ids)
+	StandardMultipleTypedLoadCommand(StandardTypedLoadCommand<T> command, Collection<? extends I> ids)
 	{
 		super(command);
 		this.ids = ids;
 	}
 
 	@Override
-	public Future<Map<I, T>> returnResultsLater()
+	public Future<Map<I, T>> later()
 	{
 		throw new UnsupportedOperationException("Not yet implemented");
 	}
 
 	@Override
-	public Map<I, T> returnResultsNow()
+	public Map<I, T> now()
 	{
 		// the stored type of the id can be defined for the id field
 		Field keyField = datastore.keyField(command.type);

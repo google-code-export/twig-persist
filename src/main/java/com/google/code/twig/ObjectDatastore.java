@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.Future;
 
+import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.QueryResultIterator;
@@ -20,7 +21,7 @@ public interface ObjectDatastore extends Activator
 	 * all the options available here. The method chain must be terminated with 
 	 * one of the .return* methods which actually send the data to the datastore.</p>
 	 * 
-	 * <p>The methods {@link SingleStoreCommand#returnKeyLater()} and {@link MultipleStoreCommand#returnKeysLater()}
+	 * <p>The methods {@link SingleStoreCommand#later()} and {@link MultipleStoreCommand#later()}
 	 * do not block and return a {@link Future} object immediately which allows your 
 	 * application to continue to do other work in parallel while waiting for the datastore to store
 	 * your data. If you require the Keys from these operations you should call {@link Future#get()}
@@ -51,7 +52,7 @@ public interface ObjectDatastore extends Activator
 	Key store(Object instance);
 	Key store(Object instance, String id);
 	Key store(Object instance, long id);
-	<T> Map<T, Key> storeAll(Collection<T> instances);
+	<T> Map<T, Key> storeAll(Collection<? extends T> instances);
 
 	// updating
 	void update(Object instance);
@@ -60,12 +61,12 @@ public interface ObjectDatastore extends Activator
 
 	// convenience load methods
 	<T> T load(Key key);
-	<T> T load(Class<T> type, Object id);
-	<I, T> Map<I, T> loadAll(Class<T> type, Collection<I> ids);
+	<T> T load(Class<? extends T> type, Object id);
+	<I, T> Map<I, T> loadAll(Class<? extends T> type, Collection<? extends I> ids);
 	
 	// convenience find methods
-	<T> QueryResultIterator<T> find(Class<T> type);
-	<T> QueryResultIterator<T> find(Class<T> type, String field, Object value);
+	<T> QueryResultIterator<T> find(Class<? extends T> type);
+	<T> QueryResultIterator<T> find(Class<? extends T> type, String field, Object value);
 
 	// convenience delete methods
 	void delete(Object instance);
@@ -151,5 +152,7 @@ public interface ObjectDatastore extends Activator
 	// transactions
 	Transaction beginTransaction();
 	Transaction getTransaction();
+	
+	DatastoreService getService();
 	
 }

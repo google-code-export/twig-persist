@@ -216,7 +216,7 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		};
 		
 		PredicateToRestrictionAdaptor<Entity> restriction = new PredicateToRestrictionAdaptor<Entity>(predicate);
-		Iterator<RockBand> results = datastore.find().type(RockBand.class).restrictEntities(restriction).returnResultsNow();
+		Iterator<RockBand> results = datastore.find().type(RockBand.class).restrictEntities(restriction).now();
 		assertEquals(Iterators.size(results), 1);
 	}
 
@@ -263,7 +263,7 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		Band band1 = musicFestival.bands.get(1);
 		Band band2 = musicFestival.bands.get(2);
 
-		Map<Band, Key> keys = datastore.store().instances(Arrays.asList(band1, band2)).batch().returnKeysNow();
+		Map<Band, Key> keys = datastore.store().instances(Arrays.asList(band1, band2)).batch().now();
 
 		assertTrue(keys.size() > 2);
 	}
@@ -331,8 +331,8 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		MusicFestival musicFestival = createFestival();
 		datastore.store(musicFestival);
 
-		Future<QueryResultIterator<RockBand>> frbs = datastore.find().type(RockBand.class).returnResultsLater();
-		Future<QueryResultIterator<DanceBand>> fdbs = datastore.find().type(DanceBand.class).returnResultsLater();
+		Future<QueryResultIterator<RockBand>> frbs = datastore.find().type(RockBand.class).later();
+		Future<QueryResultIterator<DanceBand>> fdbs = datastore.find().type(DanceBand.class).later();
 
 		QueryResultIterator<RockBand> rbs = frbs.get();
 		QueryResultIterator<DanceBand> dbs = fdbs.get();
@@ -347,8 +347,8 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		MusicFestival musicFestival = createFestival();
 		Band band1 = musicFestival.bands.get(0);
 		Band band2 = musicFestival.bands.get(1);
-		Future<Key> future1 = datastore.store().instance(band1).returnKeyLater();
-		Future<Key> future2 = datastore.store().instance(band2).returnKeyLater();
+		Future<Key> future1 = datastore.store().instance(band1).later();
+		Future<Key> future2 = datastore.store().instance(band2).later();
 
 		assertEquals("Led Zeppelin", future1.get().getName());
 		assertEquals("The Firm", future2.get().getName());
@@ -380,7 +380,7 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		boolean threw = false;
 		try
 		{
-			datastore.store().instance(band4).ensureUniqueKey().returnKeyNow();
+			datastore.store().instance(band4).ensureUniqueKey().now();
 		}
 		catch (Exception e)
 		{
@@ -397,7 +397,7 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		Band band1 = musicFestival.bands.get(0);
 		Band band2 = musicFestival.bands.get(1);
 
-		Future<Map<Band, Key>> future1 = datastore.store().instances(Arrays.asList(band1, band2)).returnKeysLater();
+		Future<Map<Band, Key>> future1 = datastore.store().instances(Arrays.asList(band1, band2)).later();
 
 		Map<Band, Key> map = future1.get();
 
@@ -436,14 +436,14 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 	{
 		Band band = new Band();
 		band.name = "The XX";
-		datastore.store().instance(band).ensureUniqueKey().returnKeyNow();
+		datastore.store().instance(band).ensureUniqueKey().now();
 
 		band = new Band();
 		band.name = "The XX";
 		boolean threw = false;
 		try
 		{
-			datastore.store().instance(band).ensureUniqueKey().returnKeyNow();
+			datastore.store().instance(band).ensureUniqueKey().now();
 		}
 		catch (Exception e)
 		{
@@ -490,7 +490,7 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 			.type(Album.class)
 			.ancestor(band)
 			.fetchNoFields()
-			.returnResultsNow();
+			.now();
 	}
 	
 	@Test

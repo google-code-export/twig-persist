@@ -6,6 +6,8 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -18,46 +20,27 @@ import com.google.code.twig.util.generic.GenericTypeReflector;
  */
 public class DefaultFieldStrategy implements FieldStrategy
 {
-	private static final class ReplacedListType implements ParameterizedType
-	{
-		private final Type type;
-		private final Type replaced;
-
-		private ReplacedListType(Type type, Type replaced)
-		{
-			this.type = type;
-			this.replaced = replaced;
-		}
-
-		public Type getRawType()
-		{
-			return ArrayList.class;
-		}
-
-		public Type getOwnerType()
-		{
-			return null;
-		}
-
-		public Type[] getActualTypeArguments()
-		{
-			return new Type[] { replaced };
-		}
-
-		@Override
-		public String toString()
-		{
-			return "(Replaced " + type + " with List<" + replaced + ">)";
-		}
-	}
-
 	private final int defaultVersion;
 
+	private static Map<String, Type> nameToType;
+	private static Map<Type,String> typeToName;
+	
 	public DefaultFieldStrategy(int defaultVersion)
 	{
 		this.defaultVersion = defaultVersion;
 	}
 
+	public static void registerTypeName(Type type, String name)
+	{
+		if (nameToType == null)
+		{
+			nameToType = new ConcurrentHashMap<String, Type>();
+			typeToName = new ConcurrentHashMap<Type, String>();
+		}
+		nameToType.put(name, type);
+		typeToName.put(type, name);
+	}
+	
 	/**
 	 * Decode a type name - possibly abbreviated - into a type.
 	 * 
@@ -66,7 +49,15 @@ public class DefaultFieldStrategy implements FieldStrategy
 	protected Type nameToType(String name)
 	{
 		try
-		{
+		{	
+			if (nameToType != null)
+			{
+				Type type = nameToType.get(name);
+				if (type != null)
+				{
+					return type;
+				}
+			}
 			return Class.forName(name);
 		}
 		catch (ClassNotFoundException e)
@@ -129,6 +120,14 @@ public class DefaultFieldStrategy implements FieldStrategy
 	 */
 	protected String typeToName(Type type)
 	{
+		if (typeToName != null)
+		{
+			String name = typeToName.get(type);
+			if (name != null)
+			{
+				return name;
+			}
+		}
 		Class<?> clazz = GenericTypeReflector.erase(type);
 		String kind = clazz.getName();
 		return kind;
@@ -194,6 +193,39 @@ public class DefaultFieldStrategy implements FieldStrategy
 
 		// replace the collection type with a list type
 		return new ReplacedListType(type, replaced);
+	}
+	
+	private static final class ReplacedListType implements ParameterizedType
+	{
+		private final Type type;
+		private final Type replaced;
+
+		private ReplacedListType(Type type, Type replaced)
+		{
+			this.type = type;
+			this.replaced = replaced;
+		}
+
+		public Type getRawType()
+		{
+			return ArrayList.class;
+		}
+
+		public Type getOwnerType()
+		{
+			return null;
+		}
+
+		public Type[] getActualTypeArguments()
+		{
+			return new Type[] { replaced };
+		}
+
+		@Override
+		public String toString()
+		{
+			return "(Replaced " + type + " with List<" + replaced + ">)";
+		}
 	}
 
 

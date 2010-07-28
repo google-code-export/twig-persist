@@ -12,7 +12,7 @@ public class StandardUntypedSingleLoadCommand extends StandardDecodeCommand
 		this.key = key;
 	}
 	
-	public <T> T returnResultNow()
+	public <T> T now()
 	{
 		return keyToInstance(key, null);
 	}

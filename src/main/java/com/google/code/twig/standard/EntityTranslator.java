@@ -72,7 +72,7 @@ class EntityTranslator implements PropertyTranslator
 		else
 		{
 			Key key = (Key) value;
-			Object result = this.datastore.load().key(key).returnResultNow();
+			Object result = this.datastore.load().key(key).now();
 			if (result == null)
 			{
 				result = NULL_VALUE;
@@ -122,7 +122,7 @@ class EntityTranslator implements PropertyTranslator
 					Key key = datastore.associatedKey(instance);
 					if (key == null)
 					{
-						key = datastore.store().instance(instance).parentKey(getParentKey()).returnKeyNow();
+						key = datastore.store().instance(instance).parentKey(getParentKey()).now();
 					}
 					return key;
 				}
@@ -152,7 +152,7 @@ class EntityTranslator implements PropertyTranslator
 		if (!missed.isEmpty())
 		{
 			// encode the instances to entities
-			result.putAll(datastore.store().instances(missed).parentKey(parentKey).returnKeysNow());
+			result.putAll(datastore.store().instances(missed).parentKey(parentKey).now());
 		}
 		
 		return result;

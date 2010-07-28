@@ -13,7 +13,7 @@ public class StandardLoadCommand extends StandardCommand implements LoadCommand
 	}
 
 	@Override
-	public <T> StandardTypedLoadCommand<T> type(Class<T> type)
+	public <T> StandardTypedLoadCommand<T> type(Class<? extends T> type)
 	{
 		return new StandardTypedLoadCommand<T>(datastore, type);
 	}

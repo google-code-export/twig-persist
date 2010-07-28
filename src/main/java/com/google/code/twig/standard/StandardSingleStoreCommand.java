@@ -26,7 +26,7 @@ final class StandardSingleStoreCommand<T> extends StandardCommonStoreCommand<T, 
 		}
 	}
 
-	public Future<Key> returnKeyLater()
+	public Future<Key> later()
 	{
 		Future<Map<T, Key>> resultsLater = storeInstancesLater();
 		return new FutureWrapper<Map<T, Key>, Key>(resultsLater)
@@ -45,7 +45,7 @@ final class StandardSingleStoreCommand<T> extends StandardCommonStoreCommand<T, 
 		};
 	}
 
-	public Key returnKeyNow()
+	public Key now()
 	{
 		T instance = Iterables.getOnlyElement(instances);
 

@@ -8,11 +8,13 @@ import com.google.appengine.api.datastore.Entity;
 
 public interface LoadCommand
 {
+	<T> TypedLoadCommand<T> type(Class<? extends T> type);
+	
 	interface TypedLoadCommand<T>
 	{
 		SingleTypedLoadCommand<T, ?> id(Object id);
-		<K> MultipleTypedLoadCommand<T, K, ?> ids(Collection<K> ids);
-		<K> MultipleTypedLoadCommand<T, K, ?> ids(K... ids);
+		<I> MultipleTypedLoadCommand<T, I, ?> ids(Collection<? extends I> ids);
+		<I> MultipleTypedLoadCommand<T, I, ?> ids(I... ids);
 	}
 
 	interface CommonTypedLoadCommand<T, C extends CommonTypedLoadCommand<T, C>>
@@ -22,13 +24,11 @@ public interface LoadCommand
 		C parent(Object parent);
 	}
 	
-	interface SingleTypedLoadCommand<T, C extends SingleTypedLoadCommand<T, C>> extends CommonTypedLoadCommand<T, C>
+	interface SingleTypedLoadCommand<T, C extends SingleTypedLoadCommand<T, C>> extends CommonTypedLoadCommand<T, C>, Terminator<T>
 	{
-		T returnResultNow();
-		Future<T> returnResultLater();
 	}
 	
-	interface MultipleTypedLoadCommand<T, K, C extends MultipleTypedLoadCommand<T, K, C>> extends CommonTypedLoadCommand<T, C>
+	interface MultipleTypedLoadCommand<T, I, C extends MultipleTypedLoadCommand<T, I, C>> extends CommonTypedLoadCommand<T, C>, Terminator<Map<I, T>>
 	{
 		/**
 		 * Loads instances in the same order as the ids set with {@link TypedLoadCommand#ids(Collection)}. 
@@ -39,10 +39,11 @@ public interface LoadCommand
 		 *  
 		 * @return Instances in same order as ids
 		 */
-		Map<K, T> returnResultsNow();
+		@Override
+		Map<I, T> now();
 		
 		/**
-		 * <p>Operates exactly the same as {@link #returnResultsNow()} but runs asynchronously</p>
+		 * <p>Operates exactly the same as {@link #now()} but runs asynchronously</p>
 		 * 
 		 * <p>If the command is still running when the servlet request has finished processing
 		 * the response will not be returned to the client until the command is finished so that 
@@ -50,8 +51,6 @@ public interface LoadCommand
 		 * 
 		 * @return Future used to get instances in same order as ids
 		 */
-		Future<Map<K, T>> returnResultsLater();
+		Future<Map<I, T>> later();
 	}
-
-	<T> TypedLoadCommand<T> type(Class<T> type);
 }

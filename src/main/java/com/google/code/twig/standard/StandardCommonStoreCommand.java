@@ -24,7 +24,7 @@ import com.google.code.twig.StoreCommand.CommonStoreCommand;
 abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreCommand<T, C>> extends StandardEncodeCommand implements CommonStoreCommand<T, C>
 {
 	final StandardStoreCommand command;
-	Collection<T> instances;
+	Collection<? extends T> instances;
 	List<?> ids;
 	Key parentKey;
 	boolean batch;

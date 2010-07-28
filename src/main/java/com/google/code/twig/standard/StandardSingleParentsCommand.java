@@ -1,6 +1,7 @@
 package com.google.code.twig.standard;
 
 import java.util.Iterator;
+import java.util.concurrent.Future;
 
 import com.google.appengine.api.datastore.Entity;
 
@@ -14,12 +15,19 @@ class StandardSingleParentsCommand<P> extends StandardCommonParentsCommand<P>
 		this.childEntities = childEntities;
 	}
 
-	public Iterator<P> returnParentsNow()
+	@Override
+	public Iterator<P> now()
 	{
 		// no need to cache entities because there are no duplicates
 		Iterator<Entity> filtered = applyEntityFilter(childEntities);
 		Iterator<Entity> parentEntities = new PrefetchParentIterator(filtered, datastore, getFetchSize());
 		parentEntities = applyEntityFilter(parentEntities);
 		return childCommand.entityToInstanceIterator(parentEntities, false);
+	}
+
+	@Override
+	public Future<Iterator<P>> later()
+	{
+		throw new UnsupportedOperationException("Not yet implemented. Depends on async bulk get.");
 	}
 }

@@ -3,6 +3,7 @@ package com.google.code.twig.standard;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.Future;
 
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Query.SortPredicate;
@@ -19,7 +20,7 @@ class StandardMultipleParentsCommand<P> extends StandardCommonParentsCommand<P>
 		this.sorts = sorts;
 	}
 
-	public Iterator<P> returnParentsNow()
+	public Iterator<P> now()
 	{
 		// keys only child queries cannot be sorted as fields are missing
 		if (childCommand.getRootCommand().isKeysOnly())
@@ -56,5 +57,11 @@ class StandardMultipleParentsCommand<P> extends StandardCommonParentsCommand<P>
 			parentEntities = applyEntityFilter(parentEntities);
 			return entityToInstanceIterator(parentEntities, false);
 		}
-	}		
+	}
+	
+	@Override
+	public Future<Iterator<P>> later()
+	{
+		throw new UnsupportedOperationException("Not implemented yet. Depends on async bulk get.");
+	}
 }

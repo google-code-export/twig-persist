@@ -3,6 +3,7 @@ package com.google.code.twig.translator;
 import java.lang.reflect.Type;
 import java.util.Set;
 
+import com.google.appengine.api.datastore.DataTypeUtils;
 import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
@@ -37,7 +38,7 @@ public class PolymorphicTranslator extends DecoratingTranslator
 			}
 		}
 
-		// there may be no polymorphic field
+		// there may be no polymorphic field - just use the raw type
 		if (kindName != null)
 		{
 			// filter out the class name
@@ -49,37 +50,24 @@ public class PolymorphicTranslator extends DecoratingTranslator
 		return chained.propertiesToTypesafe(properties, prefix, type);
 	}
 
-	//
-	// protected Type className(Set<Property> properties, Path prefix)
-	// {
-	// Path classNamePath = new Path.Builder(prefix).field(CLASS_NAME).build();
-	// for (Property property : properties)
-	// {
-	// if (property.getPath().equals(classNamePath))
-	// {
-	// String className = (String) property.getValue();
-	// try
-	// {
-	// return Class.forName(className);
-	// }
-	// catch (ClassNotFoundException e)
-	// {
-	// throw new IllegalStateException(e);
-	// }
-	// }
-	// }
-	// throw new IllegalStateException("Could not find class name");
-	// }
-
 	public Set<Property> typesafeToProperties(Object object, Path prefix, boolean indexed)
 	{
 		Set<Property> properties = chained.typesafeToProperties(object, prefix, indexed);
-
-		String className = object.getClass().getName();
-		Path classNamePath = new Path.Builder(prefix).meta(CLASS_NAME).build();
-		Property property = new SimpleProperty(classNamePath, className, true);
-
-		return new PrependSet<Property>(property, properties);
+		
+		// only add the type meta data for non-native types
+		if (!DataTypeUtils.isSupportedType(object.getClass()))
+		{
+			String className = strategy.typeToKind(object.getClass());
+			Path classNamePath = new Path.Builder(prefix).meta(CLASS_NAME).build();
+			Property property = new SimpleProperty(classNamePath, className, true);
+			
+			return new PrependSet<Property>(property, properties);
+		}
+		else
+		{
+			// native types are stored with the same exact type
+			return properties;
+		}
 	}
 
 }

@@ -12,18 +12,18 @@ import com.google.code.twig.StoreCommand.MultipleStoreCommand;
 
 class StandardMultipleStoreCommand<T> extends StandardCommonStoreCommand<T, StandardMultipleStoreCommand<T>> implements MultipleStoreCommand<T, StandardMultipleStoreCommand<T>>
 {
-	StandardMultipleStoreCommand(StandardStoreCommand command, Collection<T> instances)
+	StandardMultipleStoreCommand(StandardStoreCommand command, Collection<? extends T> instances)
 	{
 		super(command);
 		this.instances = instances;
 	}
 
-	public Future<Map<T, Key>> returnKeysLater()
+	public Future<Map<T, Key>> later()
 	{
 		return storeInstancesLater();
 	}
 
-	public Map<T, Key> returnKeysNow()
+	public Map<T, Key> now()
 	{
 		// convert into entities ready to store
 		Map<T, Entity> entities = instancesToEntities();

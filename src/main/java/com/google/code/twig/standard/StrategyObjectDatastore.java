@@ -105,8 +105,7 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	}
 
 	public StrategyObjectDatastore(RelationshipStrategy relationshipStrategy,
-			StorageStrategy storageStrategy,
-			ActivationStrategy activationStrategy,
+			StorageStrategy storageStrategy, ActivationStrategy activationStrategy,
 			FieldStrategy fieldStrategy)
 	{
 		// push the default depth onto the stack
@@ -128,11 +127,20 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 		independantTranslator = new EntityTranslator(this);
 		keyFieldTranslator = new KeyFieldTranslator(this, valueTranslatorChain, converter);
 		childTranslator = new ChildEntityTranslator(this);
+
 		embedTranslator = new ListTranslator(new MapTranslator(objectFieldTranslator, converter));
-		polyMorphicComponentTranslator = new ListTranslator(new MapTranslator(
-				new PolymorphicTranslator(objectFieldTranslator, fieldStrategy), converter));
-		defaultTranslator = new ListTranslator(new MapTranslator(new ChainedTranslator(
-				valueTranslatorChain, getFallbackTranslator()), converter));
+
+		polyMorphicComponentTranslator = new ListTranslator(
+				new MapTranslator(
+						new PolymorphicTranslator(
+								new ChainedTranslator(valueTranslatorChain, getFallbackTranslator()), 
+								fieldStrategy), 
+						converter));
+
+		defaultTranslator = new ListTranslator(
+				new MapTranslator(
+						new ChainedTranslator(valueTranslatorChain, getFallbackTranslator()),
+						converter));
 
 		keyCache = createKeyCache();
 	}
@@ -158,74 +166,74 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	@Override
 	public final Key store(Object instance)
 	{
-		return store().instance(instance).returnKeyNow();
+		return store().instance(instance).now();
 	}
 
 	@Override
 	public final Key store(Object instance, long id)
 	{
-		return store().instance(instance).id(id).returnKeyNow();
+		return store().instance(instance).id(id).now();
 	}
 
 	@Override
 	public final Key store(Object instance, String id)
 	{
-		return store().instance(instance).id(id).returnKeyNow();
+		return store().instance(instance).id(id).now();
 	}
 
 	@Override
-	public final <T> Map<T, Key> storeAll(Collection<T> instances)
+	public final <T> Map<T, Key> storeAll(Collection<? extends T> instances)
 	{
-		return store().instances(instances).returnKeysNow();
+		return store().instances(instances).now();
 	}
 
-//	protected void onAfterStore(Object instance, Key key)
-//	{
-//	}
-//
-//	protected void onBeforeStore(Object instance)
-//	{
-//	}
+	// protected void onAfterStore(Object instance, Key key)
+	// {
+	// }
+	//
+	// protected void onBeforeStore(Object instance)
+	// {
+	// }
 
-	public final <T> QueryResultIterator<T> find(Class<T> type)
+	public final <T> QueryResultIterator<T> find(Class<? extends T> type)
 	{
-		return find().type(type).returnResultsNow();
+		return find().type(type).now();
 	}
 
-	public final <T> QueryResultIterator<T> find(Class<T> type, String field, Object value)
+	public final <T> QueryResultIterator<T> find(Class<? extends T> type, String field, Object value)
 	{
-		return find().type(type).addFilter(field, FilterOperator.EQUAL, value).returnResultsNow();
+		return find().type(type).addFilter(field, FilterOperator.EQUAL, value).now();
 	}
 
 	@Override
 	public <T> T load(Key key)
 	{
-		return load().key(key).returnResultNow();
+		return load().key(key).now();
 	}
 
 	@Override
-	public final <T> T load(Class<T> type, Object id)
+	public final <T> T load(Class<? extends T> type, Object id)
 	{
-		return load().type(type).id(id).returnResultNow();
+		return load().type(type).id(id).now();
 	}
 
 	@Override
-	public final <I, T> Map<I, T> loadAll(Class<T> type, Collection<I> ids)
+	public final <I, T> Map<I, T> loadAll(Class<? extends T> type, Collection<? extends I> ids)
 	{
-		return load().type(type).ids(ids).returnResultsNow();
+		return load().type(type).ids(ids).now();
 	}
 
 	@Override
 	public final void update(Object instance)
 	{
 		// store but set the internal update flag so
-		store().update(true).instance(instance).returnKeyNow();
+		store().update(true).instance(instance).now();
 	}
 
 	@Override
 	public void updateAll(Collection<?> instances)
 	{
-		store().update(true).instances(instances).returnKeysNow();
+		store().update(true).instances(instances).now();
 	}
 
 	@Override
@@ -275,7 +283,7 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 		refresh = instance;
 
 		// load from datastore into the refresh instance
-		Object loaded = load().key(key).returnResultNow();
+		Object loaded = load().key(key).now();
 
 		if (loaded == null)
 		{
