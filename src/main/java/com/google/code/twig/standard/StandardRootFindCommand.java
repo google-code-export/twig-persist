@@ -5,17 +5,30 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import com.google.appengine.api.datastore.Cursor;
+import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Query.SortDirection;
+import com.google.appengine.api.datastore.Query.SortPredicate;
 import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.appengine.api.datastore.QueryResultList;
+import com.google.appengine.api.utils.FutureWrapper;
+import com.google.code.twig.FindCommand;
+import com.google.code.twig.Terminator;
+import com.google.code.twig.FindCommand.ParentsCommand;
 import com.google.code.twig.FindCommand.RootFindCommand;
+import com.google.code.twig.util.FutureAdaptor;
+import com.google.code.twig.util.IteratorToListFunction;
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 
 final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootFindCommand<T>>
 		implements RootFindCommand<T>
@@ -161,7 +174,7 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 	}
 
 	@Override
-	public Future<QueryResultIterator<T>> returnResultsLater()
+	public Future<QueryResultIterator<T>> later()
 	{
 		return futureSingleQueryInstanceIterator();
 	}
@@ -181,19 +194,148 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 	}
 
 	@Override
-	public QueryResultList<T> returnAllResultsNow()
+	public Terminator<List<T>> fetchAll()
 	{
-		throw new UnsupportedOperationException("Not yet implemented");
+		return new Terminator<List<T>>()
+		{
+			@Override
+			public List<T> now()
+			{
+				fetchFirst(Integer.MAX_VALUE);
+				return Lists.newArrayList(StandardRootFindCommand.this.now());
+			}
+
+			@Override
+			public Future<List<T>> later()
+			{
+				fetchFirst(Integer.MAX_VALUE);
+				Future<QueryResultIterator<T>> future = StandardRootFindCommand.this.later();
+				return new FutureAdaptor<QueryResultIterator<T>, List<T>>(future)
+				{
+					@Override
+					protected List<T> adapt(QueryResultIterator<T> source)
+					{
+						List<T> result = new ArrayList<T>();
+						while (source.hasNext())
+						{
+							result.add(source.next());
+						}
+						return result;
+					}
+				};
+			}
+		};
+	}
+	
+	@Override
+	public <P> Terminator<Iterator<P>> fetchParents()
+	{
+		return new Terminator<Iterator<P>>()
+		{
+			@Override
+			public Iterator<P> now()
+			{
+				return StandardRootFindCommand.this.<P>parentsCommandNow().now();
+			}
+
+			@Override
+			public Future<Iterator<P>> later()
+			{
+				return StandardRootFindCommand.this.<P>parentsCommandNow().later();
+			}
+		};
+	}
+	
+	@Override
+	public <P> Terminator<ParentsCommand<P>> fetchParentsCommand()
+	{
+		return new Terminator<ParentsCommand<P>>()
+		{
+			@Override
+			public ParentsCommand<P> now()
+			{
+				return parentsCommandNow();
+			}
+
+			@Override
+			public Future<ParentsCommand<P>> later()
+			{
+				@SuppressWarnings("unchecked")
+				Future<Iterator<Entity>> futureEntityIterator = (Future<Iterator<Entity>>) futureEntityIterator();
+				return new FutureAdaptor<Iterator<Entity>, ParentsCommand<P>>(futureEntityIterator)
+				{
+					@Override
+					protected ParentsCommand<P> adapt(Iterator<Entity> source)
+					{
+						return new StandardSingleParentsCommand<P>(StandardRootFindCommand.this, source);
+					}
+				};
+			}
+		};
+	}
+	public <P> ParentsCommand<P> parentsCommandNow()
+	{
+		Collection<Query> queries = queries();
+		if (queries.size() == 1)
+		{
+			Iterator<Entity> childEntities = nowSingleQueryEntities(queries.iterator().next());
+			childEntities = applyEntityFilter(childEntities);
+			return new StandardSingleParentsCommand<P>(this, childEntities);
+		}
+		else
+		{
+			try
+			{
+				List<Iterator<Entity>> childIterators = new ArrayList<Iterator<Entity>>(queries.size());
+				List<Future<QueryResultIterator<Entity>>> futures = multiQueriesToFutureEntityIterators(queries);
+				for (Future<QueryResultIterator<Entity>> future : futures)
+				{
+					childIterators.add(future.get());
+				}
+
+				Query query = queries.iterator().next();
+				List<SortPredicate> sorts = query.getSortPredicates();
+				if (query.isKeysOnly() == false)
+				{
+					// we should have the property values from the sort to merge
+					Iterator<Entity> childEntities = mergeEntities(childIterators, sorts);
+					childEntities = applyEntityFilter(childEntities);
+					return new StandardSingleParentsCommand<P>(this, childEntities);
+				}
+				else
+				{
+					return new StandardMultipleParentsCommand<P>(this, childIterators, sorts);
+				}
+			}
+			catch (Exception e)
+			{
+				throw new IllegalStateException(e);
+			}
+		}
 	}
 
-	@Override
-	public Future<QueryResultList<T>> returnAllResultsLater()
+	@SuppressWarnings("unchecked")
+	public <P> Future<ParentsCommand<P>> parentsCommandLater()
 	{
-		throw new UnsupportedOperationException("Not yet implemented");
-	}
+		Future<Iterator<Entity>> futureEntityIterator = (Future<Iterator<Entity>>) futureEntityIterator();
+		return new FutureWrapper<Iterator<Entity>, ParentsCommand<P>>(futureEntityIterator)
+		{
+			@Override
+			protected Throwable convertException(Throwable arg0)
+			{
+				return arg0;
+			}
 
+			@Override
+			protected ParentsCommand<P> wrap(Iterator<Entity> childEntities) throws Exception
+			{
+				return new StandardSingleParentsCommand<P>(StandardRootFindCommand.this, childEntities);
+			}
+		};
+	}
+	
 	@Override
-	public QueryResultIterator<T> returnResultsNow()
+	public QueryResultIterator<T> now()
 	{
 		if (children == null)
 		{
@@ -203,6 +345,7 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 		{
 			try
 			{
+				// actually fetch the multiple queries in parallel
 				final Iterator<T> result = this.<T> futureMultiQueryInstanceIterator().get();
 				return new QueryResultIterator<T>()
 				{

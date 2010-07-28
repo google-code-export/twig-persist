@@ -27,7 +27,10 @@ final class KeyFieldTranslator extends DecoratingTranslator
 
 	public Set<Property> typesafeToProperties(Object instance, Path path, boolean indexed)
 	{
-		assert path.getParts().size() == 1 : "Key field must be in root Entity";
+		if (path.getParts().size() > 1)
+		{
+			throw new IllegalStateException("Key field cannot be in embedded instance with path " + path);
+		}
 
 		// key spec may be null if we are in an update as we already have the key
 		if (datastore.encodeKeySpec != null)

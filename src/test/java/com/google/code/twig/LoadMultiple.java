@@ -35,7 +35,7 @@ public class LoadMultiple extends LocalDatastoreTestCase
 		
 		datastore.disassociateAll();
 		
-		Map<Long, Item> results = datastore.load().type(Item.class).ids(hello.id, world.id).returnResultsNow();
+		Map<Long, Item> results = datastore.load().type(Item.class).ids(hello.id, world.id).now();
 		
 		// show that we loaded both
 		Assert.assertEquals(2, results.size());

@@ -52,7 +52,7 @@ public class JoinTableTest extends LocalDatastoreTestCase
 		ds.store(new AB(a, b));
 
 		final AB ab = ds.find().type(AB.class).addFilter("a", Query.FilterOperator.EQUAL,
-				ds.associatedKey(a)).returnResultsNow().next();
+				ds.associatedKey(a)).now().next();
 
 		if (!ab.b.equals(b))
 			fail();

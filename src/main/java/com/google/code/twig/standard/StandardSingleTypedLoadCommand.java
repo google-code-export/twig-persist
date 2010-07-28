@@ -17,13 +17,13 @@ class StandardSingleTypedLoadCommand<T> extends StandardCommonTypedLoadCommand<T
 	}
 
 	@Override
-	public Future<T> returnResultLater()
+	public Future<T> later()
 	{
 		throw new UnsupportedOperationException("Not yet implemented");
 	}
 
 	@Override
-	public T returnResultNow()
+	public T now()
 	{
 		// the stored type of the id can be defined for the id field
 		Field keyField = datastore.keyField(command.type);

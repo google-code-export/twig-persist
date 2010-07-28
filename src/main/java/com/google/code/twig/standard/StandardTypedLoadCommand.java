@@ -7,9 +7,9 @@ import com.google.code.twig.LoadCommand.TypedLoadCommand;
 
 public class StandardTypedLoadCommand<T> extends StandardDecodeCommand implements TypedLoadCommand<T>
 {
-	final Class<T> type;
+	final Class<? extends T> type;
 
-	public StandardTypedLoadCommand(StrategyObjectDatastore datastore, Class<T> type)
+	public StandardTypedLoadCommand(StrategyObjectDatastore datastore, Class<? extends T> type)
 	{
 		super(datastore);
 		this.type = type;
@@ -22,7 +22,7 @@ public class StandardTypedLoadCommand<T> extends StandardDecodeCommand implement
 	}
 
 	@Override
-	public <I> StandardMultipleTypedLoadCommand<T, I> ids(Collection<I> ids)
+	public <I> StandardMultipleTypedLoadCommand<T, I> ids(Collection<? extends I> ids)
 	{
 		return new StandardMultipleTypedLoadCommand<T, I>(this, ids);
 	}

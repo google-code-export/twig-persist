@@ -5,7 +5,7 @@ import java.util.Collection;
 
 import com.google.code.twig.StoreCommand;
 
-class StandardStoreCommand extends StandardCommand implements StoreCommand
+public class StandardStoreCommand extends StandardCommand implements StoreCommand
 {
 	protected boolean update;
 
@@ -19,7 +19,7 @@ class StandardStoreCommand extends StandardCommand implements StoreCommand
 		return new StandardSingleStoreCommand<T>(this, instance);
 	}
 
-	public <T> StandardMultipleStoreCommand<T> instances(Collection<T> instances)
+	public <T> StandardMultipleStoreCommand<T> instances(Collection<? extends T> instances)
 	{
 		return new StandardMultipleStoreCommand<T>(this, instances);
 	}

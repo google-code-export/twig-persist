@@ -111,6 +111,11 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 			return service.get(transaction, keys);
 		}
 	}
+	
+	public DatastoreService getService()
+	{
+		return service;
+	}
 
 	public final Transaction getTransaction()
 	{

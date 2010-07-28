@@ -38,7 +38,7 @@ final class ParentEntityTranslator implements PropertyTranslator
 			return NULL_VALUE;
 		}
 
-		return this.datastore.load().key(parentKey).returnResultNow();
+		return this.datastore.load().key(parentKey).now();
 	}
 
 	public Set<Property> typesafeToProperties(final Object instance, final Path prefix, final boolean indexed)
@@ -67,7 +67,7 @@ final class ParentEntityTranslator implements PropertyTranslator
 		Key key = datastore.associatedKey(instance);
 		if (key == null)
 		{
-			key = datastore.store().instance(instance).returnKeyNow();
+			key = datastore.store().instance(instance).now();
 		}
 		return key;
 	}

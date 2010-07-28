@@ -2,7 +2,6 @@ package com.google.code.twig;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.Future;
 
 import com.google.appengine.api.datastore.Cursor;
 import com.google.appengine.api.datastore.Entity;
@@ -16,7 +15,7 @@ public interface FindCommand
 {
 	enum MergeOperator { OR, AND };
 	
-	<T> RootFindCommand<T> type(Class<T> type);
+	<T> RootFindCommand<T> type(Class<? extends T> type);
 
 	interface CommonFindCommand<C extends CommonFindCommand<C>>
 	{
@@ -45,7 +44,7 @@ public interface FindCommand
 	 *
 	 * @param <T>
 	 */
-	interface RootFindCommand<T> extends TypedFindCommand<T, RootFindCommand<T>>
+	interface RootFindCommand<T> extends TypedFindCommand<T, RootFindCommand<T>>, Terminator<QueryResultIterator<T>>
 	{
 		// methods that have side effects
 		
@@ -97,20 +96,12 @@ public interface FindCommand
 		// terminating methods
 		int countResultsNow();
 
-		QueryResultIterator<T> returnResultsNow();
-		List<T> returnAllResultsNow();
-		
-		Future<QueryResultIterator<T>> returnResultsLater();
-		Future<? extends List<T>> returnAllResultsLater();
-		
-		<P> Iterator<P> returnParentsNow();
-		<P> ParentsCommand<P> returnParentsCommandNow();
-		<P> Future<ParentsCommand<P>> returnParentsCommandLater();
+		Terminator<List<T>> fetchAll();
+		<P> Terminator<Iterator<P>> fetchParents();
+		<P> Terminator<ParentsCommand<P>> fetchParentsCommand();
 	}
 	
-	interface ParentsCommand<P> extends CommonFindCommand<ParentsCommand<P>>
+	interface ParentsCommand<P> extends CommonFindCommand<ParentsCommand<P>>, Terminator<Iterator<P>>
 	{
-		Iterator<P> returnParentsNow();
-//		Future<Iterator<P>> returnParentsLater();
 	}
 }
