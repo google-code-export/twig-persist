@@ -108,18 +108,18 @@ public class AnnotationStrategy extends DefaultFieldStrategy implements Combined
 		}
 	}
 	
-	@Override
-	protected String typeToName(java.lang.reflect.Type type)
-	{
-		Class<?> erased = GenericTypeReflector.erase(type);
-		Entity annotation = erased.getAnnotation(Entity.class);
-		if (annotation != null && annotation.kind().length() > 0)
-		{
-			return annotation.kind();
-		}
-		
-		return super.typeToName(type);
-	}
+//	@Override
+//	protected String typeToName(java.lang.reflect.Type type)
+//	{
+//		Class<?> erased = GenericTypeReflector.erase(type);
+//		Entity annotation = erased.getAnnotation(Entity.class);
+//		if (annotation != null && annotation.kind().length() > 0)
+//		{
+//			return annotation.kind();
+//		}
+//		
+//		return super.typeToName(type);
+//	}
 
 	public boolean polymorphic(Field field)
 	{

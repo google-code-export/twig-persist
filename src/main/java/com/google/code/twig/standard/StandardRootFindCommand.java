@@ -19,15 +19,12 @@ import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.appengine.api.datastore.Query.SortPredicate;
 import com.google.appengine.api.datastore.QueryResultIterator;
-import com.google.appengine.api.datastore.QueryResultList;
 import com.google.appengine.api.utils.FutureWrapper;
-import com.google.code.twig.FindCommand;
-import com.google.code.twig.Terminator;
 import com.google.code.twig.FindCommand.ParentsCommand;
 import com.google.code.twig.FindCommand.RootFindCommand;
+import com.google.code.twig.CommandTerminator;
 import com.google.code.twig.util.FutureAdaptor;
-import com.google.code.twig.util.IteratorToListFunction;
-import com.google.common.base.Function;
+import com.google.common.collect.ForwardingIterator;
 import com.google.common.collect.Lists;
 
 final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootFindCommand<T>>
@@ -176,7 +173,51 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 	@Override
 	public Future<QueryResultIterator<T>> later()
 	{
-		return futureSingleQueryInstanceIterator();
+			Collection<Query> queries = getValidatedQueries();
+			if (queries.size() > 1)
+			{
+				throw new IllegalStateException("Multiple queries defined");
+			}
+
+			final Query query = queries.iterator().next();
+			final Future<QueryResultIterator<Entity>> futureEntities = futureSingleQueryEntities(query);
+
+			return new Future<QueryResultIterator<T>>()
+			{
+				private QueryResultIterator<T> doGet(QueryResultIterator<Entity> entities)
+				{
+						Iterator<Entity> iterator = applyEntityFilter(entities);
+						Iterator<T> instances = entityToInstanceIterator(iterator, query.isKeysOnly());
+						return new BasicQueryResultIterator<T>(instances, entities);
+				}
+
+				public QueryResultIterator<T> get() throws InterruptedException,
+						ExecutionException
+				{
+						return doGet(futureEntities.get());
+				}
+
+				public QueryResultIterator<T> get(long timeout, TimeUnit unit)
+						throws InterruptedException, ExecutionException,
+						TimeoutException
+				{
+						return doGet(futureEntities.get(timeout, unit));
+				}
+
+				public boolean isCancelled()
+				{
+					return futureEntities.isCancelled();
+				}
+
+				public boolean isDone()
+				{
+					return futureEntities.isDone();
+				}
+				public boolean cancel(boolean mayInterruptIfRunning)
+				{
+					return futureEntities.cancel(mayInterruptIfRunning);
+				}
+			};
 	}
 
 	@Override
@@ -194,21 +235,74 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 	}
 
 	@Override
-	public Terminator<List<T>> fetchAll()
+	public CommandTerminator<T> returnUnique()
 	{
-		return new Terminator<List<T>>()
+		return new CommandTerminator<T>()
+		{
+			@Override
+			public T now()
+			{
+				return uniqueOrNull(StandardRootFindCommand.this.now());
+			}
+
+			private T uniqueOrNull(Iterator<T> iterator)
+			{
+				if (iterator.hasNext())
+				{
+					T result = iterator.next();
+					if (iterator.hasNext())
+					{
+						T extra = iterator.next();
+						throw new IllegalStateException("Found more than one result " + extra);
+					}
+					return result;
+				}
+				else
+				{
+					return null;
+				}
+			}
+
+			@Override
+			public Future<T> later()
+			{
+				Future<QueryResultIterator<T>> future = StandardRootFindCommand.this.later();
+				return new FutureAdaptor<QueryResultIterator<T>, T>(future)
+				{
+					@Override
+					protected T adapt(QueryResultIterator<T> source)
+					{
+						return uniqueOrNull(source);
+					}
+				};
+			}
+		};
+	}
+	
+	@Override
+	public CommandTerminator<List<T>> returnAll()
+	{
+		// get all in a single datastore call
+		if (options.getLimit() != null)
+		{
+			fetchFirst(options.getLimit());
+		}
+		else
+		{
+			fetchFirst(Integer.MAX_VALUE);
+		}
+		
+		return new CommandTerminator<List<T>>()
 		{
 			@Override
 			public List<T> now()
 			{
-				fetchFirst(Integer.MAX_VALUE);
 				return Lists.newArrayList(StandardRootFindCommand.this.now());
 			}
 
 			@Override
 			public Future<List<T>> later()
 			{
-				fetchFirst(Integer.MAX_VALUE);
 				Future<QueryResultIterator<T>> future = StandardRootFindCommand.this.later();
 				return new FutureAdaptor<QueryResultIterator<T>, List<T>>(future)
 				{
@@ -228,9 +322,9 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 	}
 	
 	@Override
-	public <P> Terminator<Iterator<P>> fetchParents()
+	public <P> CommandTerminator<Iterator<P>> returnParents()
 	{
-		return new Terminator<Iterator<P>>()
+		return new CommandTerminator<Iterator<P>>()
 		{
 			@Override
 			public Iterator<P> now()
@@ -247,9 +341,9 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 	}
 	
 	@Override
-	public <P> Terminator<ParentsCommand<P>> fetchParentsCommand()
+	public <P> CommandTerminator<ParentsCommand<P>> returnParentsCommand()
 	{
-		return new Terminator<ParentsCommand<P>>()
+		return new CommandTerminator<ParentsCommand<P>>()
 		{
 			@Override
 			public ParentsCommand<P> now()
@@ -339,7 +433,19 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 	{
 		if (children == null)
 		{
-			return nowSingleQueryInstanceIterator();
+			Collection<Query> queries = getValidatedQueries();
+			if (queries.size() > 1)
+			{
+				throw new IllegalStateException("Too many queries");
+			}
+			Query query = queries.iterator().next();
+
+			QueryResultIterator<Entity> entities = nowSingleQueryEntities(query);
+
+			Iterator<Entity> iterator = applyEntityFilter(entities);
+
+			Iterator<T> instances = entityToInstanceIterator(iterator, query.isKeysOnly());
+			return new BasicQueryResultIterator<T>(instances, entities);
 		}
 		else
 		{
@@ -394,7 +500,7 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 		if (this.ancestor == null && this.datastore.getTransaction() != null)
 		{
 			throw new IllegalStateException(
-					"You must set an ancestor if you run a find this in a transaction");
+					"Find command must have an ancestor in a transaction");
 		}
 
 		Query query = new Query(datastore.fieldStrategy.typeToKind(type));
@@ -430,5 +536,32 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 	public boolean isKeysOnly()
 	{
 		return keysOnly;
+	}
+	
+	/**
+	 * Takes a normal instance Iterator<V> and makes a QueryResultIterator<V> using a
+	 * low-level QueryResultIterator<Entity> to get the cursor.  
+	 */
+	private class BasicQueryResultIterator<V> extends ForwardingIterator<V> implements QueryResultIterator<V>
+	{
+		private final Iterator<V> instances;
+		private final QueryResultIterator<Entity> entities;
+
+		public BasicQueryResultIterator(Iterator<V> instances, QueryResultIterator<Entity> entities)
+		{
+			this.instances = instances;
+			this.entities = entities;
+		}
+
+		@Override
+		protected Iterator<V> delegate()
+		{
+			return instances;
+		}
+
+		public Cursor getCursor()
+		{
+			return entities.getCursor();
+		}
 	}
 }

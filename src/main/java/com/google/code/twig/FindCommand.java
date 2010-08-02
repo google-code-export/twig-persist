@@ -44,7 +44,7 @@ public interface FindCommand
 	 *
 	 * @param <T>
 	 */
-	interface RootFindCommand<T> extends TypedFindCommand<T, RootFindCommand<T>>, Terminator<QueryResultIterator<T>>
+	interface RootFindCommand<T> extends TypedFindCommand<T, RootFindCommand<T>>, CommandTerminator<QueryResultIterator<T>>
 	{
 		// methods that have side effects
 		
@@ -96,12 +96,15 @@ public interface FindCommand
 		// terminating methods
 		int countResultsNow();
 
-		Terminator<List<T>> fetchAll();
-		<P> Terminator<Iterator<P>> fetchParents();
-		<P> Terminator<ParentsCommand<P>> fetchParentsCommand();
+		CommandTerminator<List<T>> returnAll();
+		CommandTerminator<T> returnUnique();
+		
+		<P> CommandTerminator<Iterator<P>> returnParents();
+		<P> CommandTerminator<ParentsCommand<P>> returnParentsCommand();
+
 	}
 	
-	interface ParentsCommand<P> extends CommonFindCommand<ParentsCommand<P>>, Terminator<Iterator<P>>
+	interface ParentsCommand<P> extends CommonFindCommand<ParentsCommand<P>>, CommandTerminator<Iterator<P>>
 	{
 	}
 }

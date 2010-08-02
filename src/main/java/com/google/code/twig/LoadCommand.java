@@ -24,11 +24,11 @@ public interface LoadCommand
 		C parent(Object parent);
 	}
 	
-	interface SingleTypedLoadCommand<T, C extends SingleTypedLoadCommand<T, C>> extends CommonTypedLoadCommand<T, C>, Terminator<T>
+	interface SingleTypedLoadCommand<T, C extends SingleTypedLoadCommand<T, C>> extends CommonTypedLoadCommand<T, C>, CommandTerminator<T>
 	{
 	}
 	
-	interface MultipleTypedLoadCommand<T, I, C extends MultipleTypedLoadCommand<T, I, C>> extends CommonTypedLoadCommand<T, C>, Terminator<Map<I, T>>
+	interface MultipleTypedLoadCommand<T, I, C extends MultipleTypedLoadCommand<T, I, C>> extends CommonTypedLoadCommand<T, C>, CommandTerminator<Map<I, T>>
 	{
 		/**
 		 * Loads instances in the same order as the ids set with {@link TypedLoadCommand#ids(Collection)}. 

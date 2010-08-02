@@ -37,8 +37,27 @@ public class DefaultFieldStrategy implements FieldStrategy
 			nameToType = new ConcurrentHashMap<String, Type>();
 			typeToName = new ConcurrentHashMap<Type, String>();
 		}
-		nameToType.put(name, type);
-		typeToName.put(type, name);
+		
+		// put the values and check that there was no existing mappings
+		Type existingType = nameToType.get(name);
+		if (existingType == null)
+		{
+			nameToType.put(name, type);
+		}
+		else
+		{
+			throw new IllegalArgumentException("Kind name " + name + " was already mapped to " + existingType);
+		}
+		
+		String existingName = typeToName.get(type);
+		if (existingName == null)
+		{
+			typeToName.put(type, name);
+		}
+		else
+		{
+			throw new IllegalArgumentException("Type " + type + " was already mapped to kind name " + existingName);
+		}
 	}
 	
 	/**
