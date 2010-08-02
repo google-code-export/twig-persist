@@ -24,7 +24,6 @@ import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.annotation.Id;
 import com.google.code.twig.conversion.CombinedTypeConverter;
-import com.google.code.twig.conversion.DefaultTypeConverter;
 import com.google.code.twig.conversion.TypeConverter;
 import com.google.code.twig.strategy.ActivationStrategy;
 import com.google.code.twig.strategy.CombinedStrategy;
@@ -32,11 +31,8 @@ import com.google.code.twig.strategy.FieldStrategy;
 import com.google.code.twig.strategy.RelationshipStrategy;
 import com.google.code.twig.strategy.StorageStrategy;
 import com.google.code.twig.translator.ChainedTranslator;
-import com.google.code.twig.translator.CoreStringTypesTranslator;
-import com.google.code.twig.translator.EnumTranslator;
 import com.google.code.twig.translator.ListTranslator;
 import com.google.code.twig.translator.MapTranslator;
-import com.google.code.twig.translator.NativeDirectTranslator;
 import com.google.code.twig.translator.ObjectFieldTranslator;
 import com.google.code.twig.translator.PolymorphicTranslator;
 import com.google.code.twig.util.EntityToKeyFunction;
@@ -92,7 +88,7 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	// set when an instance is to be refreshed rather than instantiated
 	private Object refresh;
 
-	protected final TypeConverter converter;
+	protected final CombinedTypeConverter converter;
 
 	protected final RelationshipStrategy relationshipStrategy;
 	protected final FieldStrategy fieldStrategy;
@@ -187,13 +183,22 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 		return store().instances(instances).now();
 	}
 
-	// protected void onAfterStore(Object instance, Key key)
-	// {
-	// }
-	//
-	// protected void onBeforeStore(Object instance)
-	// {
-	// }
+	// TODO hook these up!
+//	 protected void onAfterStore(Object instance, Key key)
+//	 {
+//	 }
+//	
+//	 protected void onBeforeStore(Object instance)
+//	 {
+//	 }
+//	 
+//	 protected void onBeforeLoad(Key key)
+//	 {
+//	 }
+//	 
+//	 protected void onAfterLoad(Key key, Object instance)
+//	 {
+//	 }
 
 	public final <T> QueryResultIterator<T> find(Class<? extends T> type)
 	{
@@ -369,27 +374,14 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	/**
 	 * @return The translator which is used if no others handle the instance
 	 */
-	protected PropertyTranslator getFallbackTranslator()
-	{
-		return getIndependantTranslator();
-	}
+	protected abstract PropertyTranslator getFallbackTranslator();
 
-	protected CombinedTypeConverter createTypeConverter()
-	{
-		return new DefaultTypeConverter();
-	}
+	protected abstract CombinedTypeConverter createTypeConverter();
 
 	/**
 	 * @return The translator that is used for single items by default
 	 */
-	protected ChainedTranslator createValueTranslatorChain()
-	{
-		ChainedTranslator result = new ChainedTranslator();
-		result.append(new NativeDirectTranslator());
-		result.append(new CoreStringTypesTranslator());
-		result.append(new EnumTranslator());
-		return result;
-	}
+	protected abstract ChainedTranslator createValueTranslatorChain();
 
 	protected boolean propertiesIndexedByDefault()
 	{
@@ -597,8 +589,7 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 			}
 			refresh = null;
 
-			// need to cache the instance immediately so instances can reference
-			// it
+			// cache the instance immediately so related instances can reference it
 			if (keyCache.getInstance(decodeKey) == null)
 			{
 				// only cache first time - not for embedded components
@@ -609,19 +600,27 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 		}
 
 		@Override
-		protected void onBeforeTranslate(Field field, Set<Property> childProperties)
+		protected void onBeforeDecode(Field field, Set<Property> childProperties)
 		{
+			// potentially change the activation depth
 			if (activationDepthDeque.peek() > 0)
 			{
-				activationDepthDeque.push(StrategyObjectDatastore.this.activationStrategy
-						.activationDepth(field, activationDepthDeque.peek() - 1));
+				activationDepthDeque.push(activationStrategy
+						.activationDepth(field, activationDepthDeque.pop()));
 			}
 		}
 
 		@Override
-		protected void onAfterTranslate(Field field, Object value)
+		protected void onBeforeEncode(Path path, Object value)
 		{
-			activationDepthDeque.pop();
+			if (!path.getParts().isEmpty())
+			{
+				// check that this embedded value is not a persistent instance
+				if (keyCache.getKey(value) != null)
+				{
+					throw new IllegalStateException("Cannot embed persistent instance " + value + " at " + path );
+				}
+			}
 		}
 
 		@Override
@@ -629,8 +628,17 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 		{
 			if (getActivationDepth() > 0)
 			{
+				
+				activationDepthDeque.push(activationDepthDeque.peek() - 1);
 				super.activate(properties, instance, path);
+				activationDepthDeque.pop();
 			}
+		}
+		
+		@Override
+		protected boolean isNullStored()
+		{
+			return StrategyObjectDatastore.this.isNullStored();
 		}
 	}
 
@@ -672,6 +680,8 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 			return result;
 		}
 	}
+
+	protected abstract boolean isNullStored();
 
 	// null values are not permitted in a concurrent hash map so need a
 	// "missing" value

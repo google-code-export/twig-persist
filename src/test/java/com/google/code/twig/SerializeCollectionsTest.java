@@ -12,7 +12,9 @@ import com.google.code.twig.TypeWithCollections.TypeWithEnum;
 import com.google.code.twig.TypeWithCollections.TypeWithEnum.MyEnum;
 import com.google.code.twig.annotation.AnnotationObjectDatastore;
 import com.google.code.twig.conversion.CombinedTypeConverter;
-import com.google.code.twig.conversion.DefaultTypeConverter;
+import com.google.code.twig.conversion.EngineTypeConverters.BlobToAnything;
+import com.google.code.twig.conversion.EngineTypeConverters.SerializableToBlob;
+import com.google.code.twig.conversion.CoreTypeConverters;
 
 
 public class SerializeCollectionsTest extends LocalDatastoreTestCase
@@ -25,10 +27,10 @@ public class SerializeCollectionsTest extends LocalDatastoreTestCase
 			@Override
 			protected CombinedTypeConverter createTypeConverter()
 			{
-				DefaultTypeConverter dtc = new DefaultTypeConverter();
-				dtc.prepend(new DefaultTypeConverter.SlowBlobToAnything());
-				dtc.prepend(new DefaultTypeConverter.SlowSerializableToBlob());
-				return dtc;
+				CombinedTypeConverter combined = super.createTypeConverter();
+				combined.prepend(new BlobToAnything());
+				combined.prepend(new SerializableToBlob());
+				return combined;
 			}
 		};
 		

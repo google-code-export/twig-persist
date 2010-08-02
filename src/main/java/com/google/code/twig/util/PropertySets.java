@@ -35,6 +35,15 @@ public class PropertySets
 			}
 		}
 	}
+	
+	public static <T> T uniqueValue(Set<Property> properties)
+	{
+		if (properties.size() != 1)
+		{
+			throw new IllegalStateException("Expected one property but was " + properties.size());
+		}
+		return firstValue(properties);
+	}
 
 	public static class PrefixPropertySet
 	{
@@ -97,5 +106,10 @@ public class PropertySets
 	public static Set<Property> create(Map<String, Object> properties, boolean indexed)
 	{
 		return new PropertyMapToSet(properties, indexed);
+	}
+
+	public static Set<Property> singletonPropertySet(Path path, Object value, boolean indexed)
+	{
+		return new SinglePropertySet(path, value, indexed);
 	}
 }

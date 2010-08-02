@@ -19,13 +19,13 @@ public interface StoreCommand
 		C ensureUniqueKey();
 	}
 
-	interface SingleStoreCommand<T, C extends SingleStoreCommand<T, C>> extends CommonStoreCommand<T, C>, Terminator<Key>
+	interface SingleStoreCommand<T, C extends SingleStoreCommand<T, C>> extends CommonStoreCommand<T, C>, CommandTerminator<Key>
 	{
 		C id(long id);
 		C id(String id);
 	}
 
-	interface MultipleStoreCommand<T, C extends MultipleStoreCommand<T, C>> extends CommonStoreCommand<T, C>, Terminator<Map<T, Key>>
+	interface MultipleStoreCommand<T, C extends MultipleStoreCommand<T, C>> extends CommonStoreCommand<T, C>, CommandTerminator<Map<T, Key>>
 	{
 		C ids(String... ids);
 		C ids(Long... ids);

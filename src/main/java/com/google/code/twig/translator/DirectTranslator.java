@@ -36,7 +36,7 @@ public class DirectTranslator implements PropertyTranslator
 	{
 		if (isDirectType(object.getClass()))
 		{
-			return new SinglePropertySet(path, object, indexed);
+			return PropertySets.singletonPropertySet(path, object, indexed);
 		}
 		else
 		{

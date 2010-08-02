@@ -9,16 +9,15 @@ import com.google.appengine.api.datastore.Blob;
 import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
-import com.google.code.twig.conversion.DefaultTypeConverter;
-import com.google.code.twig.conversion.DefaultTypeConverter.BlobToAnything;
-import com.google.code.twig.conversion.DefaultTypeConverter.SerializableToBlob;
+import com.google.code.twig.conversion.EngineTypeConverters.FastBlobToAnything;
+import com.google.code.twig.conversion.EngineTypeConverters.FastSerializableToBlob;
 import com.google.code.twig.util.SimpleProperty;
 
 
 public class SerializingTranslator implements PropertyTranslator
 {
-	private final BlobToAnything blobToSerializable = new DefaultTypeConverter.BlobToAnything();
-	private final SerializableToBlob serializableToBlob = new DefaultTypeConverter.SerializableToBlob();
+	private final FastBlobToAnything blobToSerializable = new FastBlobToAnything();
+	private final FastSerializableToBlob serializableToBlob = new FastSerializableToBlob();
 
 	public final Object propertiesToTypesafe(Set<Property> properties, Path path, Type type)
 	{

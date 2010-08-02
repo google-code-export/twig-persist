@@ -104,7 +104,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 				// get the type that we need to store
 				Type type = typeFromField(field);
 
-				onBeforeTranslate(field, childProperties);
+				onBeforeDecode(field, childProperties);
 
 				// create instance
 				Object value;
@@ -118,7 +118,6 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 					throw new IllegalStateException("Problem translating field " + field, e);
 				}
 
-				onAfterTranslate(field, value);
 
 				if (value == null)
 				{
@@ -131,6 +130,8 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 				}
 				
 				setFieldValue(instance, field, value);
+				
+				onAfterDecode(field, value);
 			}
 		}
 	}
@@ -211,11 +212,11 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 	}
 
 
-	protected void onAfterTranslate(Field field, Object value)
+	protected void onAfterDecode(Field field, Object value)
 	{
 	}
 
-	protected void onBeforeTranslate(Field field, Set<Property> childProperties)
+	protected void onBeforeDecode(Field field, Set<Property> childProperties)
 	{
 	}
 
@@ -267,6 +268,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 
 	public final Set<Property> typesafeToProperties(Object object, Path path, boolean indexed)
 	{
+		onBeforeEncode(path, object);
 		if (object == null)
 		{
 			return Collections.emptySet();
@@ -298,6 +300,8 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 
 					Path childPath = new Path.Builder(path).field(fieldToPartName(field)).build();
 
+					onBeforeEncode(field, value);
+					
 					PropertyTranslator translator = encoder(field, value);
 					Set<Property> properties = translator.typesafeToProperties(value, childPath, indexed(field));
 					if (properties == null)
@@ -305,15 +309,35 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 						throw new IllegalStateException("Could not translate value to properties: " + value);
 					}
 					merged.addAll(properties);
+					
+					onAfterEncode(field, properties);
 				}
 			}
 
+			onAfterEncode(path, merged);
+			
 			return merged;
 		}
 		catch (IllegalAccessException e)
 		{
 			throw new IllegalStateException(e);
 		}
+	}
+
+	protected void onAfterEncode(Path path, Set<Property> properties)
+	{
+	}
+
+	protected void onBeforeEncode(Path path, Object object)
+	{
+	}
+
+	protected void onAfterEncode(Field field, Set<Property> properties)
+	{
+	}
+
+	protected void onBeforeEncode(Field field, Object value)
+	{
 	}
 
 	private List<Field> getSortedFields(Object object)
@@ -333,10 +357,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 		return fields;
 	}
 
-	protected boolean isNullStored()
-	{
-		return false;
-	}
+	protected abstract boolean isNullStored();
 
 	protected abstract boolean indexed(Field field);
 

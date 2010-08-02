@@ -12,7 +12,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import com.google.appengine.api.datastore.AsyncPreparedQuery;
-import com.google.appengine.api.datastore.Cursor;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.PreparedQuery;
@@ -28,7 +27,6 @@ import com.google.code.twig.FindCommand.MergeOperator;
 import com.google.code.twig.FindCommand.TypedFindCommand;
 import com.google.common.base.Predicate;
 import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.ForwardingIterator;
 
 abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, C>> extends StandardCommonFindCommand<T, C> implements TypedFindCommand<T, C>, BranchFindCommand<T>
 {
@@ -158,24 +156,6 @@ abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, C>> ext
 		}
 	}
 
-	// TODO get rid of this
-	<R> QueryResultIterator<R> nowSingleQueryInstanceIterator()
-	{
-		Collection<Query> queries = getValidatedQueries();
-		if (queries.size() > 1)
-		{
-			throw new IllegalStateException("Too many queries");
-		}
-		Query query = queries.iterator().next();
-
-		QueryResultIterator<Entity> entities = nowSingleQueryEntities(query);
-
-		Iterator<Entity> iterator = applyEntityFilter(entities);
-
-		Iterator<R> instances = entityToInstanceIterator(iterator, query.isKeysOnly());
-		return new BasicQueryResultIterator<R>(instances, entities);
-	}
-
 	protected QueryResultIterator<Entity> nowSingleQueryEntities(Query query)
 	{
 		final QueryResultIterator<Entity> entities;
@@ -192,56 +172,7 @@ abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, C>> ext
 		return entities;
 	}
 
-	<R> Future<QueryResultIterator<R>> futureSingleQueryInstanceIterator()
-	{
-		Collection<Query> queries = getValidatedQueries();
-		if (queries.size() > 1)
-		{
-			throw new IllegalStateException("Multiple queries defined");
-		}
-
-		final Query query = queries.iterator().next();
-		final Future<QueryResultIterator<Entity>> futureEntities = futureSingleQueryEntities(query);
-
-		return new Future<QueryResultIterator<R>>()
-		{
-			private QueryResultIterator<R> doGet(QueryResultIterator<Entity> entities)
-			{
-					Iterator<Entity> iterator = applyEntityFilter(entities);
-					Iterator<R> instances = entityToInstanceIterator(iterator, query.isKeysOnly());
-					return new BasicQueryResultIterator<R>(instances, entities);
-			}
-
-			public QueryResultIterator<R> get() throws InterruptedException,
-					ExecutionException
-			{
-					return doGet(futureEntities.get());
-			}
-
-			public QueryResultIterator<R> get(long timeout, TimeUnit unit)
-					throws InterruptedException, ExecutionException,
-					TimeoutException
-			{
-					return doGet(futureEntities.get(timeout, unit));
-			}
-
-			public boolean isCancelled()
-			{
-				return futureEntities.isCancelled();
-			}
-
-			public boolean isDone()
-			{
-				return futureEntities.isDone();
-			}
-			public boolean cancel(boolean mayInterruptIfRunning)
-			{
-				return futureEntities.cancel(mayInterruptIfRunning);
-			}
-		};
-	}
-
-	private Future<QueryResultIterator<Entity>> futureSingleQueryEntities(Query query)
+	Future<QueryResultIterator<Entity>> futureSingleQueryEntities(Query query)
 	{
 			Transaction txn = this.datastore.getTransaction();
 			Future<QueryResultIterator<Entity>> futureEntities;
@@ -257,14 +188,6 @@ abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, C>> ext
 			}
 			return futureEntities;
 	}
-//
-//	private boolean isInternalIncompatability(Throwable t)
-//	{
-//		return t instanceof Error || 
-//		t instanceof SecurityException || 
-//		t instanceof ClassNotFoundException ||
-//		t instanceof NoSuchMethodException;
-//	}
 
 	protected Iterator<Entity> nowMultipleQueryEntities(Collection<Query> queries)
 	{
@@ -514,52 +437,5 @@ abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, C>> ext
 			return endOfData();
 		}
 	}
-
-	private class BasicQueryResultIterator<V> extends ForwardingIterator<V> implements QueryResultIterator<V>
-	{
-		private final Iterator<V> instances;
-		private final QueryResultIterator<Entity> entities;
-
-		public BasicQueryResultIterator(Iterator<V> instances, QueryResultIterator<Entity> entities)
-		{
-			this.instances = instances;
-			this.entities = entities;
-		}
-
-		@Override
-		protected Iterator<V> delegate()
-		{
-			return instances;
-		}
-
-		public Cursor getCursor()
-		{
-			return entities.getCursor();
-		}
-	}
-//	public class ParentEntityIterator implements Iterator<Entity>
-//	{
-//		private final Iterator<Entity> children;
-//
-//		public ParentEntityIterator(Iterator<Entity> entities)
-//		{
-//			this.children = entities;
-//		}
-//
-//		public boolean hasNext()
-//		{
-//			return children.hasNext();
-//		}
-//
-//		public Entity next()
-//		{
-//			return datastore.keyToInstance(children.next().getKey(), propertyPredicate);
-//		}
-//
-//		public void remove()
-//		{
-//			throw new UnsupportedOperationException();
-//		}
-//	}
 
 }
