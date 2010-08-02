@@ -89,12 +89,12 @@ public class CombinedTypeConverter implements TypeConverter
 		}
 	}
 
-	public void register(SpecificTypeConverter<?, ?> specific)
+	public void append(SpecificTypeConverter<?, ?> specific)
 	{
 		specifics.add(specific);
 	}
 
-	public void register(TypeConverter general)
+	public void append(TypeConverter general)
 	{
 		generals.add(general);
 	}
