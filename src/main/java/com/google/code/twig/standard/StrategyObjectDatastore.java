@@ -58,8 +58,7 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	// keeps track of which instances are associated with which keys
 	final InstanceKeyCache keyCache;
 
-	// activation depth cannot be in decode context because it is defined per
-	// field
+	// activation depth state for current instance
 	final Deque<Integer> activationDepthDeque = new ArrayDeque<Integer>();
 
 	// are properties indexed by default
