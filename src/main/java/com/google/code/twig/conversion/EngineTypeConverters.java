@@ -19,17 +19,17 @@ public class EngineTypeConverters
 {
 	public static void registerAll(CombinedTypeConverter converter)
 	{
-		converter.register(new StringToText());
-		converter.register(new TextToString());
+		converter.append(new StringToText());
+		converter.append(new TextToString());
 		
-		converter.register(new StringToDate());
-		converter.register(new DateToString());
+		converter.append(new StringToDate());
+		converter.append(new DateToString());
 
-		converter.register(new ByteArrayToBlob());
-		converter.register(new BlobToByteArray());
+		converter.append(new ByteArrayToBlob());
+		converter.append(new BlobToByteArray());
 
-		converter.register(new FastSerializableToBlob());
-		converter.register(new FastBlobToAnything());
+		converter.append(new FastSerializableToBlob());
+		converter.append(new FastBlobToAnything());
 	}
 	
 	public static class StringToText implements SpecificTypeConverter<String, Text>

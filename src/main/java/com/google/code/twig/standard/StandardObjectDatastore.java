@@ -36,8 +36,8 @@ public class StandardObjectDatastore extends StrategyObjectDatastore
 	protected CombinedTypeConverter createTypeConverter()
 	{
 		CombinedTypeConverter converter = new CombinedTypeConverter();
-		converter.register(new PrimitiveTypeConverter());
-		converter.register(new CollectionConverter(converter));
+		converter.append(new PrimitiveTypeConverter());
+		converter.append(new CollectionConverter(converter));
 		EngineTypeConverters.registerAll(converter);
 		CoreTypeConverters.registerAll(converter);
 		return converter;

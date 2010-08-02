@@ -14,18 +14,18 @@ public class CoreTypeConverters
 {
 	public static void registerAll(CombinedTypeConverter converter)
 	{
-		converter.register(new DateToString());
-		converter.register(new StringToDate());
-		converter.register(new ClassToString());
-		converter.register(new StringToClass());
-		converter.register(new UrltoString());
-		converter.register(new StringToURI());
-		converter.register(new URItoString());
-		converter.register(new StringToURI());
-		converter.register(new LocaleToString());
-		converter.register(new StringToLocale());
-		converter.register(new CurrencyToString());
-		converter.register(new StringToCurrency());
+		converter.append(new DateToString());
+		converter.append(new StringToDate());
+		converter.append(new ClassToString());
+		converter.append(new StringToClass());
+		converter.append(new UrltoString());
+		converter.append(new StringToURI());
+		converter.append(new URItoString());
+		converter.append(new StringToURI());
+		converter.append(new LocaleToString());
+		converter.append(new StringToLocale());
+		converter.append(new CurrencyToString());
+		converter.append(new StringToCurrency());
 	}
 
 	static DateFormat format = DateFormat.getDateTimeInstance();
