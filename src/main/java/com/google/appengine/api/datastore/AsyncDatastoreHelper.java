@@ -13,6 +13,7 @@ import com.google.appengine.api.datastore.Query.SortPredicate;
 import com.google.appengine.repackaged.com.google.io.protocol.ProtocolMessage;
 import com.google.apphosting.api.ApiProxy;
 import com.google.apphosting.api.DatastorePb;
+import com.google.code.twig.util.FutureAdaptor;
 import com.google.storage.onestore.v3.OnestoreEntity;
 import com.google.storage.onestore.v3.OnestoreEntity.Reference;
 import com.vercer.util.reference.SimpleObjectReference;
@@ -29,54 +30,25 @@ public class AsyncDatastoreHelper
 {
 	public static Future<List<Key>> put(final Transaction txn, final Iterable<Entity> entities)
 	{
-		final DatastorePb.PutRequest req = new DatastorePb.PutRequest();
+		DatastorePb.PutRequest req = new DatastorePb.PutRequest();
+		if (txn != null)
+		{
+			TransactionImpl.ensureTxnActive(txn);
+			req.setTransaction(DatastoreServiceImpl.localTxnToRemoteTxn(txn));
+		}
 
-		final SimpleObjectReference<Future<byte[]>> futureBytes = new SimpleObjectReference<Future<byte[]>>();
-		new TransactionRunner(txn, false)  // never auto-commit
+		for (Entity entity : entities)
+		{
+			OnestoreEntity.EntityProto proto = EntityTranslator.convertToPb(entity);
+			req.addEntity(proto);
+		}
+
+		Future<byte[]> futureBytes = makeAsyncCall("Put", req);
+
+		return new FutureAdaptor<byte[], List<Key>>(futureBytes)
 		{
 			@Override
-			protected void run()
-			{
-				if (txn != null)
-				{
-					req.setTransaction(DatastoreServiceImpl.localTxnToRemoteTxn(txn));
-				}
-
-				for (Entity entity : entities)
-				{
-					OnestoreEntity.EntityProto proto = EntityTranslator.convertToPb(entity);
-					req.addEntity(proto);
-				}
-
-				futureBytes.set(makeAsyncCall("Put", req));
-			}
-		}.runInTransaction();
-
-
-		return new Future<List<Key>>()
-		{
-			public boolean isDone()
-			{
-				return futureBytes.get().isDone();
-			}
-
-			public boolean isCancelled()
-			{
-				return futureBytes.get().isCancelled();
-			}
-
-			public List<Key> get(long timeout, TimeUnit unit) throws InterruptedException,
-					ExecutionException, TimeoutException
-			{
-				return doGet(futureBytes.get().get(timeout, unit));
-			}
-
-			public List<Key> get() throws InterruptedException, ExecutionException
-			{
-				return doGet(futureBytes.get().get());
-			}
-
-			private List<Key> doGet(byte[] bytes)
+			protected List<Key> adapt(byte[] bytes)
 			{
 				DatastorePb.PutResponse response = new DatastorePb.PutResponse();
 				if (bytes != null)
@@ -95,11 +67,6 @@ public class AsyncDatastoreHelper
 				}
 
 				return keysInOrder;
-			}
-
-			public boolean cancel(boolean mayInterruptIfRunning)
-			{
-				return futureBytes.get().cancel(mayInterruptIfRunning);
 			}
 		};
 	}

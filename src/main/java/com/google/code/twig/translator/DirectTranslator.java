@@ -7,7 +7,6 @@ import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.util.PropertySets;
-import com.google.code.twig.util.SinglePropertySet;
 
 public class DirectTranslator implements PropertyTranslator
 {

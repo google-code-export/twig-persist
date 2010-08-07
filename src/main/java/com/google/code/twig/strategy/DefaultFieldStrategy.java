@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.google.code.twig.conversion.PrimitiveTypeConverter;
+import com.google.code.twig.conversion.PrimitiveConverter;
 import com.google.code.twig.util.generic.GenericTypeReflector;
 
 /**
@@ -168,10 +168,10 @@ public class DefaultFieldStrategy implements FieldStrategy
 	 */
 	public Type typeOf(Field field)
 	{
-		return replace(field.getGenericType());
+		return replaceCollectionWithList(field.getGenericType());
 	}
 
-	protected Type replace(final Type type)
+	protected Type replaceCollectionWithList(final Type type)
 	{
 		// turn every collection or array into an array list
 		Type componentType = null;
@@ -199,15 +199,13 @@ public class DefaultFieldStrategy implements FieldStrategy
 			return type;
 		}
 
-		// we have a collection type so need to convert it to 
-
-		// recurse in case we have e.g. List<Twig[]>
-		Type replaced = replace(componentType);
+		// we have a collection so convert its component type also
+		Type replaced = replaceCollectionWithList(componentType);
 		
 		// use wrapper type for primitives
 		if (GenericTypeReflector.erase(replaced).isPrimitive())
 		{
-			replaced = PrimitiveTypeConverter.getWrapperClassForPrimitive((Class<?>) replaced);
+			replaced = PrimitiveConverter.getWrapperClassForPrimitive((Class<?>) replaced);
 		}
 
 		// replace the collection type with a list type

@@ -53,7 +53,7 @@ public class CollectionConverter implements TypeConverter
 		{
 			// must be a primitive array
 			Class<?> componentType = source.getClass().getComponentType();
-			Class<?> wrapper = PrimitiveTypeConverter.getWrapperClassForPrimitive(componentType);
+			Class<?> wrapper = PrimitiveConverter.getWrapperClassForPrimitive(componentType);
 			int length = Array.getLength(source);
 			items = (Object[]) Array.newInstance(wrapper, length);
 			for (int i = 0; i < length; i++)

@@ -503,7 +503,7 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 					"Find command must have an ancestor in a transaction");
 		}
 
-		Query query = new Query(datastore.fieldStrategy.typeToKind(type));
+		Query query = new Query(datastore.getFieldStrategy().typeToKind(type));
 		applyFilters(query);
 		if (sorts != null)
 		{

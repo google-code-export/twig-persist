@@ -23,7 +23,7 @@ import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.annotation.Id;
-import com.google.code.twig.conversion.CombinedTypeConverter;
+import com.google.code.twig.conversion.CombinedConverter;
 import com.google.code.twig.conversion.TypeConverter;
 import com.google.code.twig.strategy.ActivationStrategy;
 import com.google.code.twig.strategy.CombinedStrategy;
@@ -88,12 +88,12 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	// set when an instance is to be refreshed rather than instantiated
 	private Object refresh;
 
-	protected final CombinedTypeConverter converter;
+	protected final CombinedConverter converter;
 
-	protected final RelationshipStrategy relationshipStrategy;
-	protected final FieldStrategy fieldStrategy;
-	protected final ActivationStrategy activationStrategy;
-	protected final StorageStrategy storageStrategy;
+	private final RelationshipStrategy relationshipStrategy;
+	private final FieldStrategy fieldStrategy;
+	private final ActivationStrategy activationStrategy;
+	private final StorageStrategy storageStrategy;
 
 	public StrategyObjectDatastore(CombinedStrategy strategy)
 	{
@@ -376,7 +376,7 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	 */
 	protected abstract PropertyTranslator getFallbackTranslator();
 
-	protected abstract CombinedTypeConverter createTypeConverter();
+	protected abstract CombinedConverter createTypeConverter();
 
 	/**
 	 * @return The translator that is used for single items by default
@@ -679,6 +679,26 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 		{
 			return result;
 		}
+	}
+
+	public RelationshipStrategy getRelationshipStrategy()
+	{
+		return relationshipStrategy;
+	}
+
+	public FieldStrategy getFieldStrategy()
+	{
+		return fieldStrategy;
+	}
+
+	public ActivationStrategy getActivationStrategy()
+	{
+		return activationStrategy;
+	}
+
+	public StorageStrategy getStorageStrategy()
+	{
+		return storageStrategy;
 	}
 
 	protected abstract boolean isNullStored();

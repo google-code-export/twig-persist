@@ -27,7 +27,7 @@ class StandardSingleTypedLoadCommand<T> extends StandardCommonTypedLoadCommand<T
 	{
 		// the stored type of the id can be defined for the id field
 		Field keyField = datastore.keyField(command.type);
-		String kind = datastore.fieldStrategy.typeToKind(command.type);
+		String kind = datastore.getFieldStrategy().typeToKind(command.type);
 		Key key = idToKey(id, keyField, kind);
 		return keyToInstance(key, propertyRestriction);
 	}

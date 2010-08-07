@@ -55,7 +55,7 @@ class StandardCommonTypedLoadCommand<T, C extends StandardCommonTypedLoadCommand
 		Type keyType;
 		if (keyField != null)
 		{
-			keyType = datastore.fieldStrategy.typeOf(keyField);
+			keyType = datastore.getFieldStrategy().typeOf(keyField);
 		}
 		else
 		{

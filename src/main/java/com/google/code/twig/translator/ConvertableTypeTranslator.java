@@ -6,15 +6,15 @@ import java.util.Set;
 import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
-import com.google.code.twig.conversion.CombinedTypeConverter;
-import com.google.code.twig.conversion.SpecificTypeConverter;
+import com.google.code.twig.conversion.CombinedConverter;
+import com.google.code.twig.conversion.SpecificConverter;
 import com.google.code.twig.util.PropertySets;
 
 public class ConvertableTypeTranslator implements PropertyTranslator
 {
-	private final CombinedTypeConverter converter;
+	private final CombinedConverter converter;
 
-	public ConvertableTypeTranslator(CombinedTypeConverter converter)
+	public ConvertableTypeTranslator(CombinedConverter converter)
 	{
 		this.converter = converter;
 	}
@@ -43,7 +43,7 @@ public class ConvertableTypeTranslator implements PropertyTranslator
 	private <S, T> T typesafeConvert(Type type, S value)
 	{
 		@SuppressWarnings("unchecked")
-		SpecificTypeConverter<S, T> specific = (SpecificTypeConverter<S, T>) converter.converter(value.getClass(), type);
+		SpecificConverter<S, T> specific = (SpecificConverter<S, T>) converter.converter(value.getClass(), type);
 		if (specific != null)
 		{
 			return specific.convert(value);

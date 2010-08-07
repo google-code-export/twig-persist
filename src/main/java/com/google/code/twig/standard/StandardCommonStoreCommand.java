@@ -195,7 +195,7 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 
 	protected Entity instanceToEntity(Object instance, Key parentKey, Object id)
 	{
-		String kind = datastore.fieldStrategy.typeToKind(instance.getClass());
+		String kind = datastore.getFieldStrategy().typeToKind(instance.getClass());
 		
 		// push a new encode context
 		KeySpecification existingEncodeKeySpec = datastore.encodeKeySpec;

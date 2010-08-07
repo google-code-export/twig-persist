@@ -2,10 +2,10 @@ package com.google.code.twig.standard;
 
 import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.conversion.CollectionConverter;
-import com.google.code.twig.conversion.CombinedTypeConverter;
-import com.google.code.twig.conversion.EngineTypeConverters;
-import com.google.code.twig.conversion.CoreTypeConverters;
-import com.google.code.twig.conversion.PrimitiveTypeConverter;
+import com.google.code.twig.conversion.CombinedConverter;
+import com.google.code.twig.conversion.EngineConverters;
+import com.google.code.twig.conversion.CoreConverters;
+import com.google.code.twig.conversion.PrimitiveConverter;
 import com.google.code.twig.strategy.ActivationStrategy;
 import com.google.code.twig.strategy.CombinedStrategy;
 import com.google.code.twig.strategy.FieldStrategy;
@@ -33,13 +33,13 @@ public class StandardObjectDatastore extends StrategyObjectDatastore
 	}
 	
 	@Override
-	protected CombinedTypeConverter createTypeConverter()
+	protected CombinedConverter createTypeConverter()
 	{
-		CombinedTypeConverter converter = new CombinedTypeConverter();
-		converter.append(new PrimitiveTypeConverter());
+		CombinedConverter converter = new CombinedConverter();
+		converter.append(new PrimitiveConverter());
 		converter.append(new CollectionConverter(converter));
-		EngineTypeConverters.registerAll(converter);
-		CoreTypeConverters.registerAll(converter);
+		EngineConverters.registerAll(converter);
+		CoreConverters.registerAll(converter);
 		return converter;
 		
 	}

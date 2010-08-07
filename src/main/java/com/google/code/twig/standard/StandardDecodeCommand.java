@@ -29,7 +29,7 @@ class StandardDecodeCommand extends StandardCommand
 	}
 	
 	@SuppressWarnings("unchecked")
-	final <T> T entityToInstance(Entity entity, Restriction<Property> predicate)
+	public final <T> T entityToInstance(Entity entity, Restriction<Property> predicate)
 	{
 		T instance = (T) datastore.keyCache.getInstance(entity.getKey());
 		if (instance == null)
@@ -38,7 +38,7 @@ class StandardDecodeCommand extends StandardCommand
 			Key existingDecodeKey = datastore.decodeKey;
 			datastore.decodeKey = entity.getKey();
 
-			Type type = datastore.fieldStrategy.kindToType(entity.getKind());
+			Type type = datastore.getFieldStrategy().kindToType(entity.getKind());
 
 			Set<Property> properties = PropertySets.create(entity.getProperties(), datastore.indexed);
 			
@@ -65,7 +65,7 @@ class StandardDecodeCommand extends StandardCommand
 	}
 	
 
-	final <T> Iterator<T> entitiesToInstances(final Iterator<Entity> entities, final Restriction<Property> filter)
+	public final <T> Iterator<T> entitiesToInstances(final Iterator<Entity> entities, final Restriction<Property> filter)
 	{
 		return new Iterator<T>()
 		{
@@ -92,7 +92,7 @@ class StandardDecodeCommand extends StandardCommand
 
 
 	@SuppressWarnings("unchecked")
-	<T> T keyToInstance(Key key, Restriction<Property> filter)
+	public <T> T keyToInstance(Key key, Restriction<Property> filter)
 	{
 		T instance = (T) datastore.keyCache.getInstance(key);
 		if (instance == null)
@@ -112,7 +112,7 @@ class StandardDecodeCommand extends StandardCommand
 	}
 	
 	@SuppressWarnings("unchecked")
-	final <T> Map<Key, T> keysToInstances(Collection<Key> keys, Restriction<Property> filter)
+	public final <T> Map<Key, T> keysToInstances(Collection<Key> keys, Restriction<Property> filter)
 	{
 		Map<Key, T> result = new HashMap<Key, T>(keys.size());
 		List<Key> missing = null;

@@ -10,6 +10,7 @@ import java.util.concurrent.TimeoutException;
 import com.google.appengine.api.utils.FutureWrapper;
 import com.google.apphosting.api.ApiBasePb;
 import com.google.apphosting.api.DatastorePb;
+import com.google.code.twig.util.FutureAdaptor;
 
 public class AsyncPreparedQuery extends BasePreparedQuery
 {
@@ -41,16 +42,10 @@ public class AsyncPreparedQuery extends BasePreparedQuery
 		DatastorePb.Query queryProto = convertToPb(this.query, FetchOptions.Builder.withDefaults());
 
 		Future<byte[]> fb = AsyncDatastoreHelper.makeAsyncCall("Count", queryProto);
-		return new FutureWrapper<byte[], Integer>(fb)
+		return new FutureAdaptor<byte[], Integer>(fb)
 		{
 			@Override
-			protected Throwable convertException(Throwable e)
-			{
-				return e;
-			}
-
-			@Override
-			protected Integer wrap(byte[] bytes) throws Exception
+			protected Integer adapt(byte[] bytes)
 			{
 				ApiBasePb.Integer64Proto resp = new ApiBasePb.Integer64Proto();
 				resp.mergeFrom(bytes);
@@ -62,51 +57,22 @@ public class AsyncPreparedQuery extends BasePreparedQuery
 	private Future<QueryResultIterator<Entity>> runAsyncQuery(Query q, final FetchOptions fetchOptions)
 	{
 		DatastorePb.Query queryProto = convertToPb(q, fetchOptions);
-		final Future<byte[]> future;
-		future = AsyncDatastoreHelper.makeAsyncCall("RunQuery", queryProto);
+		Future<byte[]> futureBytes = AsyncDatastoreHelper.makeAsyncCall("RunQuery", queryProto);
 
-		return new Future<QueryResultIterator<Entity>>()
+		return new FutureAdaptor<byte[], QueryResultIterator<Entity>>(futureBytes)
 		{
-			public boolean isDone()
-			{
-				return future.isDone();
-			}
-
-			public boolean isCancelled()
-			{
-				return future.isCancelled();
-			}
-
-			public QueryResultIterator<Entity> get(long timeout, TimeUnit unit)
-					throws InterruptedException, ExecutionException, TimeoutException
-			{
-				byte[] bs = future.get(timeout, unit);
-				return makeResult(bs);
-			}
-
-			private QueryResultIterator<Entity> makeResult(byte[] bs)
+			@Override
+			protected QueryResultIterator<Entity> adapt(byte[] bytes)
 			{
 				DatastorePb.QueryResult result = new DatastorePb.QueryResult();
-				if (bs != null)
+				if (bytes != null)
 				{
-					result.mergeFrom(bs);
+					result.mergeFrom(bytes);
 				}
 				QueryResultsSourceImpl src = new QueryResultsSourceImpl(null, fetchOptions, txn);
 				List<Entity> prefetchedEntities = src.loadFromPb(result);
 				return new QueryResultIteratorImpl(AsyncPreparedQuery.this, prefetchedEntities,
 						src, fetchOptions, txn);
-			}
-
-			public QueryResultIterator<Entity> get() throws InterruptedException,
-					ExecutionException
-			{
-				byte[] bs = future.get();
-				return makeResult(bs);
-			}
-
-			public boolean cancel(boolean mayInterruptIfRunning)
-			{
-				return future.cancel(mayInterruptIfRunning);
 			}
 		};
 	}
@@ -155,7 +121,6 @@ public class AsyncPreparedQuery extends BasePreparedQuery
 
 	public int countEntities()
 	{
-		// TODO Auto-generated method stub
-		return 0;
+		throw new UnsupportedOperationException();
 	}
 }
