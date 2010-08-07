@@ -10,14 +10,14 @@ import java.lang.reflect.Type;
 
 import com.google.appengine.api.datastore.Blob;
 import com.google.appengine.api.datastore.Text;
-import com.google.code.twig.conversion.CoreTypeConverters.DateToString;
-import com.google.code.twig.conversion.CoreTypeConverters.StringToDate;
+import com.google.code.twig.conversion.CoreConverters.DateToString;
+import com.google.code.twig.conversion.CoreConverters.StringToDate;
 import com.google.code.twig.util.io.NoDescriptorObjectInputStream;
 import com.google.code.twig.util.io.NoDescriptorObjectOutputStream;
 
-public class EngineTypeConverters
+public class EngineConverters
 {
-	public static void registerAll(CombinedTypeConverter converter)
+	public static void registerAll(CombinedConverter converter)
 	{
 		converter.append(new StringToText());
 		converter.append(new TextToString());
@@ -28,11 +28,11 @@ public class EngineTypeConverters
 		converter.append(new ByteArrayToBlob());
 		converter.append(new BlobToByteArray());
 
-		converter.append(new FastSerializableToBlob());
-		converter.append(new FastBlobToAnything());
+		converter.append(new SerializableToBlob());
+		converter.append(new BlobToAnything());
 	}
 	
-	public static class StringToText implements SpecificTypeConverter<String, Text>
+	public static class StringToText implements SpecificConverter<String, Text>
 	{
 		public Text convert(String source)
 		{
@@ -40,7 +40,7 @@ public class EngineTypeConverters
 		}
 	}
 	
-	public static class TextToString implements SpecificTypeConverter<Text, String>
+	public static class TextToString implements SpecificConverter<Text, String>
 	{
 		public String convert(Text source)
 		{
@@ -48,7 +48,7 @@ public class EngineTypeConverters
 		}
 	}
 
-	public static class ByteArrayToBlob implements SpecificTypeConverter<byte[], Blob>
+	public static class ByteArrayToBlob implements SpecificConverter<byte[], Blob>
 	{
 		public Blob convert(byte[] source)
 		{
@@ -56,7 +56,7 @@ public class EngineTypeConverters
 		}
 	}
 
-	public static class BlobToByteArray implements SpecificTypeConverter<Blob, byte[]>
+	public static class BlobToByteArray implements SpecificConverter<Blob, byte[]>
 	{
 		public byte[] convert(Blob source)
 		{
@@ -64,7 +64,7 @@ public class EngineTypeConverters
 		}
 	}
 
-	public static class FastSerializableToBlob implements SpecificTypeConverter<Serializable, Blob>
+	public static class SerializableToBlob implements SpecificConverter<Serializable, Blob>
 	{
 		public Blob convert(Serializable source)
 		{
@@ -83,21 +83,21 @@ public class EngineTypeConverters
 
 		protected ObjectOutputStream createObjectOutputStream(ByteArrayOutputStream baos) throws IOException
 		{
-			return new NoDescriptorObjectOutputStream(baos);
+			return new ObjectOutputStream(baos);
 		}
 
 	}
 	
-	public static class SerializableToBlob extends FastSerializableToBlob
+	public static class NoDescriptorSerializableToBlob extends SerializableToBlob
 	{
 		@Override
 		protected ObjectOutputStream createObjectOutputStream(ByteArrayOutputStream baos) throws IOException
 		{
-			return new ObjectOutputStream(baos);
+			return new NoDescriptorObjectOutputStream(baos);
 		}
 	}
 	
-	public static class FastBlobToAnything implements TypeConverter
+	public static class BlobToAnything implements TypeConverter
 	{
 		public Object convert(Blob blob)
 		{
@@ -115,7 +115,7 @@ public class EngineTypeConverters
 
 		protected ObjectInputStream createObjectInputStream(ByteArrayInputStream bais) throws IOException
 		{
-			return new NoDescriptorObjectInputStream(bais);
+			return new ObjectInputStream(bais);
 		}
 
 		@SuppressWarnings("unchecked")
@@ -129,12 +129,12 @@ public class EngineTypeConverters
 		}
 	}
 	
-	public static class BlobToAnything extends FastBlobToAnything
+	public static class NoDescriptorBlobToAnything extends BlobToAnything
 	{
 		@Override
 		protected ObjectInputStream createObjectInputStream(ByteArrayInputStream bais) throws IOException
 		{
-			return new ObjectInputStream(bais);
+			return new NoDescriptorObjectInputStream(bais);
 		}
 	}
 }

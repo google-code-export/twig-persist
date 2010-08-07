@@ -8,7 +8,7 @@ import java.util.Set;
 
 import com.google.code.twig.util.generic.GenericTypeReflector;
 
-public class PrimitiveTypeConverter implements TypeConverter
+public class PrimitiveConverter implements TypeConverter
 {
 	private static final Map<Class<?>, Class<?>> primitives = new HashMap<Class<?>, Class<?>>();
 	private static final Set<Class<?>> wrappers = new HashSet<Class<?>>();
@@ -35,7 +35,7 @@ public class PrimitiveTypeConverter implements TypeConverter
 		if (source == null && !erased.isPrimitive())
 		{
 			// consider null a primitive value
-			return (T) nullValue;
+			return (T) NULL_VALUE;
 		}
 		
 		// if we have a primitive or wrapper get the wrapper
@@ -88,28 +88,11 @@ public class PrimitiveTypeConverter implements TypeConverter
 		}
 		else
 		{
-			// please tell me if you know a better way to do this!
-			if (wrapper == Integer.class)
+			if (Integer.class.isAssignableFrom(wrapper))
 			{
-				if (source instanceof Long)
+				if (source instanceof Number)
 				{
-					return (T) Integer.valueOf(((Long) source).intValue());
-				}
-				else if (source instanceof Double)
-				{
-					return (T) Integer.valueOf(((Double) source).intValue());
-				}
-				else if (source instanceof Float)
-				{
-					return (T) Integer.valueOf(((Float) source).intValue());
-				}
-				else if (source instanceof Short)
-				{
-					return (T) Integer.valueOf(((Short) source).intValue());
-				}
-				else if (source instanceof Byte)
-				{
-					return (T) Integer.valueOf(((Byte) source).intValue());
+					return (T) Integer.valueOf(((Number) source).intValue());
 				}
 				else if (source instanceof String)
 				{
@@ -118,25 +101,9 @@ public class PrimitiveTypeConverter implements TypeConverter
 			}
 			else if (wrapper == Long.class)
 			{
-				if (source instanceof Integer)
+				if (source instanceof Number)
 				{
-					return (T) Long.valueOf(((Integer) source).longValue());
-				}
-				else if (source instanceof Double)
-				{
-					return (T) Long.valueOf(((Double) source).longValue());
-				}
-				else if (source instanceof Float)
-				{
-					return (T) Long.valueOf(((Float) source).longValue());
-				}
-				else if (source instanceof Short)
-				{
-					return (T) Long.valueOf(((Short) source).longValue());
-				}
-				else if (source instanceof Byte)
-				{
-					return (T) Long.valueOf(((Byte) source).longValue());
+					return (T) Long.valueOf(((Number) source).longValue());
 				}
 				else if (source instanceof String)
 				{
@@ -145,25 +112,9 @@ public class PrimitiveTypeConverter implements TypeConverter
 			}
 			else if (wrapper == Float.class)
 			{
-				if (source instanceof Long)
+				if (source instanceof Number)
 				{
-					return (T) Float.valueOf(((Long) source).floatValue());
-				}
-				else if (source instanceof Double)
-				{
-					return (T) Float.valueOf(((Double) source).floatValue());
-				}
-				else if (source instanceof Integer)
-				{
-					return (T) Float.valueOf(((Integer) source).floatValue());
-				}
-				else if (source instanceof Short)
-				{
-					return (T) Float.valueOf(((Short) source).floatValue());
-				}
-				else if (source instanceof Byte)
-				{
-					return (T) Float.valueOf(((Byte) source).floatValue());
+					return (T) Float.valueOf(((Number) source).floatValue());
 				}
 				else if (source instanceof String)
 				{
@@ -172,25 +123,9 @@ public class PrimitiveTypeConverter implements TypeConverter
 			}
 			else if (wrapper == Double.class)
 			{
-				if (source instanceof Long)
+				if (source instanceof Number)
 				{
-					return (T) Double.valueOf(((Long) source).doubleValue());
-				}
-				else if (source instanceof Integer)
-				{
-					return (T) Double.valueOf(((Integer) source).doubleValue());
-				}
-				else if (source instanceof Float)
-				{
-					return (T) Double.valueOf(((Float) source).doubleValue());
-				}
-				else if (source instanceof Short)
-				{
-					return (T) Double.valueOf(((Short) source).doubleValue());
-				}
-				else if (source instanceof Byte)
-				{
-					return (T) Double.valueOf(((Byte) source).doubleValue());
+					return (T) Double.valueOf(((Number) source).doubleValue());
 				}
 				else if (source instanceof String)
 				{
@@ -210,25 +145,9 @@ public class PrimitiveTypeConverter implements TypeConverter
 			}
 			else if (wrapper == Byte.class)
 			{
-				if (source instanceof Long)
+				if (source instanceof Number)
 				{
-					return (T) Byte.valueOf(((Long) source).byteValue());
-				}
-				else if (source instanceof Integer)
-				{
-					return (T) Byte.valueOf(((Integer) source).byteValue());
-				}
-				else if (source instanceof Float)
-				{
-					return (T) Byte.valueOf(((Float) source).byteValue());
-				}
-				else if (source instanceof Double)
-				{
-					return (T) Byte.valueOf(((Double) source).byteValue());
-				}
-				else if (source instanceof Short)
-				{
-					return (T) Byte.valueOf(((Short) source).byteValue());
+					return (T) Byte.valueOf(((Number) source).byteValue());
 				}
 				else if (source instanceof String)
 				{

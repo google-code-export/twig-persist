@@ -1,6 +1,6 @@
 package com.google.code.twig.conversion;
 
-public interface SpecificTypeConverter<S, T>
+public interface SpecificConverter<S, T>
 {
 	T convert(S source);
 }
