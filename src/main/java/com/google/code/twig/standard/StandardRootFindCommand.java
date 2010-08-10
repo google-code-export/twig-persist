@@ -297,7 +297,7 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 	public CommandTerminator<List<T>> returnAll()
 	{
 		// get all in a single datastore call
-		if (options.getLimit() != null)
+		if (options != null && options.getLimit() != null)
 		{
 			fetchFirst(options.getLimit());
 		}
