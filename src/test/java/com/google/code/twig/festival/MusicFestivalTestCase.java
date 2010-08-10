@@ -27,9 +27,6 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.appengine.api.datastore.Transaction;
-import com.google.common.base.Predicate;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterators;
 import com.google.code.twig.LocalDatastoreTestCase;
 import com.google.code.twig.ObjectDatastore;
 import com.google.code.twig.annotation.AnnotationObjectDatastore;
@@ -38,6 +35,9 @@ import com.google.code.twig.annotation.Id;
 import com.google.code.twig.festival.Album.Track;
 import com.google.code.twig.festival.Band.HairStyle;
 import com.google.code.twig.util.PredicateToRestrictionAdaptor;
+import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterators;
 
 public class MusicFestivalTestCase extends LocalDatastoreTestCase
 {
@@ -457,7 +457,7 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 	{
 		MusicFestival musicFestival = createFestival();
 		datastore.store(musicFestival);
-		int count = datastore.find().type(Musician.class).countResultsNow();
+		int count = datastore.find().type(Musician.class).returnCount().now();
 		assertEquals(7, count);
 	}
 	

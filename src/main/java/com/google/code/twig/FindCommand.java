@@ -94,8 +94,7 @@ public interface FindCommand
 		RootFindCommand<T> fetchFirst(int size);
 
 		// terminating methods
-		int countResultsNow();
-
+		CommandTerminator<Integer> returnCount();
 		CommandTerminator<List<T>> returnAll();
 		CommandTerminator<T> returnUnique();
 		

@@ -59,8 +59,6 @@ final class KeyFieldTranslator extends DecoratingTranslator
 
 	public Object propertiesToTypesafe(Set<Property> properties, Path prefix, Type type)
 	{
-		assert properties.isEmpty();
-
 		// the key value is not stored in the properties but in the key
 		Object keyValue = datastore.decodeKey.getName();
 		if (keyValue == null)

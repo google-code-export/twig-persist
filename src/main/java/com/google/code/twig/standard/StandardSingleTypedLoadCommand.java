@@ -29,6 +29,9 @@ class StandardSingleTypedLoadCommand<T> extends StandardCommonTypedLoadCommand<T
 		Field keyField = datastore.keyField(command.type);
 		String kind = datastore.getFieldStrategy().typeToKind(command.type);
 		Key key = idToKey(id, keyField, kind);
-		return keyToInstance(key, propertyRestriction);
+		
+		@SuppressWarnings("unchecked")
+		T keyToInstance = (T) keyToInstance(key, propertyRestriction);
+		return keyToInstance;
 	}
 }

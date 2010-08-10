@@ -208,7 +208,7 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 			datastore.keyCache.cacheKeyReferenceForInstance(instance, datastore.encodeKeySpec.toObjectReference());
 		}
 			
-		// translate fields to properties - sets parent and id on key
+		// translate fields to properties - sets key parent and id
 		PropertyTranslator encoder = datastore.encoder(instance);
 		Set<Property> properties = encoder.typesafeToProperties(instance, Path.EMPTY_PATH, datastore.indexed);
 		if (properties == null)
@@ -218,7 +218,7 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 
 		// the key will now be set with id and parent
 		Entity entity = createEntity();
-
+		
 		// will trigger referenced instances to be stored
 		transferProperties(entity, properties);
 		

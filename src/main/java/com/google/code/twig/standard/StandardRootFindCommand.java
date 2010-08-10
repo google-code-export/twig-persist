@@ -221,17 +221,31 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 	}
 
 	@Override
-	public int countResultsNow()
+	public CommandTerminator<Integer> returnCount()
 	{
-		Collection<Query> queries = getValidatedQueries();
-		if (queries.size() > 1)
+		return new CommandTerminator<Integer>()
 		{
-			throw new IllegalStateException("Too many queries");
-		}
+			@Override
+			public Integer now()
+			{
+				Collection<Query> queries = getValidatedQueries();
+				if (queries.size() > 1)
+				{
+					throw new IllegalStateException("Too many queries");
+				}
 
-		Query query = queries.iterator().next();
-		PreparedQuery prepared = this.datastore.servicePrepare(query);
-		return prepared.countEntities();
+				Query query = queries.iterator().next();
+				PreparedQuery prepared = datastore.servicePrepare(query);
+				return prepared.countEntities();
+			}
+			
+			@Override
+			public Future<Integer> later()
+			{
+				throw new UnsupportedOperationException("Not implemented yet. Depends on async count");
+			}
+		};
+		
 	}
 
 	@Override

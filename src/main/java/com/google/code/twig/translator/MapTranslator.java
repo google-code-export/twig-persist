@@ -30,16 +30,16 @@ public class MapTranslator extends DecoratingTranslator
 	@Override
 	public Object propertiesToTypesafe(Set<Property> properties, Path path, Type type)
 	{
+		if (properties.isEmpty() || PropertySets.firstValue(properties) == null)
+		{
+			return NULL_VALUE;
+		}
+		
 		// only try if we can set a map to the field
 		if (!GenericTypeReflector.erase(type).isAssignableFrom(HashMap.class))
 		{
 			// pass on all other types down the chain
 			return chained.propertiesToTypesafe(properties, path, type);
-		}
-
-		if (properties.isEmpty())
-		{
-			return NULL_VALUE;
 		}
 
 		// group the properties by prefix to create each item

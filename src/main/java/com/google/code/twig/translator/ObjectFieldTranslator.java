@@ -53,6 +53,11 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 
 	public final Object propertiesToTypesafe(Set<Property> properties, Path path, Type type)
 	{
+		if (properties.size() == 1 && PropertySets.firstValue(properties) == null)
+		{
+			return NULL_VALUE;
+		}
+		
 		Class<?> clazz = GenericTypeReflector.erase(type);
 		Object instance = createInstance(clazz);
 		activate(properties, instance, path);
@@ -285,20 +290,20 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 					// get the type that we need to store
 					Type type = typeFromField(field);
 
+					Path childPath = new Path.Builder(path).field(fieldToPartName(field)).build();
+
 					// we may need to convert the object if it is not assignable
 					Object value = field.get(object);
 					if (value == null)
 					{
 						if (isNullStored())
 						{
-							merged.add(new SimpleProperty(path, null, indexed));
+							merged.add(new SimpleProperty(childPath, null, indexed(field)));
 						}
 						continue;
 					}
 
 					value = converters.convert(value, type);
-
-					Path childPath = new Path.Builder(path).field(fieldToPartName(field)).build();
 
 					onBeforeEncode(field, value);
 					

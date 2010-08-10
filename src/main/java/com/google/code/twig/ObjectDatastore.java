@@ -13,6 +13,10 @@ import com.google.appengine.api.datastore.Transaction;
 import com.google.code.twig.StoreCommand.MultipleStoreCommand;
 import com.google.code.twig.StoreCommand.SingleStoreCommand;
 
+/**
+ * @author John Patterson <john@vercer.com>
+ *
+ */
 public interface ObjectDatastore extends Activator
 {
 	/**
@@ -54,7 +58,10 @@ public interface ObjectDatastore extends Activator
 	Key store(Object instance, long id);
 	<T> Map<T, Key> storeAll(Collection<? extends T> instances);
 
-	// updating
+	/**
+	 * Update this persistent instance in the datastore. A check is made to ensure that this instance is
+	 * @param instance
+	 */
 	void update(Object instance);
 	void updateAll(Collection<?> instances);
 	void storeOrUpdate(Object instance);

@@ -42,7 +42,9 @@ public class PropertySets
 		{
 			throw new IllegalStateException("Expected one property but was " + properties.size());
 		}
-		return firstValue(properties);
+		@SuppressWarnings("unchecked")
+		T firstValue = (T) firstValue(properties);
+		return firstValue;
 	}
 
 	public static class PrefixPropertySet
@@ -69,8 +71,8 @@ public class PropertySets
 	
 	public static Collection<PrefixPropertySet> prefixPropertySets(Set<Property> properties, Path prefix)
 	{
-		Collection<PrefixPropertySet> result = new ArrayList<PrefixPropertySet>();
 		Property[] array = (Property[]) properties.toArray(new Property[properties.size()]);
+		Collection<PrefixPropertySet> result = new ArrayList<PrefixPropertySet>();
 		Part part = null;
 		int start = 0;
 		for (int i = 0; i < array.length; i++)
@@ -95,8 +97,7 @@ public class PropertySets
 		return result;
 	}
 
-	private static PrefixPropertySet createPrefixSubset(Path prefix, Property[] array, Part part,
-			int start, int i)
+	private static PrefixPropertySet createPrefixSubset(Path prefix, Property[] array, Part part, int start, int i)
 	{
 		Set<Property> subset = new ArraySortedSet<Property>(array, start, i - start);
 		PrefixPropertySet ppf = new PrefixPropertySet(Path.builder(prefix).append(part).build(), subset);
