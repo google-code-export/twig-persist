@@ -38,7 +38,7 @@ class EntityTranslator implements PropertyTranslator
 
 	public Object propertiesToTypesafe(Set<Property> properties, Path prefix, Type type)
 	{
-		if (properties.isEmpty())
+		if (properties.isEmpty() || properties.size() == 1 && PropertySets.firstValue(properties) == null)
 		{
 			return NULL_VALUE;
 		}

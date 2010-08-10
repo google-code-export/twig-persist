@@ -128,7 +128,7 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 		polyMorphicComponentTranslator = new ListTranslator(
 				new MapTranslator(
 						new PolymorphicTranslator(
-								new ChainedTranslator(valueTranslatorChain, getFallbackTranslator()), 
+								new ChainedTranslator(valueTranslatorChain, objectFieldTranslator), 
 								fieldStrategy), 
 						converter));
 
@@ -212,7 +212,9 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	@Override
 	public <T> T load(Key key)
 	{
-		return load().key(key).now();
+		@SuppressWarnings("unchecked")
+		T result = (T) load().key(key).now();
+		return result;
 	}
 
 	@Override
