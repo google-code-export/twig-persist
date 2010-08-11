@@ -58,14 +58,10 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 			return NULL_VALUE;
 		}
 		
+		// create the instance
 		Class<?> clazz = GenericTypeReflector.erase(type);
 		Object instance = createInstance(clazz);
-		activate(properties, instance, path);
-		return instance;
-	}
-
-	protected void activate(Set<Property> properties, Object instance, Path path)
-	{
+		
 		// ensure the properties are sorted
 		if (properties instanceof SortedSet<?> == false)
 		{
@@ -103,42 +99,48 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 					childProperties = pps.getProperties();
 				}
 
-				// get the correct translator for this field
-				PropertyTranslator translator = decoder(field, childProperties);
-
-				// get the type that we need to store
-				Type type = typeFromField(field);
-
-				onBeforeDecode(field, childProperties);
-
-				// create instance
-				Object value;
-				try
-				{
-					value = translator.propertiesToTypesafe(childProperties, fieldPath, type);
-				}
-				catch (Exception e)
-				{
-					// add a bit of context to the trace
-					throw new IllegalStateException("Problem translating field " + field, e);
-				}
-
-
-				if (value == null)
-				{
-					throw new IllegalStateException("Could not translate path " + fieldPath);
-				}
-
-				if (value == NULL_VALUE)
-				{
-					value = null;
-				}
-				
-				setFieldValue(instance, field, value);
-				
-				onAfterDecode(field, value);
+				decode(instance, field, fieldPath, childProperties);
 			}
 		}
+		
+		return instance;
+	}
+
+	protected void decode(Object instance, Field field, Path path, Set<Property> properties)
+	{
+		// get the correct translator for this field
+		PropertyTranslator translator = decoder(field, properties);
+
+		// get the type that we need to store
+		Type fieldType = typeFromField(field);
+
+		onBeforeDecode(field, properties);
+
+		// create instance
+		Object value;
+		try
+		{
+			value = translator.propertiesToTypesafe(properties, path, fieldType);
+		}
+		catch (Exception e)
+		{
+			// add a bit of context to the trace
+			throw new IllegalStateException("Problem translating field " + field, e);
+		}
+
+		if (value == null)
+		{
+			throw new IllegalStateException("Could not translate path " + path);
+		}
+
+		if (value == NULL_VALUE)
+		{
+			value = null;
+		}
+		
+		setFieldValue(instance, field, value);
+		
+		onAfterDecode(field, value);
 	}
 
 	private void setFieldValue(Object instance, Field field, Object value)

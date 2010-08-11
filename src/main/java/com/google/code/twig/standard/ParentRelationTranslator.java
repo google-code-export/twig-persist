@@ -10,19 +10,16 @@ import java.util.Set;
 import com.google.appengine.api.datastore.Key;
 import com.google.code.twig.Path;
 import com.google.code.twig.Property;
-import com.google.code.twig.PropertyTranslator;
 import com.vercer.util.reference.ReadOnlyObjectReference;
 
-final class ParentEntityTranslator implements PropertyTranslator
+final class ParentRelationTranslator extends RelationTranslator
 {
-	private final StrategyObjectDatastore datastore;
-
 	/**
 	 * @param datastore
 	 */
-	ParentEntityTranslator(StrategyObjectDatastore datastore)
+	ParentRelationTranslator(StrategyObjectDatastore datastore)
 	{
-		this.datastore = datastore;
+		super(datastore);
 	}
 
 	public Object propertiesToTypesafe(Set<Property> properties, Path prefix, Type type)
@@ -38,7 +35,7 @@ final class ParentEntityTranslator implements PropertyTranslator
 			return NULL_VALUE;
 		}
 
-		return this.datastore.load().key(parentKey).now();
+		return keyToInstance(parentKey);
 	}
 
 	public Set<Property> typesafeToProperties(final Object instance, final Path prefix, final boolean indexed)
@@ -60,15 +57,5 @@ final class ParentEntityTranslator implements PropertyTranslator
 
 		// no fields are stored for parent
 		return Collections.emptySet();
-	}
-
-	protected Key instanceToKey(Object instance)
-	{
-		Key key = datastore.associatedKey(instance);
-		if (key == null)
-		{
-			key = datastore.store().instance(instance).now();
-		}
-		return key;
 	}
 }

@@ -88,7 +88,7 @@ public interface FindCommand
 		RootFindCommand<T> finishAt(Cursor cursor);
 		
 		
-		RootFindCommand<T> maximumResults(int limit);
+		RootFindCommand<T> fetchMaximum(int limit);
 		RootFindCommand<T> fetchNoFields();
 		RootFindCommand<T> fetchNextBy(int size);
 		RootFindCommand<T> fetchFirst(int size);

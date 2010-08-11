@@ -22,7 +22,7 @@ class StandardSingleParentsCommand<P> extends StandardCommonParentsCommand<P>
 		Iterator<Entity> filtered = applyEntityFilter(childEntities);
 		Iterator<Entity> parentEntities = new PrefetchParentIterator(filtered, datastore, getFetchSize());
 		parentEntities = applyEntityFilter(parentEntities);
-		return childCommand.entityToInstanceIterator(parentEntities, false);
+		return childCommand.entitiesToInstances(parentEntities, propertyRestriction);
 	}
 
 	@Override

@@ -31,34 +31,40 @@ class StandardDecodeCommand extends StandardCommand
 	@SuppressWarnings("unchecked")
 	public final <T> T entityToInstance(Entity entity, Restriction<Property> predicate)
 	{
+		// we have the entity data but must return the associated instance
 		T instance = (T) datastore.keyCache.getInstance(entity.getKey());
 		if (instance == null)
 		{
-			// push a new context
+			// push new decode context state
 			Key existingDecodeKey = datastore.decodeKey;
 			datastore.decodeKey = entity.getKey();
 
-			Type type = datastore.getFieldStrategy().kindToType(entity.getKind());
-
-			Set<Property> properties = PropertySets.create(entity.getProperties(), datastore.indexed);
-			
-			// filter out unwanted properties at the lowest level
-			if (predicate != null)
+			try
 			{
-				properties = Sets.filter(properties, new RestrictionToPredicateAdaptor<Property>(predicate));
+				Type type = datastore.getFieldStrategy().kindToType(entity.getKind());
+	
+				Set<Property> properties = PropertySets.create(entity.getProperties(), datastore.indexed);
+				
+				// filter out unwanted properties at the lowest level
+				if (predicate != null)
+				{
+					properties = Sets.filter(properties, new RestrictionToPredicateAdaptor<Property>(predicate));
+				}
+	
+				// order the properties for efficient separation by field
+				properties = new TreeSet<Property>(properties);
+	
+				instance = (T) datastore.decoder(entity).propertiesToTypesafe(properties, Path.EMPTY_PATH, type);
+				if (instance == null)
+				{
+					throw new IllegalStateException("Could not translate entity " + entity);
+				}
 			}
-
-			// order the properties for efficient separation by field
-			properties = new TreeSet<Property>(properties);
-
-			instance = (T) datastore.decoder(entity).propertiesToTypesafe(properties, Path.EMPTY_PATH, type);
-			if (instance == null)
+			finally
 			{
-				throw new IllegalStateException("Could not translate entity " + entity);
+				// pop the decode context
+				datastore.decodeKey = existingDecodeKey;
 			}
-
-			// pop the context
-			datastore.decodeKey = existingDecodeKey;
 		}
 
 		return instance;
@@ -90,7 +96,7 @@ class StandardDecodeCommand extends StandardCommand
 		};
 	}
 
-
+	// get from key cache or datastore
 	@SuppressWarnings("unchecked")
 	public <T> T keyToInstance(Key key, Restriction<Property> filter)
 	{
@@ -152,7 +158,7 @@ class StandardDecodeCommand extends StandardCommand
 
 	final Entity keyToEntity(Key key)
 	{
-		if (datastore.getActivationDepth() > 0)
+		if (datastore.activationDepth >= 0)
 		{
 			try
 			{
@@ -173,7 +179,7 @@ class StandardDecodeCommand extends StandardCommand
 	final Map<Key, Entity> keysToEntities(Collection<Key> keys)
 	{
 		// only load entity if we will activate instance
-		if (datastore.getActivationDepth() > 0)
+		if (datastore.activationDepth >= 0)
 		{
 			return datastore.serviceGet(keys);
 		}

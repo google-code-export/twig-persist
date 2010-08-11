@@ -124,7 +124,7 @@ abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, C>> ext
 	protected Collection<Query> getValidatedQueries()
 	{
 		Collection<Query> queries = queries();
-		if (queries.iterator().next().isKeysOnly() && (entityPredicate != null || propertyPredicate != null))
+		if (queries.iterator().next().isKeysOnly() && (entityRestriction != null || propertyRestriction != null))
 		{
 			throw new IllegalStateException("Cannot set filters for a keysOnly query");
 		}
@@ -231,7 +231,7 @@ abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, C>> ext
 		{
 			Collection<Query> queries = getValidatedQueries();
 			Iterator<Entity> entities = nowMultipleQueryEntities(queries);
-			return entityToInstanceIterator(entities, false);
+			return entitiesToInstances(entities, propertyRestriction);
 		}
 		catch (Exception e)
 		{
@@ -243,7 +243,6 @@ abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, C>> ext
 	private <R> Future<Iterator<R>> futureMultipleQueriesInstanceIterator(Collection<Query> queries)
 	{
 		final Future<Iterator<Entity>> futureMerged = futureMergedEntities(queries);
-		final boolean keysOnly = queries.iterator().next().isKeysOnly();
 
 		return new Future<Iterator<R>>()
 		{
@@ -254,13 +253,13 @@ abstract class StandardTypedFindCommand<T, C extends TypedFindCommand<T, C>> ext
 
 			public Iterator<R> get() throws InterruptedException, ExecutionException
 			{
-					return entityToInstanceIterator(futureMerged.get(), keysOnly);
+				return entitiesToInstances(futureMerged.get(), propertyRestriction);
 			}
 
 			public Iterator<R> get(long timeout, TimeUnit unit) throws InterruptedException,
 					ExecutionException, TimeoutException
 			{
-					return entityToInstanceIterator(futureMerged.get(timeout, unit), keysOnly);
+				return entitiesToInstances(futureMerged.get(timeout, unit), propertyRestriction);
 			}
 
 			public boolean isCancelled()

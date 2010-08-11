@@ -4,10 +4,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import com.google.appengine.api.datastore.Query.SortPredicate;
 import com.google.appengine.repackaged.com.google.io.protocol.ProtocolMessage;
@@ -16,7 +13,6 @@ import com.google.apphosting.api.DatastorePb;
 import com.google.code.twig.util.FutureAdaptor;
 import com.google.storage.onestore.v3.OnestoreEntity;
 import com.google.storage.onestore.v3.OnestoreEntity.Reference;
-import com.vercer.util.reference.SimpleObjectReference;
 
 /**
  * This class has access to package private internals that are essential to async operations

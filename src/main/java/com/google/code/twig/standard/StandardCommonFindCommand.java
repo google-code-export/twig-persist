@@ -12,7 +12,6 @@ import com.google.code.twig.Property;
 import com.google.code.twig.Restriction;
 import com.google.code.twig.util.RestrictionToPredicateAdaptor;
 import com.google.code.twig.util.SortedMergeIterator;
-import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
 
 /**
@@ -25,8 +24,8 @@ import com.google.common.collect.Iterators;
  */
 abstract class StandardCommonFindCommand<T, C extends CommonFindCommand<C>> extends StandardDecodeCommand implements CommonFindCommand<C>
 {
-	Restriction<Entity> entityPredicate;
-	Restriction<Property> propertyPredicate;
+	Restriction<Entity> entityRestriction;
+	Restriction<Property> propertyRestriction;
 
 	StandardCommonFindCommand(StrategyObjectDatastore datastore)
 	{
@@ -37,11 +36,11 @@ abstract class StandardCommonFindCommand<T, C extends CommonFindCommand<C>> exte
 	@Override
 	public C restrictEntities(Restriction<Entity> filter)
 	{
-		if (this.entityPredicate != null)
+		if (this.entityRestriction != null)
 		{
 			throw new IllegalStateException("Entity filter was already set");
 		}
-		this.entityPredicate = filter;
+		this.entityRestriction = filter;
 		return (C) this;
 	}
 
@@ -49,19 +48,19 @@ abstract class StandardCommonFindCommand<T, C extends CommonFindCommand<C>> exte
 	@Override
 	public C restrictProperties(Restriction<Property> filter)
 	{
-		if (this.propertyPredicate != null)
+		if (this.propertyRestriction != null)
 		{
 			throw new IllegalStateException("Property filter was already set");
 		}
-		this.propertyPredicate = filter;
+		this.propertyRestriction = filter;
 		return (C) this;
 	}
 
 	Iterator<Entity> applyEntityFilter(Iterator<Entity> entities)
 	{
-		if (this.entityPredicate != null)
+		if (this.entityRestriction != null)
 		{
-			entities = Iterators.filter(entities, new RestrictionToPredicateAdaptor<Entity>(entityPredicate));
+			entities = Iterators.filter(entities, new RestrictionToPredicateAdaptor<Entity>(entityRestriction));
 		}
 		return entities;
 	}
@@ -81,26 +80,4 @@ abstract class StandardCommonFindCommand<T, C extends CommonFindCommand<C>> exte
 		return merged;
 	}
 	
-	<R> Iterator<R> entityToInstanceIterator(Iterator<Entity> entities, boolean keysOnly)
-	{
-		Function<Entity, R> function = new EntityToInstanceFunction<R>(propertyPredicate);
-		return Iterators.transform(entities, function);
-	}
-	
-	private final class EntityToInstanceFunction<R> implements Function<Entity, R>
-	{
-		private final Restriction<Property> predicate;
-
-		public EntityToInstanceFunction(Restriction<Property> propertyPredicate)
-		{
-			this.predicate = propertyPredicate;
-		}
-
-		@SuppressWarnings("unchecked")
-		@Override
-		public R apply(Entity entity)
-		{
-			return (R) entityToInstance(entity, predicate);
-		}
-	}
 }

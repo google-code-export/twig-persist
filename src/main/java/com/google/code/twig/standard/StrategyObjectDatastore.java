@@ -2,11 +2,9 @@ package com.google.code.twig.standard;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
-import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -58,12 +56,12 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	// keeps track of which instances are associated with which keys
 	final InstanceKeyCache keyCache;
 
-	// activation depth state for current instance
-	final Deque<Integer> activationDepthDeque = new ArrayDeque<Integer>();
-
 	// are properties indexed by default
 	boolean indexed;
 
+	// current activation depth
+	int activationDepth = Integer.MAX_VALUE;
+	
 	// translators are selected for particular fields by a strategy
 	private final PropertyTranslator objectFieldTranslator;
 	private final PropertyTranslator embedTranslator;
@@ -103,25 +101,22 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 			StorageStrategy storageStrategy, ActivationStrategy activationStrategy,
 			FieldStrategy fieldStrategy)
 	{
-		// push the default depth onto the stack
-		activationDepthDeque.push(Integer.MAX_VALUE);
-
 		this.activationStrategy = activationStrategy;
 		this.fieldStrategy = fieldStrategy;
 		this.relationshipStrategy = relationshipStrategy;
 		this.storageStrategy = storageStrategy;
 
 		this.converter = createTypeConverter();
-
+		
 		// the main translator which converts to and from objects
 		objectFieldTranslator = new StrategyObjectFieldTranslator(converter);
 
 		valueTranslatorChain = createValueTranslatorChain();
 
-		parentTranslator = new ParentEntityTranslator(this);
-		independantTranslator = new EntityTranslator(this);
+		parentTranslator = new ParentRelationTranslator(this);
+		independantTranslator = new RelationTranslator(this);
 		keyFieldTranslator = new KeyFieldTranslator(this, valueTranslatorChain, converter);
-		childTranslator = new ChildEntityTranslator(this);
+		childTranslator = new ChildRelationTranslator(this);
 
 		embedTranslator = new ListTranslator(new MapTranslator(objectFieldTranslator, converter));
 
@@ -425,14 +420,13 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	@Override
 	public final int getActivationDepth()
 	{
-		return activationDepthDeque.peek();
+		return activationDepth;
 	}
 
 	@Override
 	public final void setActivationDepth(int depth)
 	{
-		activationDepthDeque.pop();
-		activationDepthDeque.push(depth);
+		this.activationDepth = depth;
 	}
 
 	protected final PropertyTranslator getIndependantTranslator()
@@ -601,13 +595,17 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 		}
 
 		@Override
-		protected void onBeforeDecode(Field field, Set<Property> childProperties)
+		protected void decode(Object instance, Field field, Path path, Set<Property> properties)
 		{
-			// potentially change the activation depth
-			if (activationDepthDeque.peek() > 0)
+			int existingActivationDepth = activationDepth;
+			try
 			{
-				activationDepthDeque.push(activationStrategy
-						.activationDepth(field, activationDepthDeque.pop()));
+				activationDepth = activationStrategy.activationDepth(field, activationDepth);
+				super.decode(instance, field, path, properties);
+			}
+			finally
+			{
+				activationDepth = existingActivationDepth;
 			}
 		}
 
@@ -624,18 +622,6 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 			}
 		}
 
-		@Override
-		protected void activate(Set<Property> properties, Object instance, Path path)
-		{
-			if (getActivationDepth() > 0)
-			{
-				
-				activationDepthDeque.push(activationDepthDeque.peek() - 1);
-				super.activate(properties, instance, path);
-				activationDepthDeque.pop();
-			}
-		}
-		
 		@Override
 		protected boolean isNullStored()
 		{
