@@ -2,12 +2,8 @@ package com.google.appengine.api.datastore;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
-import com.google.appengine.api.utils.FutureWrapper;
 import com.google.apphosting.api.ApiBasePb;
 import com.google.apphosting.api.DatastorePb;
 import com.google.code.twig.util.FutureAdaptor;

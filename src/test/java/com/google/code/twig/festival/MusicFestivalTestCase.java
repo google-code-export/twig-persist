@@ -417,13 +417,13 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		Key stored = datastore.store(musicFestival);
 		datastore.disassociateAll();
 
-		// musicians have depth 3
+		// musicians have depth 2
 		MusicFestival reloaded = datastore.load(stored);
-		assertNull(reloaded.bands.get(0).hair);
+		assertNull(reloaded.bands.get(0).members.get(0).name);
 
-		datastore.refresh(reloaded.bands.get(0));
+		datastore.activate(reloaded.bands.get(0).members.get(0));
 
-		assertNotNull(reloaded.bands.get(0).hair);
+		assertNotNull(reloaded.bands.get(0).members.get(0).name);
 
 		datastore.setActivationDepth(2);
 		datastore.disassociateAll();

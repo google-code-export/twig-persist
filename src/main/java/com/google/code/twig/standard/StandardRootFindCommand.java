@@ -157,7 +157,7 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 	}
 
 	@Override
-	public RootFindCommand<T> maximumResults(int limit)
+	public RootFindCommand<T> fetchMaximum(int limit)
 	{
 		if (this.options == null)
 		{
@@ -187,7 +187,7 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 				private QueryResultIterator<T> doGet(QueryResultIterator<Entity> entities)
 				{
 						Iterator<Entity> iterator = applyEntityFilter(entities);
-						Iterator<T> instances = entityToInstanceIterator(iterator, query.isKeysOnly());
+						Iterator<T> instances = entitiesToInstances(iterator, propertyRestriction);
 						return new BasicQueryResultIterator<T>(instances, entities);
 				}
 
@@ -458,7 +458,7 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 
 			Iterator<Entity> iterator = applyEntityFilter(entities);
 
-			Iterator<T> instances = entityToInstanceIterator(iterator, query.isKeysOnly());
+			Iterator<T> instances = entitiesToInstances(iterator, propertyRestriction);
 			return new BasicQueryResultIterator<T>(instances, entities);
 		}
 		else

@@ -6,9 +6,9 @@ package com.google.code.twig.standard;
 import com.google.appengine.api.datastore.Key;
 
 
-class ChildEntityTranslator extends EntityTranslator
+class ChildRelationTranslator extends RelationTranslator
 {
-	ChildEntityTranslator(StrategyObjectDatastore strategyObjectDatastore)
+	ChildRelationTranslator(StrategyObjectDatastore strategyObjectDatastore)
 	{
 		super(strategyObjectDatastore);
 	}
