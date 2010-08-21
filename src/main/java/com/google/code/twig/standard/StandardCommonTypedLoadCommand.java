@@ -65,7 +65,7 @@ class StandardCommonTypedLoadCommand<T, C extends StandardCommonTypedLoadCommand
 		}
 		
 		// convert the id to the same type as was stored
-		Object converted = datastore.converter.convert(id, keyType);
+		Object converted = datastore.getConverter().convert(id, keyType);
 
 		Key key;
 		
@@ -86,7 +86,7 @@ class StandardCommonTypedLoadCommand<T, C extends StandardCommonTypedLoadCommand
 		else
 		{
 			// make into string
-			String keyName = datastore.converter.convert(converted, String.class);
+			String keyName = datastore.getConverter().convert(converted, String.class);
 
 			if (parentKey == null)
 			{

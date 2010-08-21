@@ -25,7 +25,7 @@ public class PolymorphicTranslator extends DecoratingTranslator
 		this.strategy = strategy;
 	}
 
-	public Object propertiesToTypesafe(Set<Property> properties, final Path prefix, Type type)
+	public Object decode(Set<Property> properties, final Path prefix, Type type)
 	{
 		String kindName = null;
 		Path kindNamePath = new Path.Builder(prefix).meta(CLASS_NAME).build();
@@ -47,12 +47,12 @@ public class PolymorphicTranslator extends DecoratingTranslator
 			type = strategy.kindToType(kindName);
 		}
 
-		return chained.propertiesToTypesafe(properties, prefix, type);
+		return chained.decode(properties, prefix, type);
 	}
 
-	public Set<Property> typesafeToProperties(Object object, Path prefix, boolean indexed)
+	public Set<Property> encode(Object object, Path prefix, boolean indexed)
 	{
-		Set<Property> properties = chained.typesafeToProperties(object, prefix, indexed);
+		Set<Property> properties = chained.encode(object, prefix, indexed);
 		
 		// only add the type meta data for non-native types
 		if (!DataTypeUtils.isSupportedType(object.getClass()))

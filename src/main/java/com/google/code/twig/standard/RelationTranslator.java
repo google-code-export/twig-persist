@@ -36,7 +36,7 @@ class RelationTranslator implements PropertyTranslator
 		this.datastore = strategyObjectDatastore;
 	}
 
-	public Object propertiesToTypesafe(Set<Property> properties, Path prefix, Type type)
+	public Object decode(Set<Property> properties, Path prefix, Type type)
 	{
 		if (properties.isEmpty() || properties.size() == 1 && PropertySets.firstValue(properties) == null)
 		{
@@ -111,7 +111,7 @@ class RelationTranslator implements PropertyTranslator
 		return result;
 	}
 
-	public Set<Property> typesafeToProperties(final Object instance, final Path path, final boolean indexed)
+	public Set<Property> encode(final Object instance, final Path path, final boolean indexed)
 	{
 		if (instance== null)
 		{

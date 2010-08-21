@@ -94,21 +94,4 @@ public class SimpleProperty implements Property
 		return true;
 	}
 
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public int compareTo(Property o)
-	{
-		int pathComparison = path.compareTo(o.getPath());
-		if (pathComparison != 0)
-		{
-			return pathComparison;
-		}
-		else if (value instanceof Comparable<?>)
-		{
-			return ((Comparable) value).compareTo(o.getValue());
-		}
-		else
-		{
-			throw new IllegalArgumentException("Cannot compare " + o);
-		}
-	}
 }

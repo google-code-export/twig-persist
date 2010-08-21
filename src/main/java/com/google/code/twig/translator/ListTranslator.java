@@ -29,13 +29,13 @@ public class ListTranslator extends DecoratingTranslator
 		super(chained);
 	}
 
-	public Object propertiesToTypesafe(final Set<Property> properties, final Path path, Type type)
+	public Object decode(final Set<Property> properties, final Path path, Type type)
 	{
 		// only handle lists
 		if (!GenericTypeReflector.erase(type).isAssignableFrom(ArrayList.class))
 		{
 			// pass on all other types down the chain
-			return chained.propertiesToTypesafe(properties, path, type);
+			return chained.decode(properties, path, type);
 		}
 
 		if (properties.isEmpty())
@@ -65,7 +65,7 @@ public class ListTranslator extends DecoratingTranslator
 				else
 				{
 					// we could not handle this value so pass the whole thing down the line
-					return chained.propertiesToTypesafe(properties, path, type);
+					return chained.decode(properties, path, type);
 				}
 
 				if (values.size() > index)
@@ -96,7 +96,7 @@ public class ListTranslator extends DecoratingTranslator
 		List<Object> objects = new ArrayList<Object>();
 		for (Set<Property> itemProperties : propertySets)
 		{
-			Object convertedChild = chained.propertiesToTypesafe(itemProperties, path, componentType);
+			Object convertedChild = chained.decode(itemProperties, path, componentType);
 
 			// if we cannot convert every member of the list we fail
 			if (convertedChild == null)
@@ -111,7 +111,7 @@ public class ListTranslator extends DecoratingTranslator
 		return objects;
 	}
 
-	public Set<Property> typesafeToProperties(Object object, Path path, boolean indexed)
+	public Set<Property> encode(Object object, Path path, boolean indexed)
 	{
 		if (object instanceof List<?>)
 		{
@@ -129,12 +129,12 @@ public class ListTranslator extends DecoratingTranslator
 			{
 				if (item != null)
 				{
-					Set<Property> properties = chained.typesafeToProperties(item, path, indexed);
+					Set<Property> properties = chained.encode(item, path, indexed);
 
 					if (properties == null)
 					{
 						// we could not handle so continue up the chain
-						return chained.typesafeToProperties(object, path, indexed);
+						return chained.encode(object, path, indexed);
 					}
 
 					for (Property property : properties)
@@ -239,7 +239,7 @@ public class ListTranslator extends DecoratingTranslator
 		else
 		{
 			// we could not handle value as a collection so continue up the chain
-			return chained.typesafeToProperties(object, path, indexed);
+			return chained.encode(object, path, indexed);
 		}
 	}
 

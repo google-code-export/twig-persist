@@ -22,7 +22,7 @@ final class ParentRelationTranslator extends RelationTranslator
 		super(datastore);
 	}
 
-	public Object propertiesToTypesafe(Set<Property> properties, Path prefix, Type type)
+	public Object decode(Set<Property> properties, Path prefix, Type type)
 	{
 		// properties are not used as the parent is found by the key
 		assert properties.isEmpty();
@@ -38,7 +38,7 @@ final class ParentRelationTranslator extends RelationTranslator
 		return keyToInstance(parentKey);
 	}
 
-	public Set<Property> typesafeToProperties(final Object instance, final Path prefix, final boolean indexed)
+	public Set<Property> encode(final Object instance, final Path prefix, final boolean indexed)
 	{
 		ReadOnlyObjectReference<Key> keyReference = new ReadOnlyObjectReference<Key>()
 		{

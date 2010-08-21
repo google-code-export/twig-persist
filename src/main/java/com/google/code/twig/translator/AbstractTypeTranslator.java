@@ -22,7 +22,7 @@ public abstract class AbstractTypeTranslator<T> implements PropertyTranslator
 	protected abstract T decode(Object value);
 	protected abstract Object encode(T value);
 
-	public final Object propertiesToTypesafe(Set<Property> properties, Path path, Type type)
+	public final Object decode(Set<Property> properties, Path path, Type type)
 	{
 		if (GenericTypeReflector.erase(type) == clazz)
 		{
@@ -35,7 +35,7 @@ public abstract class AbstractTypeTranslator<T> implements PropertyTranslator
 	}
 
 	@SuppressWarnings("unchecked")
-	public final Set<Property> typesafeToProperties(Object instance, Path path, boolean indexed)
+	public final Set<Property> encode(Object instance, Path path, boolean indexed)
 	{
 		if (clazz.isInstance(instance))
 		{

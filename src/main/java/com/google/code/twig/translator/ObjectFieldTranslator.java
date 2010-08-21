@@ -51,11 +51,15 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 		this.converters = converters;
 	}
 
-	public final Object propertiesToTypesafe(Set<Property> properties, Path path, Type type)
+	public final Object decode(Set<Property> properties, Path path, Type type)
 	{
-		if (properties.size() == 1 && PropertySets.firstValue(properties) == null)
+		if (properties.size() == 1)
 		{
-			return NULL_VALUE;
+			Property property = PropertySets.firstProperty(properties);
+			if (property.getValue() == null && property.getPath().equals(path))
+			{
+				return NULL_VALUE;
+			}
 		}
 		
 		// create the instance
@@ -120,12 +124,12 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 		Object value;
 		try
 		{
-			value = translator.propertiesToTypesafe(properties, path, fieldType);
+			value = translator.decode(properties, path, fieldType);
 		}
 		catch (Exception e)
 		{
 			// add a bit of context to the trace
-			throw new IllegalStateException("Problem translating field " + field, e);
+			throw new IllegalStateException("Problem translating field " + field + " with properties " + properties, e);
 		}
 
 		if (value == null)
@@ -273,7 +277,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 		return constructor;
 	}
 
-	public final Set<Property> typesafeToProperties(Object object, Path path, boolean indexed)
+	public final Set<Property> encode(Object object, Path path, boolean indexed)
 	{
 		onBeforeEncode(path, object);
 		if (object == null)
@@ -310,7 +314,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 					onBeforeEncode(field, value);
 					
 					PropertyTranslator translator = encoder(field, value);
-					Set<Property> properties = translator.typesafeToProperties(value, childPath, indexed(field));
+					Set<Property> properties = translator.encode(value, childPath, indexed(field));
 					if (properties == null)
 					{
 						throw new IllegalStateException("Could not translate value to properties: " + value);

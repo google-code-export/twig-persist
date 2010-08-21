@@ -16,13 +16,17 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.code.twig.Path;
 import com.google.code.twig.Property;
+import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.Restriction;
+import com.google.code.twig.util.PropertyComparator;
 import com.google.code.twig.util.PropertySets;
 import com.google.code.twig.util.RestrictionToPredicateAdaptor;
 import com.google.common.collect.Sets;
 
 class StandardDecodeCommand extends StandardCommand
 {
+	private static final PropertyComparator COMPARATOR = new PropertyComparator();
+	
 	StandardDecodeCommand(StrategyObjectDatastore datastore)
 	{
 		super(datastore);
@@ -52,12 +56,21 @@ class StandardDecodeCommand extends StandardCommand
 				}
 	
 				// order the properties for efficient separation by field
-				properties = new TreeSet<Property>(properties);
+				properties = new TreeSet<Property>(COMPARATOR);
+				properties.addAll(properties);
 	
-				instance = (T) datastore.decoder(entity).propertiesToTypesafe(properties, Path.EMPTY_PATH, type);
+				instance = (T) datastore.decoder(entity).decode(properties, Path.EMPTY_PATH, type);
+				
+				// null signifies that the properties could not be decoded
 				if (instance == null)
 				{
 					throw new IllegalStateException("Could not translate entity " + entity);
+				}
+				
+				// a null value is indicated by this special return value
+				if (instance == PropertyTranslator.NULL_VALUE)
+				{
+					instance = null;
 				}
 			}
 			finally

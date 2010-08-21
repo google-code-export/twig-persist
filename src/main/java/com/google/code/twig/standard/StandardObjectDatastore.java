@@ -49,7 +49,7 @@ public class StandardObjectDatastore extends StrategyObjectDatastore
 	{
 		ChainedTranslator result = new ChainedTranslator();
 		result.append(new NativeDirectTranslator());
-		result.append(new ConvertableTypeTranslator(converter));
+		result.append(new ConvertableTypeTranslator(getConverter()));
 		result.append(new EnumTranslator());
 		return result;
 	}
