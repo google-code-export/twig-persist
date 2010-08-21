@@ -47,17 +47,17 @@ import com.vercer.util.Reflection;
  */
 public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 {
+	// keeps track of which instances are associated with which keys
+	protected final InstanceKeyCache keyCache;
+	
+	// are properties indexed by default
+	protected boolean indexed;
+
 	// key details are updated as the current instance is encoded
-	KeySpecification encodeKeySpec;
+	protected KeySpecification encodeKeySpec;
 
 	// the key of the currently decoding entity
-	Key decodeKey;
-
-	// keeps track of which instances are associated with which keys
-	final InstanceKeyCache keyCache;
-
-	// are properties indexed by default
-	boolean indexed;
+	protected Key decodeKey;
 
 	// current activation depth
 	int activationDepth = Integer.MAX_VALUE;
@@ -85,7 +85,7 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	// set when an instance is to be refreshed rather than instantiated
 	private Object refresh;
 
-	protected final CombinedConverter converter;
+	private final CombinedConverter converter;
 
 	private final RelationshipStrategy relationshipStrategy;
 	private final FieldStrategy fieldStrategy;
@@ -429,6 +429,11 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 		this.activationDepth = depth;
 	}
 
+	public CombinedConverter getConverter()
+	{
+		return converter;
+	}
+	
 	protected final PropertyTranslator getIndependantTranslator()
 	{
 		return independantTranslator;
@@ -444,7 +449,7 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 		return parentTranslator;
 	}
 
-	protected final PropertyTranslator getPolyMorphicComponentTranslator()
+	protected final PropertyTranslator getPolyMorphicTranslator()
 	{
 		return polyMorphicComponentTranslator;
 	}

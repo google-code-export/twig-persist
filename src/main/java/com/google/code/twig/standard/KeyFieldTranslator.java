@@ -25,7 +25,7 @@ final class KeyFieldTranslator extends DecoratingTranslator
 		this.converters = converters;
 	}
 
-	public Set<Property> typesafeToProperties(Object instance, Path path, boolean indexed)
+	public Set<Property> encode(Object instance, Path path, boolean indexed)
 	{
 		if (path.getParts().size() > 1)
 		{
@@ -57,7 +57,7 @@ final class KeyFieldTranslator extends DecoratingTranslator
 		return Collections.emptySet();
 	}
 
-	public Object propertiesToTypesafe(Set<Property> properties, Path prefix, Type type)
+	public Object decode(Set<Property> properties, Path prefix, Type type)
 	{
 		// the key value is not stored in the properties but in the key
 		Object keyValue = datastore.decodeKey.getName();

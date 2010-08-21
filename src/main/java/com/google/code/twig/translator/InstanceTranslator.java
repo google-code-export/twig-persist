@@ -10,14 +10,14 @@ import com.google.code.twig.PropertyTranslator;
 
 public abstract class InstanceTranslator implements PropertyTranslator
 {
-	public Object propertiesToTypesafe(Set<Property> properties, Path prefix, Type type)
+	public Object decode(Set<Property> properties, Path prefix, Type type)
 	{
 		return getInstance();
 	}
 
 	protected abstract Object getInstance();
 
-	public Set<Property> typesafeToProperties(Object object, Path prefix, boolean indexed)
+	public Set<Property> encode(Object object, Path prefix, boolean indexed)
 	{
 		return Collections.singleton(getProperty());
 	}

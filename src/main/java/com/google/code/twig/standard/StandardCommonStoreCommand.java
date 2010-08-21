@@ -105,7 +105,7 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 					}
 					
 					// convert the long or String to the declared key type
-					Object converted = datastore.converter.convert(idOrName, type);
+					Object converted = datastore.getConverter().convert(idOrName, type);
 					field.set(instance, converted);
 				}
 			}
@@ -210,7 +210,7 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 			
 		// translate fields to properties - sets key parent and id
 		PropertyTranslator encoder = datastore.encoder(instance);
-		Set<Property> properties = encoder.typesafeToProperties(instance, Path.EMPTY_PATH, datastore.indexed);
+		Set<Property> properties = encoder.encode(instance, Path.EMPTY_PATH, datastore.indexed);
 		if (properties == null)
 		{
 			throw new IllegalStateException("Could not translate instance: " + instance);

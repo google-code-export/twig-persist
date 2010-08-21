@@ -19,7 +19,7 @@ public class ConvertableTypeTranslator implements PropertyTranslator
 		this.converter = converter;
 	}
 	
-	public Object propertiesToTypesafe(Set<Property> properties, Path path, Type type)
+	public Object decode(Set<Property> properties, Path path, Type type)
 	{
 		if (properties.size() == 1)
 		{
@@ -54,7 +54,7 @@ public class ConvertableTypeTranslator implements PropertyTranslator
 		}
 	}
 
-	public Set<Property> typesafeToProperties(Object instance, Path path, boolean indexed)
+	public Set<Property> encode(Object instance, Path path, boolean indexed)
 	{
 		Object value = typesafeConvert(String.class, instance);
 		if (value == null)

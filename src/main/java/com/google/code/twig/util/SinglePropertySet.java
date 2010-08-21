@@ -7,7 +7,7 @@ import java.util.NoSuchElementException;
 import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 
-public class SinglePropertySet extends AbstractSet<Property>
+public class SinglePropertySet extends AbstractSet<Property> implements Property
 {
 	private final Path path;
 	private final Object value;
