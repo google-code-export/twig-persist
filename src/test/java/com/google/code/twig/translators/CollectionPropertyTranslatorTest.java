@@ -40,7 +40,7 @@ public class CollectionPropertyTranslatorTest
 		PropertyTranslator chained = new DirectTranslator();
 
 		ListTranslator translator = new ListTranslator(chained);
-		Set<Property> encoded = translator.typesafeToProperties(values, Path.EMPTY_PATH, true);
+		Set<Property> encoded = translator.encode(values, Path.EMPTY_PATH, true);
 
 		// should be a single property with a list of values
 		assertEquals(1, encoded.size());
@@ -48,7 +48,7 @@ public class CollectionPropertyTranslatorTest
 		Field field = getClass().getDeclaredField("values");
 
 		@SuppressWarnings("unchecked")
-		List<String> decoded = (List<String>) translator.propertiesToTypesafe(encoded, Path.EMPTY_PATH, field.getGenericType());
+		List<String> decoded = (List<String>) translator.decode(encoded, Path.EMPTY_PATH, field.getGenericType());
 
 		assertEquals("is", decoded.get(1));
 		assertEquals(3, decoded.size());
@@ -60,7 +60,7 @@ public class CollectionPropertyTranslatorTest
 		// create dummy translator that always returns two properties
 		PropertyTranslator chained = new PropertyTranslator()
 		{
-			public Set<Property> typesafeToProperties(Object object, Path path, boolean indexed)
+			public Set<Property> encode(Object object, Path path, boolean indexed)
 			{
 				HashSet<Property> properties = new HashSet<Property>();
 				properties.add(new SimpleProperty(new Path.Builder(path).field("first").build(), object, indexed));
@@ -68,14 +68,14 @@ public class CollectionPropertyTranslatorTest
 				return properties;
 			}
 
-			public Object propertiesToTypesafe(Set<Property> properties, Path path, Type type)
+			public Object decode(Set<Property> properties, Path path, Type type)
 			{
 				return properties.iterator().next().getValue();
 			}
 		};
 
 		ListTranslator translator = new ListTranslator(chained);
-		Set<Property> encoded = translator.typesafeToProperties(values, Path.EMPTY_PATH, true);
+		Set<Property> encoded = translator.encode(values, Path.EMPTY_PATH, true);
 
 		assertEquals(2, encoded.size());
 		assertEquals(3, ((List<?>) encoded.iterator().next().getValue()).size());
@@ -84,7 +84,7 @@ public class CollectionPropertyTranslatorTest
 		Field field = getClass().getDeclaredField("values");
 
 		@SuppressWarnings("unchecked")
-		List<String> decoded = (List<String>) translator.propertiesToTypesafe(encoded, Path.EMPTY_PATH, field.getGenericType());
+		List<String> decoded = (List<String>) translator.decode(encoded, Path.EMPTY_PATH, field.getGenericType());
 
 		assertEquals("is", decoded.get(1));
 		assertEquals(3, decoded.size());
