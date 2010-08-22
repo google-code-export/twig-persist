@@ -56,8 +56,9 @@ class StandardDecodeCommand extends StandardCommand
 				}
 	
 				// order the properties for efficient separation by field
-				properties = new TreeSet<Property>(COMPARATOR);
-				properties.addAll(properties);
+				Set<Property> sorted = new TreeSet<Property>(COMPARATOR);
+				sorted.addAll(properties);
+				properties = sorted;
 	
 				instance = (T) datastore.decoder(entity).decode(properties, Path.EMPTY_PATH, type);
 				

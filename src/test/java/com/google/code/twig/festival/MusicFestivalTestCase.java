@@ -248,9 +248,7 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		album.tracks[0].title = "Friday I'm in Love";
 
 		datastore.store(album);
-
 		datastore.disassociateAll();
-
 		Album load = datastore.load(Album.class, album.name);
 
 		assertEquals(load, album);

@@ -10,40 +10,39 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.SortedSet;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.UnmodifiableIterator;
 
-public class ArraySortedSet<T extends Comparable<T>> extends AbstractSet<T> implements SortedSet<T>
+public class ArraySortedSet<T> extends AbstractSet<T> implements SortedSet<T>
 {
 	private final T[] elements;
-	private final static Comparator<?> comparator = new Comparator<Comparable<Object>>()
-	{
-		public int compare(Comparable<Object> o1, Comparable<Object> o2)
-		{
-			return o1.compareTo(o2);
-		}
-	};
+	private final Comparator<? super T> comparator;
+	
 	private final int offset;
 	private final int length;
 
-	public ArraySortedSet(T[] elements)
+	public ArraySortedSet(T[] elements, Comparator<? super T> comparator)
 	{
-		this(elements, 0, elements.length);
+		this(elements, 0, elements.length, comparator);
 	}
 
-	public ArraySortedSet(T[] elements, int offset, int length)
+	public ArraySortedSet(T[] elements, int offset, int length, Comparator<? super T> comparator)
 	{
 		this.elements = elements;
 		this.offset = offset;
 		this.length = length;
+		this.comparator = comparator;
 	}
 
 	@Override
+	public Object[] toArray()
+	{
+		return elements;
+	}
+	
+	@Override
 	public Iterator<T> iterator()
 	{
-		// copied from non-visible Google Collections Iterators
 		final int end = offset + length;
-		Preconditions.checkPositionIndexes(offset, end, elements.length);
 		return new UnmodifiableIterator<T>()
 		{
 			int i = offset;
@@ -70,10 +69,9 @@ public class ArraySortedSet<T extends Comparable<T>> extends AbstractSet<T> impl
 		return length;
 	}
 
-	@SuppressWarnings("unchecked")
 	public Comparator<? super T> comparator()
 	{
-		return (Comparator<? super T>) comparator;
+		return comparator;
 	}
 
 	public T first()
@@ -83,8 +81,8 @@ public class ArraySortedSet<T extends Comparable<T>> extends AbstractSet<T> impl
 
 	public SortedSet<T> headSet(T toElement)
 	{
-		int index = Arrays.binarySearch(elements, toElement);
-		return new ArraySortedSet<T>(elements, 0, index + 1);
+		int index = Arrays.binarySearch(elements, toElement, comparator);
+		return new ArraySortedSet<T>(elements, 0, index + 1, comparator);
 	}
 
 	public T last()
@@ -96,13 +94,13 @@ public class ArraySortedSet<T extends Comparable<T>> extends AbstractSet<T> impl
 	{
 		int from = Arrays.binarySearch(elements, fromElement);
 		int to = Arrays.binarySearch(elements, toElement);
-		return new ArraySortedSet<T>(elements, from, to - from + 1);
+		return new ArraySortedSet<T>(elements, from, to - from + 1, comparator);
 	}
 
 	public SortedSet<T> tailSet(T fromElement)
 	{
 		int index = Arrays.binarySearch(elements, fromElement);
-		return new ArraySortedSet<T>(elements, index, length);
+		return new ArraySortedSet<T>(elements, index, length, comparator);
 	}
 
 }

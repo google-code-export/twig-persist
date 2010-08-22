@@ -32,28 +32,6 @@ public class PropertySets
 		return firstValue;
 	}
 
-	public static class PrefixPropertySet
-	{
-		private Path prefix;
-		private Set<Property> properties;
-		public PrefixPropertySet(Path prefix, Set<Property> properties)
-		{
-			super();
-			this.prefix = prefix;
-			this.properties = properties;
-		}
-
-		public Path getPrefix()
-		{
-			return prefix;
-		}
-		
-		public Set<Property> getProperties()
-		{
-			return properties;
-		}
-	}
-	
 	public static Collection<PrefixPropertySet> prefixPropertySets(Set<Property> properties, Path prefix)
 	{
 		Property[] array = (Property[]) properties.toArray(new Property[properties.size()]);
@@ -92,6 +70,19 @@ public class PropertySets
 	public static Set<Property> create(Map<String, Object> properties, boolean indexed)
 	{
 		return new PropertyMapToSet(properties, indexed);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static <T> T valueForPath(String path, Set<Property> properties)
+	{
+		for (Property property : properties)
+		{
+			if (property.getPath().toString().equals(path))
+			{
+				return (T) property.getValue();
+			}
+		}
+		return null;
 	}
 
 	public static Set<Property> singletonPropertySet(Path path, Object value, boolean indexed)

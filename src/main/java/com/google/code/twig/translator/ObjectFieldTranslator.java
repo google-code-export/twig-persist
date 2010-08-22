@@ -20,8 +20,9 @@ import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.conversion.TypeConverter;
+import com.google.code.twig.util.PrefixPropertySet;
+import com.google.code.twig.util.PropertyComparator;
 import com.google.code.twig.util.PropertySets;
-import com.google.code.twig.util.PropertySets.PrefixPropertySet;
 import com.google.code.twig.util.SimpleProperty;
 import com.google.code.twig.util.generic.GenericTypeReflector;
 import com.vercer.util.Reflection;
@@ -40,6 +41,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 			return o1.getName().compareTo(o2.getName());
 		}
 	};
+	private static final PropertyComparator COMPARATOR = new PropertyComparator();
 	private final TypeConverter converters;
 
 	// permanent cache of class fields to reduce reflection
@@ -69,7 +71,9 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 		// ensure the properties are sorted
 		if (properties instanceof SortedSet<?> == false)
 		{
-			properties = new TreeSet<Property>(properties);
+			Set<Property> sorted = new TreeSet<Property>(COMPARATOR);
+			sorted.addAll(properties);
+			properties = sorted;
 		}
 
 		// both fields and properties are sorted by name

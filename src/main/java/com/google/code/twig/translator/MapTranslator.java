@@ -12,8 +12,8 @@ import com.google.code.twig.Path.Part;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.conversion.TypeConverter;
+import com.google.code.twig.util.PrefixPropertySet;
 import com.google.code.twig.util.PropertySets;
-import com.google.code.twig.util.PropertySets.PrefixPropertySet;
 import com.google.code.twig.util.generic.GenericTypeReflector;
 import com.vercer.util.collections.MergeSet;
 
