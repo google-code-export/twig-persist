@@ -82,7 +82,7 @@ public class MapTranslator extends DecoratingTranslator
 		{
 			Object value = map.get(key);
 			String keyString = converter.convert(key, String.class);
-			Path childPath = Path.builder(path).field(keyString).build();
+			Path childPath = Path.builder(path).key(keyString).build();
 			Set<Property> properties = chained.encode(value, childPath, indexed);
 
 			if (properties == null)
