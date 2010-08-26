@@ -11,8 +11,10 @@ import com.vercer.util.Strings;
 public class Path implements Comparable<Path>
 {
 	private final static char FIELD = '.';
-	private final static char TYPE = '$';
-	private final static char[] SEPERATORS = { FIELD, TYPE };
+	private final static char META = '$';
+	private final static char KEY = ':';
+	
+	private final static char[] SEPERATORS = { FIELD, META, KEY };
 
 	public static final Path EMPTY_PATH = new Path("");
 
@@ -46,6 +48,21 @@ public class Path implements Comparable<Path>
 			return this;
 		}
 
+
+		public Builder meta(String name)
+		{
+			builder.append(META);
+			builder.append(name);
+			return this;
+		}
+
+		public Builder key(String name)
+		{
+			builder.append(KEY);
+			builder.append(name);
+			return this;
+		}
+		
 		private void ensureValidPart(String name)
 		{
 			if (Strings.firstIndexOf(name, SEPERATORS) >= 0)
@@ -54,21 +71,16 @@ public class Path implements Comparable<Path>
 			}
 		}
 
-		public Builder meta(String name)
-		{
-			builder.append(TYPE);
-			builder.append(name);
-			return this;
-		}
-		
 		public Builder append(Path tail)
 		{
 			assert tail.isAbsolute() == false;
 			builder.append(tail.value);
 			return this;
 		}
+		
 		public Builder append(Part part)
 		{
+			assert !part.isRoot();
 			builder.append(part.text);
 			return this;
 		}
@@ -119,7 +131,7 @@ public class Path implements Comparable<Path>
 
 		public boolean isMeta()
 		{
-			return text.charAt(0) == TYPE;
+			return text.charAt(0) == META;
 		}
 		
 		public boolean isRoot()
