@@ -28,7 +28,7 @@ abstract class StandardCommonParentsCommand<P> extends
 		@SuppressWarnings("deprecation")
 		int fetch = FetchOptions.DEFAULT_CHUNK_SIZE;
 		FetchOptions fetchOptions = childCommand.getRootCommand().getFetchOptions();
-		if (fetchOptions != null)
+		if (fetchOptions != null && fetchOptions.getChunkSize() != null)
 		{
 			if (fetchOptions.getChunkSize() != fetchOptions.getPrefetchSize())
 			{

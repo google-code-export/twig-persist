@@ -80,7 +80,7 @@ public class Path implements Comparable<Path>
 		
 		public Builder append(Part part)
 		{
-			assert !part.isRoot();
+			assert builder.length() == 0 || !part.isRoot();
 			builder.append(part.text);
 			return this;
 		}
