@@ -17,25 +17,25 @@ public interface FindCommand
 	
 	<T> RootFindCommand<T> type(Class<? extends T> type);
 
-	interface CommonFindCommand<C extends CommonFindCommand<C>>
+	interface RestrictedFindCommand<C extends RestrictedFindCommand<C>>
 	{
 		C restrictEntities(Restriction<Entity> restriction);
 		C restrictProperties(Restriction<Property> restriction);
 	}
 
-	interface TypedFindCommand<T, C extends TypedFindCommand<T, C>> extends CommonFindCommand<C>
+	interface CommonFindCommand<C extends CommonFindCommand<C>> extends RestrictedFindCommand<C>
 	{
 		C addFilter(String field, FilterOperator operator, Object value);
 		C addRangeFilter(String field, Object from, Object to);
-		BranchFindCommand<T> branch(MergeOperator operator);
+		BranchFindCommand branch(MergeOperator operator);
 	}
 
-	interface BranchFindCommand<T> 
+	interface BranchFindCommand
 	{
-		ChildFindCommand<T> addChildCommand();
+		ChildFindCommand addChildCommand();
 	}
 	
-	interface ChildFindCommand<T> extends TypedFindCommand<T, ChildFindCommand<T>>
+	interface ChildFindCommand extends CommonFindCommand<ChildFindCommand>
 	{
 	}
 	
@@ -44,7 +44,7 @@ public interface FindCommand
 	 *
 	 * @param <T>
 	 */
-	interface RootFindCommand<T> extends TypedFindCommand<T, RootFindCommand<T>>, CommandTerminator<QueryResultIterator<T>>
+	interface RootFindCommand<T> extends CommonFindCommand<RootFindCommand<T>>, CommandTerminator<QueryResultIterator<T>>
 	{
 		// methods that have side effects
 		
@@ -100,10 +100,9 @@ public interface FindCommand
 		
 		<P> CommandTerminator<Iterator<P>> returnParents();
 		<P> CommandTerminator<ParentsCommand<P>> returnParentsCommand();
-
 	}
 	
-	interface ParentsCommand<P> extends CommonFindCommand<ParentsCommand<P>>, CommandTerminator<Iterator<P>>
+	interface ParentsCommand<P> extends RestrictedFindCommand<ParentsCommand<P>>, CommandTerminator<Iterator<P>>
 	{
 	}
 }

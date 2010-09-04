@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
@@ -176,7 +177,11 @@ public class DefaultFieldStrategy implements FieldStrategy
 		// turn every collection or array into an array list
 		Type componentType = null;
 		Class<?> erased = GenericTypeReflector.erase(type);
-		if (type instanceof GenericArrayType)
+		if (type instanceof TypeVariable<?>)
+		{
+			return erased;
+		}
+		else if (type instanceof GenericArrayType)
 		{
 			// we have a generic array like Provider<Twig>[]
 			GenericArrayType arrayType = (GenericArrayType) type;

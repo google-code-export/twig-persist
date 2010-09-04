@@ -27,12 +27,13 @@ public class AnnotationStrategy extends DefaultFieldStrategy implements Combined
 		return field.isAnnotationPresent(Parent.class);
 	}
 
+	@SuppressWarnings("deprecation")
 	public boolean embed(Field field)
 	{
-		Embed annotation = field.getAnnotation(Embed.class);
+		Embedded annotation = field.getAnnotation(Embedded.class);
 		if (annotation == null)
 		{
-			annotation = field.getType().getAnnotation(Embed.class);
+			annotation = field.getType().getAnnotation(Embedded.class);
 		}
 
 		if (annotation != null)
@@ -41,7 +42,20 @@ public class AnnotationStrategy extends DefaultFieldStrategy implements Combined
 		}
 		else
 		{
-			return false;
+			Embed oldAnnotation = field.getAnnotation(Embed.class);
+			if (oldAnnotation == null)
+			{
+				oldAnnotation = field.getType().getAnnotation(Embed.class);
+			}
+
+			if (oldAnnotation != null)
+			{
+				return oldAnnotation.value();
+			}
+			else
+			{
+				return false;
+			}
 		}
 	}
 
@@ -55,6 +69,11 @@ public class AnnotationStrategy extends DefaultFieldStrategy implements Combined
 		else
 		{
 			int modifiers = field.getModifiers();
+			if (Modifier.isTransient(modifiers))
+			{
+				return false;
+			}
+			
 			if (Modifier.isFinal(modifiers))
 			{
 				String name = field.getName();
@@ -67,7 +86,8 @@ public class AnnotationStrategy extends DefaultFieldStrategy implements Combined
 					throw new IllegalStateException("Final field " + field + " cannot be stored");
 				}
 			}
-			return !Modifier.isTransient(modifiers) ;
+			
+			return true;
 		}
 	}
 
@@ -123,10 +143,10 @@ public class AnnotationStrategy extends DefaultFieldStrategy implements Combined
 
 	public boolean polymorphic(Field field)
 	{
-		Embed annotation = field.getAnnotation(Embed.class);
+		Embedded annotation = field.getAnnotation(Embedded.class);
 		if (annotation == null)
 		{
-			annotation = field.getType().getAnnotation(Embed.class);
+			annotation = field.getType().getAnnotation(Embedded.class);
 		}
 		
 		if (annotation != null)

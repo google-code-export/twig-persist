@@ -17,18 +17,18 @@ public interface LoadCommand
 		<I> MultipleTypedLoadCommand<T, I, ?> ids(I... ids);
 	}
 
-	interface CommonTypedLoadCommand<T, C extends CommonTypedLoadCommand<T, C>>
+	interface CommonLoadCommand<C extends CommonLoadCommand<C>>
 	{
 		C restrictEntities(Restriction<Entity> restriction);
 		C restrictProperties(Restriction<Property> restriction);
 		C parent(Object parent);
 	}
 	
-	interface SingleTypedLoadCommand<T, C extends SingleTypedLoadCommand<T, C>> extends CommonTypedLoadCommand<T, C>, CommandTerminator<T>
+	interface SingleTypedLoadCommand<T, C extends SingleTypedLoadCommand<T, C>> extends CommonLoadCommand<C>, CommandTerminator<T>
 	{
 	}
 	
-	interface MultipleTypedLoadCommand<T, I, C extends MultipleTypedLoadCommand<T, I, C>> extends CommonTypedLoadCommand<T, C>, CommandTerminator<Map<I, T>>
+	interface MultipleTypedLoadCommand<T, I, C extends MultipleTypedLoadCommand<T, I, C>> extends CommonLoadCommand<C>, CommandTerminator<Map<I, T>>
 	{
 		/**
 		 * Loads instances in the same order as the ids set with {@link TypedLoadCommand#ids(Collection)}. 

@@ -10,6 +10,13 @@ import com.google.code.twig.conversion.CombinedConverter;
 import com.google.code.twig.conversion.SpecificConverter;
 import com.google.code.twig.util.PropertySets;
 
+/**
+ * Translates any type that can be converted into a String or Long by the
+ * supplied TypeConverter.  Note that the type should be convertible in both
+ * directions or an encoded value might not be able to be decoded again.
+ * 
+ * @author John Patterson <john@vercer.com>
+ */
 public class ConvertableTypeTranslator implements PropertyTranslator
 {
 	private final CombinedConverter converter;

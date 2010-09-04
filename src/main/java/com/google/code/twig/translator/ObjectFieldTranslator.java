@@ -124,7 +124,6 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 
 		onBeforeDecode(field, properties);
 
-		// create instance
 		Object value;
 		try
 		{
@@ -132,15 +131,24 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 		}
 		catch (Exception e)
 		{
-			// add a bit of context to the trace
+			// add a bit of context to the problem
 			throw new IllegalStateException("Problem translating field " + field + " with properties " + properties, e);
 		}
 
 		if (value == null)
 		{
-			throw new IllegalStateException("Could not translate path " + path);
+			if (properties.isEmpty())
+			{
+				// leave default value for fields with no stored properties
+				return;
+			}
+			else
+			{
+				throw new IllegalStateException("Could not translate path " + path);
+			}
 		}
 
+		// successfully decoded as a null value
 		if (value == NULL_VALUE)
 		{
 			value = null;
@@ -355,7 +363,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 	{
 	}
 
-	private List<Field> getSortedFields(Object object)
+	protected List<Field> getSortedFields(Object object)
 	{
 		// fields are cached and stored as a map because reading more common than writing
 		List<Field> fields = classFields.get(object.getClass());

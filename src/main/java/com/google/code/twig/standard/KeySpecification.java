@@ -88,7 +88,7 @@ public class KeySpecification
 		else
 		{
 			throw new IllegalStateException("Key specification is incomplete. "
-					+ " You may need to define a key name for this or its parent instance");
+					+ " You may need to define an id for this or its parent instance");
 		}
 	}
 

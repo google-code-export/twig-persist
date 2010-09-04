@@ -27,7 +27,7 @@ import com.google.code.twig.util.FutureAdaptor;
 import com.google.common.collect.ForwardingIterator;
 import com.google.common.collect.Lists;
 
-final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootFindCommand<T>>
+final class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFindCommand<T>>
 		implements RootFindCommand<T>
 {
 	private final Type type;

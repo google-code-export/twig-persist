@@ -31,6 +31,7 @@ import com.google.code.twig.LocalDatastoreTestCase;
 import com.google.code.twig.ObjectDatastore;
 import com.google.code.twig.annotation.AnnotationObjectDatastore;
 import com.google.code.twig.annotation.Embed;
+import com.google.code.twig.annotation.Embedded;
 import com.google.code.twig.annotation.Id;
 import com.google.code.twig.festival.Album.Track;
 import com.google.code.twig.festival.Band.HairStyle;
@@ -531,9 +532,9 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 	
 	public static class ClassWithEmbeddedPrimitives
 	{
-		@Embed long number;
-		@Embed Blob blob;
-		@Embed ClassWithEmbeddedPrimitives inner;
+		@Embedded long number;
+		@Embedded Blob blob;
+		@Embedded ClassWithEmbeddedPrimitives inner;
 	}
 	
 }

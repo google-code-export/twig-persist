@@ -20,10 +20,9 @@ import com.google.storage.onestore.v3.OnestoreEntity;
 import com.google.storage.onestore.v3.OnestoreEntity.Reference;
 
 /**
- * This class has access to package private internals that are essential to async operations
- * but has the danger that if the internal code is updated this may break without warning.
- * 
- * Use at your own risk.
+ * This class is in an appengine package so it has access to package private internals that 
+ * are essential to async operations.  There is a danger that if this unpublished code 
+ * changes this may break without warning.
  * 
  * @author John Patterson <john@vercer.com>
  */
@@ -87,7 +86,9 @@ public class AsyncDatastoreHelper
 		}                
 		
 		if(consistency == Consistency.EVENTUAL)
+		{
             request.setFailoverMs(-1L);
+		}
 
 		Future<byte[]> futureBytes = makeAsyncCall("Get", request);
 		

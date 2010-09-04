@@ -17,6 +17,7 @@ import java.util.Set;
 import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
+import com.google.code.twig.util.PropertySets;
 import com.google.code.twig.util.SimpleProperty;
 import com.google.code.twig.util.SinglePropertySet;
 import com.google.code.twig.util.generic.GenericTypeReflector;
@@ -31,16 +32,22 @@ public class ListTranslator extends DecoratingTranslator
 
 	public Object decode(final Set<Property> properties, final Path path, Type type)
 	{
+		if (properties.isEmpty())
+		{
+			// do not decode empty missing properties
+			return null;
+		}
+		
+		if (PropertySets.firstValue(properties) == null)
+		{
+			return NULL_VALUE;
+		}
+		
 		// only handle lists
 		if (!GenericTypeReflector.erase(type).isAssignableFrom(ArrayList.class))
 		{
 			// pass on all other types down the chain
 			return chained.decode(properties, path, type);
-		}
-
-		if (properties.isEmpty())
-		{
-			return NULL_VALUE;
 		}
 
 		// need to adapt a set of property lists into a list of property sets
