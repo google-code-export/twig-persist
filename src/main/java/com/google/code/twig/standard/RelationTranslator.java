@@ -113,7 +113,7 @@ class RelationTranslator implements PropertyTranslator
 
 	public Set<Property> encode(final Object instance, final Path path, final boolean indexed)
 	{
-		if (instance== null)
+		if (instance == null)
 		{
 			return Collections.emptySet();
 		}

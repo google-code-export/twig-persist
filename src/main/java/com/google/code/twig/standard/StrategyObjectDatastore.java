@@ -75,8 +75,7 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 
 	private static final Map<Class<?>, Field> keyFields = new ConcurrentHashMap<Class<?>, Field>();
 
-	// indicates we are associating instances with this session so do not store
-	// them
+	// indicates we are only associating instances so do not store them
 	boolean associating;
 
 	// set when all entities should be collected and stored in one call
@@ -412,6 +411,15 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	}
 
 	@Override
+	public final void associateAll(Collection<?> instances)
+	{
+		// encode the instance so we can get its id and parent to make a key
+		associating = true;
+		storeAll(instances);
+		associating = false;
+	}
+
+	@Override
 	public final Key associatedKey(Object instance)
 	{
 		return keyCache.getKey(instance);
@@ -452,6 +460,11 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	protected final PropertyTranslator getPolyMorphicTranslator()
 	{
 		return polyMorphicComponentTranslator;
+	}
+	
+	protected final PropertyTranslator getObjectFieldTranslator()
+	{
+		return objectFieldTranslator;
 	}
 
 	protected final PropertyTranslator getEmbedTranslator()
@@ -585,7 +598,11 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 			Object instance = refresh;
 			if (instance == null)
 			{
-				instance = super.createInstance(clazz);
+				instance = StrategyObjectDatastore.this.createInstance(clazz);
+				if (instance == null)
+				{
+					instance = super.createInstance(clazz);
+				}
 			}
 			refresh = null;
 
@@ -632,6 +649,7 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 		{
 			return StrategyObjectDatastore.this.isNullStored();
 		}
+		
 	}
 
 	@SuppressWarnings("deprecation")
@@ -671,6 +689,17 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 		{
 			return result;
 		}
+	}
+
+	/**
+	 * Create a new instance which will have its fields populated from stored properties.
+	 * 
+	 * @param clazz The type to create
+	 * @return A new instance or null to use the default behaviour
+	 */
+	protected Object createInstance(Class<?> clazz)
+	{
+		return null;
 	}
 
 	public RelationshipStrategy getRelationshipStrategy()

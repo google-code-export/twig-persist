@@ -30,7 +30,13 @@ public class MapTranslator extends DecoratingTranslator
 	@Override
 	public Object decode(Set<Property> properties, Path path, Type type)
 	{
-		if (properties.isEmpty() || PropertySets.firstValue(properties) == null)
+		if (properties.isEmpty())
+		{
+			// do not decode empty missing properties
+			return null;
+		}
+		
+		if (PropertySets.firstValue(properties) == null)
 		{
 			return NULL_VALUE;
 		}
@@ -87,8 +93,7 @@ public class MapTranslator extends DecoratingTranslator
 
 			if (properties == null)
 			{
-				// we could not handle a value so pass the whole map down the
-				// chain
+				// we could not handle a value so pass down the chain
 				return chained.encode(instance, path, indexed);
 			}
 

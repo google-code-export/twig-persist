@@ -33,7 +33,7 @@ public class DirectTranslator implements PropertyTranslator
 
 	public Set<Property> encode(Object object, Path path, boolean indexed)
 	{
-		if (isDirectType(object.getClass()))
+		if (object == null || isDirectType(object.getClass()))
 		{
 			return PropertySets.singletonPropertySet(path, object, indexed);
 		}

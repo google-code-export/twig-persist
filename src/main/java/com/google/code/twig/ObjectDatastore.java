@@ -111,6 +111,9 @@ public interface ObjectDatastore extends Activator
 	 */
 	void associate(Object instance);
 	
+	
+	void associateAll(Collection<?> instances);
+	
 	/**
 	 * Adds this instance but not other referenced instances to the internal
 	 * key cache so they are known by this datastore as persistent instances.

@@ -12,7 +12,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.Maps;
 
 public class StandardMultipleTypedLoadCommand<T, I> 
-	extends StandardCommonTypedLoadCommand<T, StandardMultipleTypedLoadCommand<T, I>>
+	extends StandardCommonLoadCommand<StandardMultipleTypedLoadCommand<T, I>>
 	implements MultipleTypedLoadCommand<T, I, StandardMultipleTypedLoadCommand<T, I>>
 {
 	private final Collection<? extends I> ids;
