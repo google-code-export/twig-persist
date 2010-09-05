@@ -6,7 +6,7 @@ public class StandardUntypedSingleLoadCommand extends StandardDecodeCommand
 {
 	private final Key key;
 
-	StandardUntypedSingleLoadCommand(StrategyObjectDatastore datastore, Key key)
+	StandardUntypedSingleLoadCommand(TranslatorObjectDatastore datastore, Key key)
 	{
 		super(datastore);
 		this.key = key;

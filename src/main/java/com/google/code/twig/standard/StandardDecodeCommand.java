@@ -27,7 +27,7 @@ class StandardDecodeCommand extends StandardCommand
 {
 	private static final PropertyComparator COMPARATOR = new PropertyComparator();
 	
-	StandardDecodeCommand(StrategyObjectDatastore datastore)
+	StandardDecodeCommand(TranslatorObjectDatastore datastore)
 	{
 		super(datastore);
 	}
@@ -45,7 +45,7 @@ class StandardDecodeCommand extends StandardCommand
 
 			try
 			{
-				Type type = datastore.getFieldStrategy().kindToType(entity.getKind());
+				Type type = datastore.getConfiguration().kindToType(entity.getKind());
 	
 				Set<Property> properties = PropertySets.create(entity.getProperties(), datastore.indexed);
 				

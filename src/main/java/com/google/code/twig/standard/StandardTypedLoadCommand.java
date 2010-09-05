@@ -9,7 +9,7 @@ public class StandardTypedLoadCommand<T> extends StandardDecodeCommand implement
 {
 	final Class<? extends T> type;
 
-	public StandardTypedLoadCommand(StrategyObjectDatastore datastore, Class<? extends T> type)
+	public StandardTypedLoadCommand(TranslatorObjectDatastore datastore, Class<? extends T> type)
 	{
 		super(datastore);
 		this.type = type;

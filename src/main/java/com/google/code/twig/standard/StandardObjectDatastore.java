@@ -1,35 +1,22 @@
 package com.google.code.twig.standard;
 
 import com.google.code.twig.PropertyTranslator;
+import com.google.code.twig.configuration.Configuration;
 import com.google.code.twig.conversion.CollectionConverter;
 import com.google.code.twig.conversion.CombinedConverter;
-import com.google.code.twig.conversion.EngineConverters;
 import com.google.code.twig.conversion.CoreConverters;
+import com.google.code.twig.conversion.EngineConverters;
 import com.google.code.twig.conversion.PrimitiveConverter;
-import com.google.code.twig.strategy.ActivationStrategy;
-import com.google.code.twig.strategy.CombinedStrategy;
-import com.google.code.twig.strategy.FieldStrategy;
-import com.google.code.twig.strategy.RelationshipStrategy;
-import com.google.code.twig.strategy.StorageStrategy;
 import com.google.code.twig.translator.ChainedTranslator;
 import com.google.code.twig.translator.ConvertableTypeTranslator;
 import com.google.code.twig.translator.EnumTranslator;
 import com.google.code.twig.translator.NativeDirectTranslator;
 
-public class StandardObjectDatastore extends StrategyObjectDatastore
+public class StandardObjectDatastore extends TranslatorObjectDatastore
 {
-	public StandardObjectDatastore(CombinedStrategy strategy)
+	public StandardObjectDatastore(Configuration strategy)
 	{
 		super(strategy);
-	}
-	
-	public StandardObjectDatastore(
-			RelationshipStrategy relationshipStrategy,
-			StorageStrategy storageStrategy, 
-			ActivationStrategy activationStrategy,
-			FieldStrategy fieldStrategy)
-	{
-		super(relationshipStrategy, storageStrategy, activationStrategy, fieldStrategy);
 	}
 	
 	@Override

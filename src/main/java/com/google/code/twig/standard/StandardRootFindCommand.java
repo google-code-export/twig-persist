@@ -49,7 +49,7 @@ final class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFin
 		String field;
 	}
 
-	StandardRootFindCommand(Type type, StrategyObjectDatastore datastore)
+	StandardRootFindCommand(Type type, TranslatorObjectDatastore datastore)
 	{
 		super(datastore);
 		this.type = type;
@@ -517,7 +517,7 @@ final class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFin
 					"Find command must have an ancestor in a transaction");
 		}
 
-		Query query = new Query(datastore.getFieldStrategy().typeToKind(type));
+		Query query = new Query(datastore.getConfiguration().typeToKind(type));
 		applyFilters(query);
 		if (sorts != null)
 		{

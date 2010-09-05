@@ -17,12 +17,12 @@ public class EntitySupplier
 		Key order();
 	}
 
-	private final StrategyObjectDatastore datastore;
+	private final TranslatorObjectDatastore datastore;
 	private List<EntitySink> sinks = new ArrayList<EntitySink>();
 	private Map<Key, Entity> keysToEntities;
 	private final int chunk;
 	
-	public EntitySupplier(StrategyObjectDatastore datastore, int chunk)
+	public EntitySupplier(TranslatorObjectDatastore datastore, int chunk)
 	{
 		this.datastore = datastore;
 		this.chunk = chunk;

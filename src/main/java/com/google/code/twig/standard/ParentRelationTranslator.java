@@ -17,7 +17,7 @@ final class ParentRelationTranslator extends RelationTranslator
 	/**
 	 * @param datastore
 	 */
-	ParentRelationTranslator(StrategyObjectDatastore datastore)
+	ParentRelationTranslator(TranslatorObjectDatastore datastore)
 	{
 		super(datastore);
 	}

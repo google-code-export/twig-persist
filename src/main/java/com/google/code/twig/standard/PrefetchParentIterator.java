@@ -16,9 +16,9 @@ class PrefetchParentIterator extends AbstractIterator<Entity>
 	private final Iterator<Entity> children;
 	private Iterator<Entity> parents;
 	private final int fetchBy;
-	private final StrategyObjectDatastore datastore;
+	private final TranslatorObjectDatastore datastore;
 
-	PrefetchParentIterator(Iterator<Entity> children, StrategyObjectDatastore datastore, int fetchBy)
+	PrefetchParentIterator(Iterator<Entity> children, TranslatorObjectDatastore datastore, int fetchBy)
 	{
 		this.children = children;
 		this.datastore = datastore;
