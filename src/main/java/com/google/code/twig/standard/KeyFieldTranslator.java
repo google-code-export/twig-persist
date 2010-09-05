@@ -15,17 +15,17 @@ import com.google.code.twig.translator.DecoratingTranslator;
 
 final class KeyFieldTranslator extends DecoratingTranslator
 {
-	private final StrategyObjectDatastore datastore;
+	private final TranslatorObjectDatastore datastore;
 	private final TypeConverter converters;
 
-	KeyFieldTranslator(StrategyObjectDatastore datastore, PropertyTranslator chained, TypeConverter converters)
+	KeyFieldTranslator(TranslatorObjectDatastore datastore, PropertyTranslator chained, TypeConverter converters)
 	{
 		super(chained);
 		this.datastore = datastore;
 		this.converters = converters;
 	}
 
-	public Set<Property> typesafeToProperties(Object instance, Path path, boolean indexed)
+	public Set<Property> encode(Object instance, Path path, boolean indexed)
 	{
 		if (path.getParts().size() > 1)
 		{
@@ -57,7 +57,7 @@ final class KeyFieldTranslator extends DecoratingTranslator
 		return Collections.emptySet();
 	}
 
-	public Object propertiesToTypesafe(Set<Property> properties, Path prefix, Type type)
+	public Object decode(Set<Property> properties, Path prefix, Type type)
 	{
 		// the key value is not stored in the properties but in the key
 		Object keyValue = datastore.decodeKey.getName();

@@ -7,7 +7,7 @@ import com.google.code.twig.LoadCommand;
 
 public class StandardLoadCommand extends StandardCommand implements LoadCommand
 {
-	StandardLoadCommand(StrategyObjectDatastore datastore)
+	StandardLoadCommand(TranslatorObjectDatastore datastore)
 	{
 		super(datastore);
 	}

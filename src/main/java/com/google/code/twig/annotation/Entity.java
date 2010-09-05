@@ -12,4 +12,6 @@ import java.lang.annotation.Target;
 public @interface Entity
 {
 	String kind() default "";
+
+	long allocateIdsBy();
 }

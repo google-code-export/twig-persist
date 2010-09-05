@@ -6,8 +6,8 @@ import java.util.concurrent.Future;
 
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
-import com.google.appengine.api.utils.FutureWrapper;
 import com.google.code.twig.StoreCommand.SingleStoreCommand;
+import com.google.code.twig.util.FutureAdaptor;
 import com.google.common.collect.Iterables;
 
 final class StandardSingleStoreCommand<T> extends StandardCommonStoreCommand<T, StandardSingleStoreCommand<T>> implements SingleStoreCommand<T, StandardSingleStoreCommand<T>>
@@ -29,16 +29,10 @@ final class StandardSingleStoreCommand<T> extends StandardCommonStoreCommand<T, 
 	public Future<Key> later()
 	{
 		Future<Map<T, Key>> resultsLater = storeInstancesLater();
-		return new FutureWrapper<Map<T, Key>, Key>(resultsLater)
+		return new FutureAdaptor<Map<T, Key>, Key>(resultsLater)
 		{
 			@Override
-			protected Throwable convertException(Throwable arg0)
-			{
-				return arg0;
-			}
-
-			@Override
-			protected Key wrap(Map<T, Key> keys) throws Exception
+			protected Key adapt(Map<T, Key> keys)
 			{
 				return Iterables.getOnlyElement(keys.values());
 			}

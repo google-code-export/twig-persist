@@ -6,7 +6,7 @@ import java.util.concurrent.Future;
 import com.google.appengine.api.datastore.Key;
 import com.google.code.twig.LoadCommand.SingleTypedLoadCommand;
 
-class StandardSingleTypedLoadCommand<T> extends StandardCommonTypedLoadCommand<T, StandardSingleTypedLoadCommand<T>> implements SingleTypedLoadCommand<T, StandardSingleTypedLoadCommand<T>>
+public class StandardSingleTypedLoadCommand<T> extends StandardCommonLoadCommand<StandardSingleTypedLoadCommand<T>> implements SingleTypedLoadCommand<T, StandardSingleTypedLoadCommand<T>>
 {
 	private final Object id;
 
@@ -27,7 +27,7 @@ class StandardSingleTypedLoadCommand<T> extends StandardCommonTypedLoadCommand<T
 	{
 		// the stored type of the id can be defined for the id field
 		Field keyField = datastore.keyField(command.type);
-		String kind = datastore.getFieldStrategy().typeToKind(command.type);
+		String kind = datastore.getConfiguration().typeToKind(command.type);
 		Key key = idToKey(id, keyField, kind);
 		
 		@SuppressWarnings("unchecked")

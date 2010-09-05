@@ -12,7 +12,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.Maps;
 
 public class StandardMultipleTypedLoadCommand<T, I> 
-	extends StandardCommonTypedLoadCommand<T, StandardMultipleTypedLoadCommand<T, I>>
+	extends StandardCommonLoadCommand<StandardMultipleTypedLoadCommand<T, I>>
 	implements MultipleTypedLoadCommand<T, I, StandardMultipleTypedLoadCommand<T, I>>
 {
 	private final Collection<? extends I> ids;
@@ -34,7 +34,7 @@ public class StandardMultipleTypedLoadCommand<T, I>
 	{
 		// the stored type of the id can be defined for the id field
 		Field keyField = datastore.keyField(command.type);
-		String kind = datastore.getFieldStrategy().typeToKind(command.type);
+		String kind = datastore.getConfiguration().typeToKind(command.type);
 		Map<I, Key> idsToKeys = new LinkedHashMap<I, Key>(ids.size());
 		for (I id : ids)
 		{

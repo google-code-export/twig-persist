@@ -14,12 +14,14 @@ import java.util.concurrent.Future;
 import com.google.appengine.api.datastore.AsyncDatastoreHelper;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.KeyRange;
 import com.google.appengine.api.datastore.Transaction;
 import com.google.appengine.api.utils.FutureWrapper;
 import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.StoreCommand.CommonStoreCommand;
+import com.vercer.util.reference.ObjectReference;
 
 abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreCommand<T, C>> extends StandardEncodeCommand implements CommonStoreCommand<T, C>
 {
@@ -105,7 +107,7 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 					}
 					
 					// convert the long or String to the declared key type
-					Object converted = datastore.converter.convert(idOrName, type);
+					Object converted = datastore.getConverter().convert(idOrName, type);
 					field.set(instance, converted);
 				}
 			}
@@ -193,9 +195,13 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 		return result;
 	}
 
+	
+	/**
+	 * All instances sent to the datastore come through this method - both single and multiple puts
+	 */
 	protected Entity instanceToEntity(Object instance, Key parentKey, Object id)
 	{
-		String kind = datastore.getFieldStrategy().typeToKind(instance.getClass());
+		String kind = datastore.getConfiguration().typeToKind(instance.getClass());
 		
 		// push a new encode context
 		KeySpecification existingEncodeKeySpec = datastore.encodeKeySpec;
@@ -210,12 +216,14 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 			
 		// translate fields to properties - sets key parent and id
 		PropertyTranslator encoder = datastore.encoder(instance);
-		Set<Property> properties = encoder.typesafeToProperties(instance, Path.EMPTY_PATH, datastore.indexed);
+		Set<Property> properties = encoder.encode(instance, Path.EMPTY_PATH, datastore.indexed);
 		if (properties == null)
 		{
 			throw new IllegalStateException("Could not translate instance: " + instance);
 		}
 
+		maybeSetAllocatedId(instance);
+		
 		// the key will now be set with id and parent
 		Entity entity = createEntity();
 		
@@ -232,6 +240,40 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 		datastore.encodeKeySpec = existingEncodeKeySpec;
 		
 		return entity;
+	}
+
+	private void maybeSetAllocatedId(Object instance)
+	{
+		Key parentKey;
+		long allocateIdsForType = datastore.getConfiguration().allocateIdsFor(instance.getClass());
+		if (allocateIdsForType > 0)
+		{
+			if (datastore.encodeKeySpec.getId() == null)
+			{
+				parentKey = null;
+				ObjectReference<Key> parentKeyReference = datastore.encodeKeySpec.getParentKeyReference();
+				StringBuilder kindAndParentBuilder = new StringBuilder();
+				kindAndParentBuilder.append(datastore.encodeKeySpec.getKind());
+				if (parentKeyReference != null)
+				{
+					parentKey = parentKeyReference.get();
+					kindAndParentBuilder.append(parentKey.toString());
+				}
+				
+				String kindAndParent = kindAndParentBuilder.toString();
+				KeyRange range = datastore.allocatedIdRanges.get(kindAndParent);
+				if (range == null || range.iterator().hasNext() == false)
+				{
+					range = datastore.getService().allocateIds(
+									parentKeyReference.get(), 
+									datastore.encodeKeySpec.getKind(), 
+									allocateIdsForType);
+				}
+				
+				// get the id from the key - the rest of the key spec should be the same
+				datastore.encodeKeySpec.setId(range.iterator().next().getId());
+			}
+		}
 	}
 	
 	/**

@@ -3,15 +3,15 @@ package com.google.code.twig.annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
-import com.google.code.twig.strategy.CombinedStrategy;
-import com.google.code.twig.strategy.DefaultFieldStrategy;
+import com.google.code.twig.configuration.Configuration;
+import com.google.code.twig.configuration.DefaultConfiguration;
 import com.google.code.twig.util.generic.GenericTypeReflector;
 
-public class AnnotationStrategy extends DefaultFieldStrategy implements CombinedStrategy
+public class AnnotationConfiguration extends DefaultConfiguration implements Configuration
 {
 	private final boolean indexed;
 
-	public AnnotationStrategy(boolean indexPropertiesDefault, int defaultVersion)
+	public AnnotationConfiguration(boolean indexPropertiesDefault, int defaultVersion)
 	{
 		super(defaultVersion);
 		this.indexed = indexPropertiesDefault;
@@ -27,12 +27,13 @@ public class AnnotationStrategy extends DefaultFieldStrategy implements Combined
 		return field.isAnnotationPresent(Parent.class);
 	}
 
+	@SuppressWarnings("deprecation")
 	public boolean embed(Field field)
 	{
-		Embed annotation = field.getAnnotation(Embed.class);
+		Embedded annotation = field.getAnnotation(Embedded.class);
 		if (annotation == null)
 		{
-			annotation = field.getType().getAnnotation(Embed.class);
+			annotation = field.getType().getAnnotation(Embedded.class);
 		}
 
 		if (annotation != null)
@@ -41,7 +42,20 @@ public class AnnotationStrategy extends DefaultFieldStrategy implements Combined
 		}
 		else
 		{
-			return false;
+			Embed oldAnnotation = field.getAnnotation(Embed.class);
+			if (oldAnnotation == null)
+			{
+				oldAnnotation = field.getType().getAnnotation(Embed.class);
+			}
+
+			if (oldAnnotation != null)
+			{
+				return oldAnnotation.value();
+			}
+			else
+			{
+				return false;
+			}
 		}
 	}
 
@@ -55,6 +69,11 @@ public class AnnotationStrategy extends DefaultFieldStrategy implements Combined
 		else
 		{
 			int modifiers = field.getModifiers();
+			if (Modifier.isTransient(modifiers))
+			{
+				return false;
+			}
+			
 			if (Modifier.isFinal(modifiers))
 			{
 				String name = field.getName();
@@ -67,7 +86,8 @@ public class AnnotationStrategy extends DefaultFieldStrategy implements Combined
 					throw new IllegalStateException("Final field " + field + " cannot be stored");
 				}
 			}
-			return !Modifier.isTransient(modifiers) ;
+			
+			return true;
 		}
 	}
 
@@ -89,7 +109,7 @@ public class AnnotationStrategy extends DefaultFieldStrategy implements Combined
 	}
 
 	@SuppressWarnings("deprecation")
-	public boolean key(Field field)
+	public boolean id(Field field)
 	{
 		return field.isAnnotationPresent(Key.class) || field.isAnnotationPresent(Id.class);
 	}
@@ -123,10 +143,10 @@ public class AnnotationStrategy extends DefaultFieldStrategy implements Combined
 
 	public boolean polymorphic(Field field)
 	{
-		Embed annotation = field.getAnnotation(Embed.class);
+		Embedded annotation = field.getAnnotation(Embedded.class);
 		if (annotation == null)
 		{
-			annotation = field.getType().getAnnotation(Embed.class);
+			annotation = field.getType().getAnnotation(Embedded.class);
 		}
 		
 		if (annotation != null)
@@ -175,4 +195,17 @@ public class AnnotationStrategy extends DefaultFieldStrategy implements Combined
 		}
 	}
 
+	@Override
+	public long allocateIdsFor(java.lang.reflect.Type type)
+	{
+		Class<?> clazz = GenericTypeReflector.erase(type);
+		if (clazz.isAnnotationPresent(Entity.class))
+		{
+			return clazz.getAnnotation(Entity.class).allocateIdsBy();
+		}
+		else
+		{
+			return 0;
+		}
+	}
 }

@@ -10,7 +10,7 @@ import com.google.code.twig.util.PropertySets;
 
 public class DirectTranslator implements PropertyTranslator
 {
-	public Object propertiesToTypesafe(Set<Property> properties, Path path, Type type)
+	public Object decode(Set<Property> properties, Path path, Type type)
 	{
 		if (isDirectType(type))
 		{
@@ -31,9 +31,9 @@ public class DirectTranslator implements PropertyTranslator
 		return true;
 	}
 
-	public Set<Property> typesafeToProperties(Object object, Path path, boolean indexed)
+	public Set<Property> encode(Object object, Path path, boolean indexed)
 	{
-		if (isDirectType(object.getClass()))
+		if (object == null || isDirectType(object.getClass()))
 		{
 			return PropertySets.singletonPropertySet(path, object, indexed);
 		}

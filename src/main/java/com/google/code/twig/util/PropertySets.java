@@ -13,27 +13,12 @@ import com.vercer.util.collections.ArraySortedSet;
 
 public class PropertySets
 {
+	private static final PropertyComparator comparator = new PropertyComparator();
+	
 	@SuppressWarnings("unchecked")
 	public static <T> T firstValue(Set<Property> properties)
 	{
-		if (properties instanceof SinglePropertySet)
-		{
-			// optimised case for our own implementation
-			return (T) ((SinglePropertySet) properties).getValue();
-		}
-		else
-		{
-			Iterator<Property> iterator = properties.iterator();
-			Property property = iterator.next();
-			if (property == null)
-			{
-				return null;
-			}
-			else
-			{
-				return (T) property.getValue();
-			}
-		}
+		return (T) firstProperty(properties).getValue();
 	}
 	
 	public static <T> T uniqueValue(Set<Property> properties)
@@ -47,28 +32,6 @@ public class PropertySets
 		return firstValue;
 	}
 
-	public static class PrefixPropertySet
-	{
-		private Path prefix;
-		private Set<Property> properties;
-		public PrefixPropertySet(Path prefix, Set<Property> properties)
-		{
-			super();
-			this.prefix = prefix;
-			this.properties = properties;
-		}
-
-		public Path getPrefix()
-		{
-			return prefix;
-		}
-		
-		public Set<Property> getProperties()
-		{
-			return properties;
-		}
-	}
-	
 	public static Collection<PrefixPropertySet> prefixPropertySets(Set<Property> properties, Path prefix)
 	{
 		Property[] array = (Property[]) properties.toArray(new Property[properties.size()]);
@@ -99,7 +62,7 @@ public class PropertySets
 
 	private static PrefixPropertySet createPrefixSubset(Path prefix, Property[] array, Part part, int start, int i)
 	{
-		Set<Property> subset = new ArraySortedSet<Property>(array, start, i - start);
+		Set<Property> subset = new ArraySortedSet<Property>(array, start, i - start, comparator);
 		PrefixPropertySet ppf = new PrefixPropertySet(Path.builder(prefix).append(part).build(), subset);
 		return ppf;
 	}
@@ -108,9 +71,43 @@ public class PropertySets
 	{
 		return new PropertyMapToSet(properties, indexed);
 	}
+	
+	@SuppressWarnings("unchecked")
+	public static <T> T valueForPath(String path, Set<Property> properties)
+	{
+		for (Property property : properties)
+		{
+			if (property.getPath().toString().equals(path))
+			{
+				return (T) property.getValue();
+			}
+		}
+		return null;
+	}
 
 	public static Set<Property> singletonPropertySet(Path path, Object value, boolean indexed)
 	{
 		return new SinglePropertySet(path, value, indexed);
+	}
+
+	public static Property firstProperty(Set<Property> properties)
+	{
+		if (properties instanceof SinglePropertySet)
+		{
+			// optimised case for our own implementation
+			return ((SinglePropertySet) properties);
+		}
+		else
+		{
+			Iterator<Property> iterator = properties.iterator();
+			if (iterator.hasNext())
+			{
+				return iterator.next();
+			}
+			else
+			{
+				return null;
+			}
+		}		
 	}
 }

@@ -30,7 +30,7 @@ import com.google.appengine.api.datastore.Transaction;
 import com.google.code.twig.LocalDatastoreTestCase;
 import com.google.code.twig.ObjectDatastore;
 import com.google.code.twig.annotation.AnnotationObjectDatastore;
-import com.google.code.twig.annotation.Embed;
+import com.google.code.twig.annotation.Embedded;
 import com.google.code.twig.annotation.Id;
 import com.google.code.twig.festival.Album.Track;
 import com.google.code.twig.festival.Band.HairStyle;
@@ -248,9 +248,7 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		album.tracks[0].title = "Friday I'm in Love";
 
 		datastore.store(album);
-
 		datastore.disassociateAll();
-
 		Album load = datastore.load(Album.class, album.name);
 
 		assertEquals(load, album);
@@ -417,13 +415,13 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		Key stored = datastore.store(musicFestival);
 		datastore.disassociateAll();
 
-		// musicians have depth 3
+		// musicians have depth 2
 		MusicFestival reloaded = datastore.load(stored);
-		assertNull(reloaded.bands.get(0).hair);
+		assertNull(reloaded.bands.get(0).members.get(0).name);
 
-		datastore.refresh(reloaded.bands.get(0));
+		datastore.activate(reloaded.bands.get(0).members.get(0));
 
-		assertNotNull(reloaded.bands.get(0).hair);
+		assertNotNull(reloaded.bands.get(0).members.get(0).name);
 
 		datastore.setActivationDepth(2);
 		datastore.disassociateAll();
@@ -533,9 +531,9 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 	
 	public static class ClassWithEmbeddedPrimitives
 	{
-		@Embed long number;
-		@Embed Blob blob;
-		@Embed ClassWithEmbeddedPrimitives inner;
+		@Embedded long number;
+		@Embedded Blob blob;
+		@Embedded ClassWithEmbeddedPrimitives inner;
 	}
 	
 }

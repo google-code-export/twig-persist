@@ -13,7 +13,7 @@ class StandardMultipleParentsCommand<P> extends StandardCommonParentsCommand<P>
 	private final List<Iterator<Entity>> childEntityIterators;
 	private final List<SortPredicate> sorts;
 
-	StandardMultipleParentsCommand(StandardTypedFindCommand<?, ?> command, List<Iterator<Entity>> childEntityIterators, List<SortPredicate> sorts)
+	StandardMultipleParentsCommand(StandardCommonFindCommand<?> command, List<Iterator<Entity>> childEntityIterators, List<SortPredicate> sorts)
 	{
 		super(command);
 		this.childEntityIterators = childEntityIterators;
@@ -43,7 +43,7 @@ class StandardMultipleParentsCommand<P> extends StandardCommonParentsCommand<P>
 			Iterator<Entity> mergedParentEntities = mergeEntities(parentEntityIterators, sorts);
 			
 			// convert the entities into instances to return
-			return entityToInstanceIterator(mergedParentEntities, false);
+			return entitiesToInstances(mergedParentEntities, propertyRestriction);
 		}
 		else
 		{
@@ -55,7 +55,7 @@ class StandardMultipleParentsCommand<P> extends StandardCommonParentsCommand<P>
 			mergedChildEntities = childCommand.applyEntityFilter(mergedChildEntities);
 			Iterator<Entity> parentEntities = new PrefetchParentIterator(mergedChildEntities, datastore, getFetchSize());
 			parentEntities = applyEntityFilter(parentEntities);
-			return entityToInstanceIterator(parentEntities, false);
+			return entitiesToInstances(parentEntities, propertyRestriction);
 		}
 	}
 	

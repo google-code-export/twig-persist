@@ -18,18 +18,18 @@ public class DelayedTranslator extends DecoratingTranslator
 		super(chained);
 	}
 
-	public Object propertiesToTypesafe(Set<Property> properties, Path path, Type type)
+	public Object decode(Set<Property> properties, Path path, Type type)
 	{
-		return chained.propertiesToTypesafe(properties, path, type);
+		return chained.decode(properties, path, type);
 	}
 
-	public Set<Property> typesafeToProperties(final Object object, final Path path, final boolean indexed)
+	public Set<Property> encode(final Object object, final Path path, final boolean indexed)
 	{
 		ObjectReference<Object> reference = new ReadOnlyObjectReference<Object>()
 		{
 			public Object get()
 			{
-				Set<Property> properties = chained.typesafeToProperties(object, path, indexed);
+				Set<Property> properties = chained.encode(object, path, indexed);
 				return properties.iterator().next().getValue();
 			}
 		};

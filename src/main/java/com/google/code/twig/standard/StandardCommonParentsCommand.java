@@ -7,11 +7,11 @@ import com.google.code.twig.FindCommand.ParentsCommand;
 import com.google.appengine.api.datastore.FetchOptions;
 
 abstract class StandardCommonParentsCommand<P> extends
-		StandardCommonFindCommand<P, ParentsCommand<P>> implements ParentsCommand<P>
+		StandardRestrictedFindCommand<ParentsCommand<P>> implements ParentsCommand<P>
 {
-	protected final StandardTypedFindCommand<?, ?> childCommand;
+	protected final StandardCommonFindCommand<?> childCommand;
 
-	StandardCommonParentsCommand(StandardTypedFindCommand<?, ?> command)
+	StandardCommonParentsCommand(StandardCommonFindCommand<?> command)
 	{
 		super(command.datastore);
 		this.childCommand = command;
@@ -28,7 +28,7 @@ abstract class StandardCommonParentsCommand<P> extends
 		@SuppressWarnings("deprecation")
 		int fetch = FetchOptions.DEFAULT_CHUNK_SIZE;
 		FetchOptions fetchOptions = childCommand.getRootCommand().getFetchOptions();
-		if (fetchOptions != null)
+		if (fetchOptions != null && fetchOptions.getChunkSize() != null)
 		{
 			if (fetchOptions.getChunkSize() != fetchOptions.getPrefetchSize())
 			{

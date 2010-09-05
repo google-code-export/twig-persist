@@ -6,17 +6,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * @author John Patterson <john@vercer.com>
- * 
- * @deprecated Use {@link Embedded} instead which conforms to javax.persistence 
- *
- */
 @Target({ElementType.FIELD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
-@Deprecated
-public @interface Embed
+public @interface Embedded
 {
 	boolean value() default true;
 	boolean polymorphic() default false;

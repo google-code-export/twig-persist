@@ -42,11 +42,11 @@ public class ChainedTranslator implements PropertyTranslator
 		return translators.iterator();
 	}
 
-	public Set<Property> typesafeToProperties(Object object, Path prefix, boolean indexed)
+	public Set<Property> encode(Object object, Path prefix, boolean indexed)
 	{
 		for (PropertyTranslator translator : translators)
 		{
-			Set<Property> result = translator.typesafeToProperties(object, prefix, indexed);
+			Set<Property> result = translator.encode(object, prefix, indexed);
 			if (result != null)
 			{
 				return result;
@@ -55,11 +55,11 @@ public class ChainedTranslator implements PropertyTranslator
 		return null;
 	}
 
-	public Object propertiesToTypesafe(Set<Property> properties, Path prefix, Type type)
+	public Object decode(Set<Property> properties, Path prefix, Type type)
 	{
 		for (PropertyTranslator translator : translators)
 		{
-			Object result = translator.propertiesToTypesafe(properties, prefix, type);
+			Object result = translator.decode(properties, prefix, type);
 			if (result != null)
 			{
 				return result;

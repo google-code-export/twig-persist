@@ -27,7 +27,7 @@ import com.google.code.twig.util.FutureAdaptor;
 import com.google.common.collect.ForwardingIterator;
 import com.google.common.collect.Lists;
 
-final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootFindCommand<T>>
+final class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFindCommand<T>>
 		implements RootFindCommand<T>
 {
 	private final Type type;
@@ -49,7 +49,7 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 		String field;
 	}
 
-	StandardRootFindCommand(Type type, StrategyObjectDatastore datastore)
+	StandardRootFindCommand(Type type, TranslatorObjectDatastore datastore)
 	{
 		super(datastore);
 		this.type = type;
@@ -157,7 +157,7 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 	}
 
 	@Override
-	public RootFindCommand<T> maximumResults(int limit)
+	public RootFindCommand<T> fetchMaximum(int limit)
 	{
 		if (this.options == null)
 		{
@@ -187,7 +187,7 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 				private QueryResultIterator<T> doGet(QueryResultIterator<Entity> entities)
 				{
 						Iterator<Entity> iterator = applyEntityFilter(entities);
-						Iterator<T> instances = entityToInstanceIterator(iterator, query.isKeysOnly());
+						Iterator<T> instances = entitiesToInstances(iterator, propertyRestriction);
 						return new BasicQueryResultIterator<T>(instances, entities);
 				}
 
@@ -297,7 +297,7 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 	public CommandTerminator<List<T>> returnAll()
 	{
 		// get all in a single datastore call
-		if (options.getLimit() != null)
+		if (options != null && options.getLimit() != null)
 		{
 			fetchFirst(options.getLimit());
 		}
@@ -458,7 +458,7 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 
 			Iterator<Entity> iterator = applyEntityFilter(entities);
 
-			Iterator<T> instances = entityToInstanceIterator(iterator, query.isKeysOnly());
+			Iterator<T> instances = entitiesToInstances(iterator, propertyRestriction);
 			return new BasicQueryResultIterator<T>(instances, entities);
 		}
 		else
@@ -517,7 +517,7 @@ final class StandardRootFindCommand<T> extends StandardTypedFindCommand<T, RootF
 					"Find command must have an ancestor in a transaction");
 		}
 
-		Query query = new Query(datastore.getFieldStrategy().typeToKind(type));
+		Query query = new Query(datastore.getConfiguration().typeToKind(type));
 		applyFilters(query);
 		if (sorts != null)
 		{

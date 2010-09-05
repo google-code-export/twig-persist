@@ -6,18 +6,18 @@ import java.lang.reflect.Type;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
-import com.google.code.twig.LoadCommand.CommonTypedLoadCommand;
+import com.google.code.twig.LoadCommand;
 import com.google.code.twig.Property;
 import com.google.code.twig.Restriction;
 
-class StandardCommonTypedLoadCommand<T, C extends StandardCommonTypedLoadCommand<T, C>> extends StandardDecodeCommand implements CommonTypedLoadCommand<T, C>
+class StandardCommonLoadCommand<C extends StandardCommonLoadCommand<C>> extends StandardDecodeCommand implements LoadCommand.CommonLoadCommand<C>
 {
-	final StandardTypedLoadCommand<T> command;
+	final StandardTypedLoadCommand<?> command;
 	Restriction<Entity> entityRestriction;
 	Restriction<Property> propertyRestriction;
 	Key parentKey;
 
-	StandardCommonTypedLoadCommand(StandardTypedLoadCommand<T> command)
+	StandardCommonLoadCommand(StandardTypedLoadCommand<?> command)
 	{
 		super(command.datastore);
 		this.command = command;
@@ -55,7 +55,7 @@ class StandardCommonTypedLoadCommand<T, C extends StandardCommonTypedLoadCommand
 		Type keyType;
 		if (keyField != null)
 		{
-			keyType = datastore.getFieldStrategy().typeOf(keyField);
+			keyType = datastore.getConfiguration().typeOf(keyField);
 		}
 		else
 		{
@@ -65,7 +65,7 @@ class StandardCommonTypedLoadCommand<T, C extends StandardCommonTypedLoadCommand
 		}
 		
 		// convert the id to the same type as was stored
-		Object converted = datastore.converter.convert(id, keyType);
+		Object converted = datastore.getConverter().convert(id, keyType);
 
 		Key key;
 		
@@ -86,7 +86,7 @@ class StandardCommonTypedLoadCommand<T, C extends StandardCommonTypedLoadCommand
 		else
 		{
 			// make into string
-			String keyName = datastore.converter.convert(converted, String.class);
+			String keyName = datastore.getConverter().convert(converted, String.class);
 
 			if (parentKey == null)
 			{
