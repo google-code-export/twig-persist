@@ -71,14 +71,22 @@ class EntityTranslator implements PropertyTranslator
 		}
 		else
 		{
-			Key key = (Key) value;
-			Object result = this.datastore.load().key(key).now();
-			if (result == null)
+			if (value instanceof Key)
 			{
-				result = NULL_VALUE;
-				logger.warning("No entity found for referenced key " + key);
+				Key key = (Key) value;
+				Object result = this.datastore.load().key(key).now();
+				if (result == null)
+				{
+					result = NULL_VALUE;
+					logger.warning("No entity found for referenced key " + key);
+				}
+				return result;
 			}
-			return result;
+			else
+			{
+				// signal we cannot handle this property
+				return null;
+			}
 		}
 	}
 

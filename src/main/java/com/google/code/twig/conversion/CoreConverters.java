@@ -25,7 +25,7 @@ public class CoreConverters
 		converter.append(new ClassToString());
 		converter.append(new StringToClass());
 		converter.append(new UrltoString());
-		converter.append(new StringToURI());
+		converter.append(new StringToUrl());
 		converter.append(new URItoString());
 		converter.append(new StringToURI());
 		converter.append(new LocaleToString());
