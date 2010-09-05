@@ -1,6 +1,5 @@
 package com.google.code.twig;
 
-import java.io.Serializable;
 import java.util.List;
 
 import junit.framework.Assert;
@@ -8,9 +7,10 @@ import junit.framework.Assert;
 import org.junit.Test;
 
 import com.google.appengine.api.datastore.Key;
-import com.google.common.collect.Lists;
 import com.google.code.twig.annotation.Activate;
 import com.google.code.twig.annotation.AnnotationObjectDatastore;
+import com.google.code.twig.annotation.Id;
+import com.google.common.collect.Lists;
 
 public class ActivationTest extends LocalDatastoreTestCase
 {
@@ -25,14 +25,14 @@ public class ActivationTest extends LocalDatastoreTestCase
 		List<C> cs;
 	}
 
-	static class C implements Serializable
+	static class C
 	{
-		private static final long serialVersionUID = 1L;
+		@Id long id;
 		String field;
 	}
 
 	@Test
-	public void noActivationEmbedded()
+	public void noActivation()
 	{
 		A a = new A();
 		B b1 = new B();
@@ -47,8 +47,50 @@ public class ActivationTest extends LocalDatastoreTestCase
 		ObjectDatastore datastore = new AnnotationObjectDatastore();
 		Key key = datastore.store(a);
 		datastore.disassociateAll();
+		
 		A reloaded = datastore.load(key);
 		
+		// show c is not activated
 		Assert.assertNull(reloaded.bs.get(0).cs.get(0).field);
+		
+		// show that the id was set
+		Assert.assertTrue(reloaded.bs.get(0).cs.get(0).id > 0);
+		
+		// now activate in bulk
+		datastore.activateAll(reloaded.bs.get(0).cs);
+		
+		// show c is now activated
+		Assert.assertNotNull(reloaded.bs.get(0).cs.get(0).field);
+	}
+	
+	static class X
+	{
+		Y y;
+	}
+	
+	static class Y
+	{
+		@Activate
+		String field;
+	}
+	
+	@Test
+	public void overrideActivationDepth()
+	{
+		ObjectDatastore datastore = new AnnotationObjectDatastore();
+		datastore.setActivationDepth(1);
+		
+		X x = new X();
+		x.y = new Y();
+		x.y.field = "hi";
+		
+		Key key = datastore.store(x);
+		
+		datastore.disassociateAll();
+		
+		X reloaded = datastore.load(key);
+		
+		Assert.assertNotNull(reloaded.y.field);
+		
 	}
 }

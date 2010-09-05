@@ -23,20 +23,20 @@ import com.google.code.twig.util.SinglePropertySet;
 import com.vercer.util.reference.ObjectReference;
 import com.vercer.util.reference.ReadOnlyObjectReference;
 
-class EntityTranslator implements PropertyTranslator
+class RelationTranslator implements PropertyTranslator
 {
-	protected final StrategyObjectDatastore datastore;
-	private static final Logger logger = Logger.getLogger(EntityTranslator.class.getName());
+	protected final TranslatorObjectDatastore datastore;
+	private static final Logger logger = Logger.getLogger(RelationTranslator.class.getName());
 
 	/**
 	 * @param strategyObjectDatastore
 	 */
-	EntityTranslator(StrategyObjectDatastore strategyObjectDatastore)
+	RelationTranslator(TranslatorObjectDatastore strategyObjectDatastore)
 	{
 		this.datastore = strategyObjectDatastore;
 	}
 
-	public Object propertiesToTypesafe(Set<Property> properties, Path prefix, Type type)
+	public Object decode(Set<Property> properties, Path prefix, Type type)
 	{
 		if (properties.isEmpty() || properties.size() == 1 && PropertySets.firstValue(properties) == null)
 		{
@@ -48,26 +48,7 @@ class EntityTranslator implements PropertyTranslator
 		{
 			@SuppressWarnings("unchecked")
 			List<Key> keys = (List<Key>) value;
-			Map<Key, Object> keysToInstances = datastore.load().keys(keys).returnResultsNow();
-			List<Object> result = new ArrayList<Object>();
-			
-			// keep order the same as keys
-			Iterator<Key> iterator = keys.iterator();
-			while(iterator.hasNext())
-			{
-				Key key = iterator.next();
-				Object instance = keysToInstances.get(key);
-				if (instance != null)
-				{
-					result.add(instance);
-					iterator.remove();
-				}
-				else
-				{
-					logger.warning("No entity found for referenced key " + key);
-				}
-			}
-			return result;
+			return keysToInstances(keys);
 		}
 		else
 		{
@@ -90,9 +71,64 @@ class EntityTranslator implements PropertyTranslator
 		}
 	}
 
-	public Set<Property> typesafeToProperties(final Object instance, final Path path, final boolean indexed)
+	protected Object keysToInstances(List<Key> keys)
 	{
-		if (instance== null)
+		Map<Key, Object> keysToInstances;
+		try
+		{
+			datastore.activationDepth--;
+			keysToInstances = datastore.load().keys(keys).returnResultsNow();
+		}
+		finally
+		{
+			datastore.activationDepth++;
+		}
+		
+		List<Object> result = new ArrayList<Object>();
+		
+		// keep order the same as keys
+		Iterator<Key> iterator = keys.iterator();
+		while(iterator.hasNext())
+		{
+			Key key = iterator.next();
+			Object instance = keysToInstances.get(key);
+			if (instance != null)
+			{
+				result.add(instance);
+				iterator.remove();
+			}
+			else
+			{
+				logger.warning("No entity found for referenced key " + key);
+			}
+		}
+		return result;
+	}
+
+	protected Object keyToInstance(Key key)
+	{
+		Object result;
+		try
+		{
+			datastore.activationDepth--;
+			result = this.datastore.load().key(key).now();
+		}
+		finally
+		{
+			datastore.activationDepth++;
+		}
+		
+		if (result == null)
+		{
+			result = NULL_VALUE;
+			logger.warning("No entity found for referenced key " + key);
+		}
+		return result;
+	}
+
+	public Set<Property> encode(final Object instance, final Path path, final boolean indexed)
+	{
+		if (instance == null)
 		{
 			return Collections.emptySet();
 		}
@@ -127,17 +163,22 @@ class EntityTranslator implements PropertyTranslator
 			{
 				public Key get()
 				{
-					Key key = datastore.associatedKey(instance);
-					if (key == null)
-					{
-						key = datastore.store().instance(instance).parentKey(getParentKey()).now();
-					}
-					return key;
+					return instanceToKey(instance);
 				}
 			};
 		}
 
 		return new SinglePropertySet(path, item, indexed);
+	}
+	
+	protected Key instanceToKey(final Object instance)
+	{
+		Key key = datastore.associatedKey(instance);
+		if (key == null)
+		{
+			key = datastore.store().instance(instance).parentKey(getParentKey()).now();
+		}
+		return key;
 	}
 	
 	private <T> Map<T, Key> instancesToKeys(Collection<T> instances, Key parentKey)

@@ -3,11 +3,11 @@ package com.google.code.twig.standard;
 import com.google.appengine.api.datastore.Query;
 import com.google.code.twig.FindCommand.ChildFindCommand;
 
-final class StandardBranchFindCommand<T> extends StandardTypedFindCommand<T, ChildFindCommand<T>> implements ChildFindCommand<T>
+final class StandardBranchFindCommand extends StandardCommonFindCommand<ChildFindCommand> implements ChildFindCommand
 {
-	private final StandardTypedFindCommand<T, ?> parent;
+	private final StandardCommonFindCommand<?> parent;
 
-	StandardBranchFindCommand(StandardTypedFindCommand<T, ?> parent)
+	StandardBranchFindCommand(StandardCommonFindCommand<?> parent)
 	{
 		super(parent.datastore);
 		this.parent = parent;
@@ -22,7 +22,7 @@ final class StandardBranchFindCommand<T> extends StandardTypedFindCommand<T, Chi
 	}
 	
 	@Override
-	public StandardRootFindCommand<T> getRootCommand()
+	public StandardRootFindCommand<?> getRootCommand()
 	{
 		return parent.getRootCommand();
 	}

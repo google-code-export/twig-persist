@@ -11,7 +11,7 @@ import com.vercer.util.reference.ObjectReference;
 
 class StandardEncodeCommand extends StandardCommand
 {
-	StandardEncodeCommand(StrategyObjectDatastore datastore)
+	StandardEncodeCommand(TranslatorObjectDatastore datastore)
 	{
 		super(datastore);
 	}

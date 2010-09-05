@@ -20,8 +20,9 @@ import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.conversion.TypeConverter;
+import com.google.code.twig.util.PrefixPropertySet;
+import com.google.code.twig.util.PropertyComparator;
 import com.google.code.twig.util.PropertySets;
-import com.google.code.twig.util.PropertySets.PrefixPropertySet;
 import com.google.code.twig.util.SimpleProperty;
 import com.google.code.twig.util.generic.GenericTypeReflector;
 import com.vercer.util.Reflection;
@@ -40,6 +41,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 			return o1.getName().compareTo(o2.getName());
 		}
 	};
+	private static final PropertyComparator COMPARATOR = new PropertyComparator();
 	private final TypeConverter converters;
 
 	// permanent cache of class fields to reduce reflection
@@ -51,25 +53,27 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 		this.converters = converters;
 	}
 
-	public final Object propertiesToTypesafe(Set<Property> properties, Path path, Type type)
+	public final Object decode(Set<Property> properties, Path path, Type type)
 	{
-		if (properties.size() == 1 && PropertySets.firstValue(properties) == null)
+		if (properties.size() == 1)
 		{
-			return NULL_VALUE;
+			Property property = PropertySets.firstProperty(properties);
+			if (property.getValue() == null && property.getPath().equals(path))
+			{
+				return NULL_VALUE;
+			}
 		}
 		
+		// create the instance
 		Class<?> clazz = GenericTypeReflector.erase(type);
 		Object instance = createInstance(clazz);
-		activate(properties, instance, path);
-		return instance;
-	}
-
-	protected void activate(Set<Property> properties, Object instance, Path path)
-	{
+		
 		// ensure the properties are sorted
 		if (properties instanceof SortedSet<?> == false)
 		{
-			properties = new TreeSet<Property>(properties);
+			Set<Property> sorted = new TreeSet<Property>(COMPARATOR);
+			sorted.addAll(properties);
+			properties = sorted;
 		}
 
 		// both fields and properties are sorted by name
@@ -103,42 +107,56 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 					childProperties = pps.getProperties();
 				}
 
-				// get the correct translator for this field
-				PropertyTranslator translator = decoder(field, childProperties);
-
-				// get the type that we need to store
-				Type type = typeFromField(field);
-
-				onBeforeDecode(field, childProperties);
-
-				// create instance
-				Object value;
-				try
-				{
-					value = translator.propertiesToTypesafe(childProperties, fieldPath, type);
-				}
-				catch (Exception e)
-				{
-					// add a bit of context to the trace
-					throw new IllegalStateException("Problem translating field " + field, e);
-				}
-
-
-				if (value == null)
-				{
-					throw new IllegalStateException("Could not translate path " + fieldPath);
-				}
-
-				if (value == NULL_VALUE)
-				{
-					value = null;
-				}
-				
-				setFieldValue(instance, field, value);
-				
-				onAfterDecode(field, value);
+				decode(instance, field, fieldPath, childProperties);
 			}
 		}
+		
+		return instance;
+	}
+
+	protected void decode(Object instance, Field field, Path path, Set<Property> properties)
+	{
+		// get the correct translator for this field
+		PropertyTranslator translator = decoder(field, properties);
+
+		// get the type that we need to store
+		Type fieldType = typeFromField(field);
+
+		onBeforeDecode(field, properties);
+
+		Object value;
+		try
+		{
+			value = translator.decode(properties, path, fieldType);
+		}
+		catch (Exception e)
+		{
+			// add a bit of context to the problem
+			throw new IllegalStateException("Problem translating field " + field + " with properties " + properties, e);
+		}
+
+		if (value == null)
+		{
+			if (properties.isEmpty())
+			{
+				// leave default value for fields with no stored properties
+				return;
+			}
+			else
+			{
+				throw new IllegalStateException("Could not translate path " + path);
+			}
+		}
+
+		// successfully decoded as a null value
+		if (value == NULL_VALUE)
+		{
+			value = null;
+		}
+		
+		setFieldValue(instance, field, value);
+		
+		onAfterDecode(field, value);
 	}
 
 	private void setFieldValue(Object instance, Field field, Object value)
@@ -271,7 +289,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 		return constructor;
 	}
 
-	public final Set<Property> typesafeToProperties(Object object, Path path, boolean indexed)
+	public final Set<Property> encode(Object object, Path path, boolean indexed)
 	{
 		onBeforeEncode(path, object);
 		if (object == null)
@@ -308,7 +326,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 					onBeforeEncode(field, value);
 					
 					PropertyTranslator translator = encoder(field, value);
-					Set<Property> properties = translator.typesafeToProperties(value, childPath, indexed(field));
+					Set<Property> properties = translator.encode(value, childPath, indexed(field));
 					if (properties == null)
 					{
 						throw new IllegalStateException("Could not translate value to properties: " + value);
@@ -345,7 +363,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 	{
 	}
 
-	private List<Field> getSortedFields(Object object)
+	protected List<Field> getSortedFields(Object object)
 	{
 		// fields are cached and stored as a map because reading more common than writing
 		List<Field> fields = classFields.get(object.getClass());

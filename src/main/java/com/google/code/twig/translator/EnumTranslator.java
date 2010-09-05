@@ -14,7 +14,7 @@ public class EnumTranslator implements PropertyTranslator
 {
 
 	@SuppressWarnings("unchecked")
-	public Object propertiesToTypesafe(Set<Property> properties, Path path, Type type)
+	public Object decode(Set<Property> properties, Path path, Type type)
 	{
 		Class<?> clazz = GenericTypeReflector.erase(type);
 		if (clazz.isEnum())
@@ -31,7 +31,7 @@ public class EnumTranslator implements PropertyTranslator
 		}
 	}
 
-	public Set<Property> typesafeToProperties(Object object, Path path, boolean indexed)
+	public Set<Property> encode(Object object, Path path, boolean indexed)
 	{
 		if (object instanceof Enum<?>)
 		{

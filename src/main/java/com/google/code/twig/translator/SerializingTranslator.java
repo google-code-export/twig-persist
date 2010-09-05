@@ -19,7 +19,7 @@ public class SerializingTranslator implements PropertyTranslator
 	private final BlobToAnything blobToSerializable = new BlobToAnything();
 	private final SerializableToBlob serializableToBlob = new SerializableToBlob();
 
-	public final Object propertiesToTypesafe(Set<Property> properties, Path path, Type type)
+	public final Object decode(Set<Property> properties, Path path, Type type)
 	{
 		try
 		{
@@ -40,7 +40,7 @@ public class SerializingTranslator implements PropertyTranslator
 		}
 	}
 
-	public final Set<Property> typesafeToProperties(Object object, Path path, boolean indexed)
+	public final Set<Property> encode(Object object, Path path, boolean indexed)
 	{
 		try
 		{

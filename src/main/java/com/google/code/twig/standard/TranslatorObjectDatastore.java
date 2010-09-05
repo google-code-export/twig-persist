@@ -2,11 +2,9 @@ package com.google.code.twig.standard;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
-import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.KeyRange;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.QueryResultIterator;
@@ -23,13 +22,9 @@ import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.annotation.Id;
+import com.google.code.twig.configuration.Configuration;
 import com.google.code.twig.conversion.CombinedConverter;
 import com.google.code.twig.conversion.TypeConverter;
-import com.google.code.twig.strategy.ActivationStrategy;
-import com.google.code.twig.strategy.CombinedStrategy;
-import com.google.code.twig.strategy.FieldStrategy;
-import com.google.code.twig.strategy.RelationshipStrategy;
-import com.google.code.twig.strategy.StorageStrategy;
 import com.google.code.twig.translator.ChainedTranslator;
 import com.google.code.twig.translator.ListTranslator;
 import com.google.code.twig.translator.MapTranslator;
@@ -47,23 +42,23 @@ import com.vercer.util.Reflection;
  * 
  * @author John Patterson <john@vercer.com>
  */
-public abstract class StrategyObjectDatastore extends BaseObjectDatastore
+public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 {
+	// keeps track of which instances are associated with which keys
+	protected final InstanceKeyCache keyCache;
+	
+	// are properties indexed by default
+	protected boolean indexed;
+
 	// key details are updated as the current instance is encoded
-	KeySpecification encodeKeySpec;
+	protected KeySpecification encodeKeySpec;
 
 	// the key of the currently decoding entity
-	Key decodeKey;
+	protected Key decodeKey;
 
-	// keeps track of which instances are associated with which keys
-	final InstanceKeyCache keyCache;
-
-	// activation depth state for current instance
-	final Deque<Integer> activationDepthDeque = new ArrayDeque<Integer>();
-
-	// are properties indexed by default
-	boolean indexed;
-
+	// current activation depth
+	int activationDepth = Integer.MAX_VALUE;
+	
 	// translators are selected for particular fields by a strategy
 	private final PropertyTranslator objectFieldTranslator;
 	private final PropertyTranslator embedTranslator;
@@ -77,51 +72,35 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 
 	private static final Map<Class<?>, Field> keyFields = new ConcurrentHashMap<Class<?>, Field>();
 
-	// indicates we are associating instances with this session so do not store
-	// them
+	// indicates we are only associating instances so do not store them
 	boolean associating;
 
 	// set when all entities should be collected and stored in one call
 	Map<Object, Entity> batched;
 
+	Map<String, KeyRange> allocatedIdRanges;
+	
 	// set when an instance is to be refreshed rather than instantiated
 	private Object refresh;
 
-	protected final CombinedConverter converter;
+	private final CombinedConverter converter;
 
-	private final RelationshipStrategy relationshipStrategy;
-	private final FieldStrategy fieldStrategy;
-	private final ActivationStrategy activationStrategy;
-	private final StorageStrategy storageStrategy;
+	private final Configuration configuration;
 
-	public StrategyObjectDatastore(CombinedStrategy strategy)
+	public TranslatorObjectDatastore(Configuration configuration)
 	{
-		this(strategy, strategy, strategy, strategy);
-	}
-
-	public StrategyObjectDatastore(RelationshipStrategy relationshipStrategy,
-			StorageStrategy storageStrategy, ActivationStrategy activationStrategy,
-			FieldStrategy fieldStrategy)
-	{
-		// push the default depth onto the stack
-		activationDepthDeque.push(Integer.MAX_VALUE);
-
-		this.activationStrategy = activationStrategy;
-		this.fieldStrategy = fieldStrategy;
-		this.relationshipStrategy = relationshipStrategy;
-		this.storageStrategy = storageStrategy;
-
+		this.configuration = configuration;
 		this.converter = createTypeConverter();
-
+		
 		// the main translator which converts to and from objects
 		objectFieldTranslator = new StrategyObjectFieldTranslator(converter);
 
 		valueTranslatorChain = createValueTranslatorChain();
 
-		parentTranslator = new ParentEntityTranslator(this);
-		independantTranslator = new EntityTranslator(this);
+		parentTranslator = new ParentRelationTranslator(this);
+		independantTranslator = new RelationTranslator(this);
 		keyFieldTranslator = new KeyFieldTranslator(this, valueTranslatorChain, converter);
-		childTranslator = new ChildEntityTranslator(this);
+		childTranslator = new ChildRelationTranslator(this);
 
 		embedTranslator = new ListTranslator(new MapTranslator(objectFieldTranslator, converter));
 
@@ -129,7 +108,7 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 				new MapTranslator(
 						new PolymorphicTranslator(
 								new ChainedTranslator(valueTranslatorChain, objectFieldTranslator), 
-								fieldStrategy), 
+								configuration), 
 						converter));
 
 		defaultTranslator = new ListTranslator(
@@ -334,14 +313,14 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 
 	protected PropertyTranslator translator(Field field)
 	{
-		if (storageStrategy.entity(field))
+		if (configuration.entity(field))
 		{
 			PropertyTranslator translator;
-			if (relationshipStrategy.parent(field))
+			if (configuration.parent(field))
 			{
 				translator = parentTranslator;
 			}
-			else if (relationshipStrategy.child(field))
+			else if (configuration.child(field))
 			{
 				translator = childTranslator;
 			}
@@ -351,13 +330,13 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 			}
 			return translator;
 		}
-		else if (relationshipStrategy.key(field))
+		else if (configuration.id(field))
 		{
 			return keyFieldTranslator;
 		}
-		else if (storageStrategy.embed(field))
+		else if (configuration.embed(field))
 		{
-			if (storageStrategy.polymorphic(field))
+			if (configuration.polymorphic(field))
 			{
 				return polyMorphicComponentTranslator;
 			}
@@ -417,6 +396,15 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	}
 
 	@Override
+	public final void associateAll(Collection<?> instances)
+	{
+		// encode the instance so we can get its id and parent to make a key
+		associating = true;
+		storeAll(instances);
+		associating = false;
+	}
+
+	@Override
 	public final Key associatedKey(Object instance)
 	{
 		return keyCache.getKey(instance);
@@ -425,16 +413,20 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	@Override
 	public final int getActivationDepth()
 	{
-		return activationDepthDeque.peek();
+		return activationDepth;
 	}
 
 	@Override
 	public final void setActivationDepth(int depth)
 	{
-		activationDepthDeque.pop();
-		activationDepthDeque.push(depth);
+		this.activationDepth = depth;
 	}
 
+	public CombinedConverter getConverter()
+	{
+		return converter;
+	}
+	
 	protected final PropertyTranslator getIndependantTranslator()
 	{
 		return independantTranslator;
@@ -450,9 +442,14 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 		return parentTranslator;
 	}
 
-	protected final PropertyTranslator getPolyMorphicComponentTranslator()
+	protected final PropertyTranslator getPolymorphicTranslator()
 	{
 		return polyMorphicComponentTranslator;
+	}
+	
+	protected final PropertyTranslator getObjectFieldTranslator()
+	{
+		return objectFieldTranslator;
 	}
 
 	protected final PropertyTranslator getEmbedTranslator()
@@ -507,7 +504,7 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 
 	final Query createQuery(Type type)
 	{
-		return new Query(fieldStrategy.typeToKind(type));
+		return new Query(configuration.typeToKind(type));
 	}
 
 	public final void deleteAll(Type type)
@@ -546,37 +543,37 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 		@Override
 		protected boolean indexed(Field field)
 		{
-			return StrategyObjectDatastore.this.storageStrategy.index(field);
+			return TranslatorObjectDatastore.this.configuration.index(field);
 		}
 
 		@Override
 		protected boolean stored(Field field)
 		{
-			return StrategyObjectDatastore.this.storageStrategy.store(field);
+			return TranslatorObjectDatastore.this.configuration.store(field);
 		}
 
 		@Override
 		protected Type typeFromField(Field field)
 		{
-			return StrategyObjectDatastore.this.fieldStrategy.typeOf(field);
+			return TranslatorObjectDatastore.this.configuration.typeOf(field);
 		}
 
 		@Override
 		protected String fieldToPartName(Field field)
 		{
-			return StrategyObjectDatastore.this.fieldStrategy.name(field);
+			return TranslatorObjectDatastore.this.configuration.name(field);
 		}
 
 		@Override
 		protected PropertyTranslator encoder(Field field, Object instance)
 		{
-			return StrategyObjectDatastore.this.encoder(field, instance);
+			return TranslatorObjectDatastore.this.encoder(field, instance);
 		}
 
 		@Override
 		protected PropertyTranslator decoder(Field field, Set<Property> properties)
 		{
-			return StrategyObjectDatastore.this.decoder(field, properties);
+			return TranslatorObjectDatastore.this.decoder(field, properties);
 		}
 
 		@Override
@@ -586,7 +583,11 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 			Object instance = refresh;
 			if (instance == null)
 			{
-				instance = super.createInstance(clazz);
+				instance = TranslatorObjectDatastore.this.createInstance(clazz);
+				if (instance == null)
+				{
+					instance = super.createInstance(clazz);
+				}
 			}
 			refresh = null;
 
@@ -601,13 +602,17 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 		}
 
 		@Override
-		protected void onBeforeDecode(Field field, Set<Property> childProperties)
+		protected void decode(Object instance, Field field, Path path, Set<Property> properties)
 		{
-			// potentially change the activation depth
-			if (activationDepthDeque.peek() > 0)
+			int existingActivationDepth = activationDepth;
+			try
 			{
-				activationDepthDeque.push(activationStrategy
-						.activationDepth(field, activationDepthDeque.pop()));
+				activationDepth = configuration.activationDepth(field, activationDepth);
+				super.decode(instance, field, path, properties);
+			}
+			finally
+			{
+				activationDepth = existingActivationDepth;
 			}
 		}
 
@@ -625,22 +630,11 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 		}
 
 		@Override
-		protected void activate(Set<Property> properties, Object instance, Path path)
-		{
-			if (getActivationDepth() > 0)
-			{
-				
-				activationDepthDeque.push(activationDepthDeque.peek() - 1);
-				super.activate(properties, instance, path);
-				activationDepthDeque.pop();
-			}
-		}
-		
-		@Override
 		protected boolean isNullStored()
 		{
-			return StrategyObjectDatastore.this.isNullStored();
+			return TranslatorObjectDatastore.this.isNullStored();
 		}
+		
 	}
 
 	@SuppressWarnings("deprecation")
@@ -682,24 +676,20 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 		}
 	}
 
-	public RelationshipStrategy getRelationshipStrategy()
+	/**
+	 * Create a new instance which will have its fields populated from stored properties.
+	 * 
+	 * @param clazz The type to create
+	 * @return A new instance or null to use the default behaviour
+	 */
+	protected Object createInstance(Class<?> clazz)
 	{
-		return relationshipStrategy;
+		return null;
 	}
 
-	public FieldStrategy getFieldStrategy()
+	public Configuration getConfiguration()
 	{
-		return fieldStrategy;
-	}
-
-	public ActivationStrategy getActivationStrategy()
-	{
-		return activationStrategy;
-	}
-
-	public StorageStrategy getStorageStrategy()
-	{
-		return storageStrategy;
+		return configuration;
 	}
 
 	protected abstract boolean isNullStored();
@@ -711,7 +701,7 @@ public abstract class StrategyObjectDatastore extends BaseObjectDatastore
 	{
 		try
 		{
-			NO_KEY_FIELD = StrategyObjectDatastore.class.getDeclaredField("NO_KEY_FIELD");
+			NO_KEY_FIELD = TranslatorObjectDatastore.class.getDeclaredField("NO_KEY_FIELD");
 		}
 		catch (Exception e)
 		{

@@ -12,8 +12,8 @@ import com.google.code.twig.Path.Part;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.conversion.TypeConverter;
+import com.google.code.twig.util.PrefixPropertySet;
 import com.google.code.twig.util.PropertySets;
-import com.google.code.twig.util.PropertySets.PrefixPropertySet;
 import com.google.code.twig.util.generic.GenericTypeReflector;
 import com.vercer.util.collections.MergeSet;
 
@@ -28,9 +28,15 @@ public class MapTranslator extends DecoratingTranslator
 	}
 
 	@Override
-	public Object propertiesToTypesafe(Set<Property> properties, Path path, Type type)
+	public Object decode(Set<Property> properties, Path path, Type type)
 	{
-		if (properties.isEmpty() || PropertySets.firstValue(properties) == null)
+		if (properties.isEmpty())
+		{
+			// do not decode empty missing properties
+			return null;
+		}
+		
+		if (PropertySets.firstValue(properties) == null)
 		{
 			return NULL_VALUE;
 		}
@@ -39,7 +45,7 @@ public class MapTranslator extends DecoratingTranslator
 		if (!GenericTypeReflector.erase(type).isAssignableFrom(HashMap.class))
 		{
 			// pass on all other types down the chain
-			return chained.propertiesToTypesafe(properties, path, type);
+			return chained.decode(properties, path, type);
 		}
 
 		// group the properties by prefix to create each item
@@ -59,8 +65,7 @@ public class MapTranslator extends DecoratingTranslator
 			Object key = converter.convert(partAfterPrefix.getName(), keyType);
 
 			// decode the value properties using the generic type info
-			Object value = chained.propertiesToTypesafe(pps.getProperties(), pps.getPrefix(),
-					valueType);
+			Object value = chained.decode(pps.getProperties(), pps.getPrefix(), valueType);
 
 			result.put(key, value);
 		}
@@ -68,12 +73,12 @@ public class MapTranslator extends DecoratingTranslator
 	}
 
 	@Override
-	public Set<Property> typesafeToProperties(Object instance, Path path, boolean indexed)
+	public Set<Property> encode(Object instance, Path path, boolean indexed)
 	{
 		if (instance instanceof Map<?, ?> == false)
 		{
 			// pass it on down the line
-			return chained.typesafeToProperties(instance, path, indexed);
+			return chained.encode(instance, path, indexed);
 		}
 
 		Map<?, ?> map = (Map<?, ?>) instance;
@@ -83,14 +88,13 @@ public class MapTranslator extends DecoratingTranslator
 		{
 			Object value = map.get(key);
 			String keyString = converter.convert(key, String.class);
-			Path childPath = Path.builder(path).field(keyString).build();
-			Set<Property> properties = chained.typesafeToProperties(value, childPath, indexed);
+			Path childPath = Path.builder(path).key(keyString).build();
+			Set<Property> properties = chained.encode(value, childPath, indexed);
 
 			if (properties == null)
 			{
-				// we could not handle a value so pass the whole map down the
-				// chain
-				return chained.typesafeToProperties(instance, path, indexed);
+				// we could not handle a value so pass down the chain
+				return chained.encode(instance, path, indexed);
 			}
 
 			merged.addAll(properties);
