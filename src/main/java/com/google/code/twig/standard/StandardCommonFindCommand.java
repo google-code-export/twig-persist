@@ -55,7 +55,7 @@ abstract class StandardCommonFindCommand<C extends CommonFindCommand<C>> extends
 		Object value;
 	}
 
-	StandardCommonFindCommand(StrategyObjectDatastore datastore)
+	StandardCommonFindCommand(TranslatorObjectDatastore datastore)
 	{
 		super(datastore);
 	}

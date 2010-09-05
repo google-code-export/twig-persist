@@ -2,9 +2,9 @@ package com.google.code.twig.standard;
 
 class StandardCommand
 {
-	final StrategyObjectDatastore datastore;
+	final TranslatorObjectDatastore datastore;
 
-	StandardCommand(StrategyObjectDatastore datastore)
+	StandardCommand(TranslatorObjectDatastore datastore)
 	{
 		this.datastore = datastore;
 		if (datastore.getTransaction() != null && datastore.getTransaction().isActive() == false)

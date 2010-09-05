@@ -30,7 +30,6 @@ import com.google.appengine.api.datastore.Transaction;
 import com.google.code.twig.LocalDatastoreTestCase;
 import com.google.code.twig.ObjectDatastore;
 import com.google.code.twig.annotation.AnnotationObjectDatastore;
-import com.google.code.twig.annotation.Embed;
 import com.google.code.twig.annotation.Embedded;
 import com.google.code.twig.annotation.Id;
 import com.google.code.twig.festival.Album.Track;

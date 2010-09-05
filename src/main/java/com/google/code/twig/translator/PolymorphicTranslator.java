@@ -7,7 +7,7 @@ import com.google.appengine.api.datastore.DataTypeUtils;
 import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
-import com.google.code.twig.strategy.FieldStrategy;
+import com.google.code.twig.configuration.Configuration;
 import com.google.code.twig.util.PathPrefixPredicate;
 import com.google.code.twig.util.PropertySets;
 import com.google.code.twig.util.SimpleProperty;
@@ -18,9 +18,9 @@ import com.vercer.util.collections.PrependSet;
 public class PolymorphicTranslator extends DecoratingTranslator
 {
 	public static final String CLASS_PROPERTY = "class";
-	private final FieldStrategy strategy;
+	private final Configuration strategy;
 
-	public PolymorphicTranslator(PropertyTranslator chained, FieldStrategy strategy)
+	public PolymorphicTranslator(PropertyTranslator chained, Configuration strategy)
 	{
 		super(chained);
 		this.strategy = strategy;

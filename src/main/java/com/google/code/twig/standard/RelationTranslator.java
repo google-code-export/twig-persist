@@ -25,13 +25,13 @@ import com.vercer.util.reference.ReadOnlyObjectReference;
 
 class RelationTranslator implements PropertyTranslator
 {
-	protected final StrategyObjectDatastore datastore;
+	protected final TranslatorObjectDatastore datastore;
 	private static final Logger logger = Logger.getLogger(RelationTranslator.class.getName());
 
 	/**
 	 * @param strategyObjectDatastore
 	 */
-	RelationTranslator(StrategyObjectDatastore strategyObjectDatastore)
+	RelationTranslator(TranslatorObjectDatastore strategyObjectDatastore)
 	{
 		this.datastore = strategyObjectDatastore;
 	}

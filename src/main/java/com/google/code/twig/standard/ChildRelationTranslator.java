@@ -8,7 +8,7 @@ import com.google.appengine.api.datastore.Key;
 
 class ChildRelationTranslator extends RelationTranslator
 {
-	ChildRelationTranslator(StrategyObjectDatastore strategyObjectDatastore)
+	ChildRelationTranslator(TranslatorObjectDatastore strategyObjectDatastore)
 	{
 		super(strategyObjectDatastore);
 	}

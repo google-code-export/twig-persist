@@ -9,7 +9,7 @@ public class StandardUntypedMultipleLoadCommand extends StandardDecodeCommand
 {
 	private final Collection<Key> keys;
 
-	StandardUntypedMultipleLoadCommand(StrategyObjectDatastore datastore, Collection<Key> keys)
+	StandardUntypedMultipleLoadCommand(TranslatorObjectDatastore datastore, Collection<Key> keys)
 	{
 		super(datastore);
 		this.keys = keys;

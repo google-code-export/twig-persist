@@ -4,7 +4,7 @@ import com.google.code.twig.FindCommand;
 
 public class StandardFindCommand extends StandardCommand implements FindCommand
 {
-	StandardFindCommand(StrategyObjectDatastore datastore)
+	StandardFindCommand(TranslatorObjectDatastore datastore)
 	{
 		super(datastore);
 	}

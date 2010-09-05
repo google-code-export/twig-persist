@@ -3,15 +3,15 @@ package com.google.code.twig.annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
-import com.google.code.twig.strategy.CombinedStrategy;
-import com.google.code.twig.strategy.DefaultFieldStrategy;
+import com.google.code.twig.configuration.Configuration;
+import com.google.code.twig.configuration.DefaultConfiguration;
 import com.google.code.twig.util.generic.GenericTypeReflector;
 
-public class AnnotationStrategy extends DefaultFieldStrategy implements CombinedStrategy
+public class AnnotationConfiguration extends DefaultConfiguration implements Configuration
 {
 	private final boolean indexed;
 
-	public AnnotationStrategy(boolean indexPropertiesDefault, int defaultVersion)
+	public AnnotationConfiguration(boolean indexPropertiesDefault, int defaultVersion)
 	{
 		super(defaultVersion);
 		this.indexed = indexPropertiesDefault;
@@ -109,7 +109,7 @@ public class AnnotationStrategy extends DefaultFieldStrategy implements Combined
 	}
 
 	@SuppressWarnings("deprecation")
-	public boolean key(Field field)
+	public boolean id(Field field)
 	{
 		return field.isAnnotationPresent(Key.class) || field.isAnnotationPresent(Id.class);
 	}
@@ -195,4 +195,17 @@ public class AnnotationStrategy extends DefaultFieldStrategy implements Combined
 		}
 	}
 
+	@Override
+	public long allocateIdsFor(java.lang.reflect.Type type)
+	{
+		Class<?> clazz = GenericTypeReflector.erase(type);
+		if (clazz.isAnnotationPresent(Entity.class))
+		{
+			return clazz.getAnnotation(Entity.class).allocateIdsBy();
+		}
+		else
+		{
+			return 0;
+		}
+	}
 }

@@ -1,4 +1,4 @@
-package com.google.code.twig.strategy;
+package com.google.code.twig.configuration;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
@@ -19,14 +19,14 @@ import com.google.code.twig.util.generic.GenericTypeReflector;
  * @author John Patterson <john@vercer.com>
  *
  */
-public class DefaultFieldStrategy implements FieldStrategy
+public abstract class DefaultConfiguration implements Configuration
 {
 	private final int defaultVersion;
 
 	private static Map<String, Type> nameToType;
 	private static Map<Type,String> typeToName;
 	
-	public DefaultFieldStrategy(int defaultVersion)
+	public DefaultConfiguration(int defaultVersion)
 	{
 		this.defaultVersion = defaultVersion;
 	}
@@ -104,7 +104,7 @@ public class DefaultFieldStrategy implements FieldStrategy
 
 	/**
 	 *
-	 * @see com.google.code.twig.strategy.FieldStrategy#name(java.lang.reflect.Field)
+	 * @see com.google.code.twig.strategy.KeyStrategy#name(java.lang.reflect.Field)
 	 */
 	public final String name(Field field)
 	{
@@ -165,7 +165,7 @@ public class DefaultFieldStrategy implements FieldStrategy
 	 * Replaces all Collection types and Arrays with List. Converts all elements of
 	 * the collection to the component type.
 	 *
-	 * @see com.google.code.twig.strategy.FieldStrategy#typeOf(java.lang.reflect.Field)
+	 * @see com.google.code.twig.strategy.KeyStrategy#typeOf(java.lang.reflect.Field)
 	 */
 	public Type typeOf(Field field)
 	{
@@ -249,7 +249,4 @@ public class DefaultFieldStrategy implements FieldStrategy
 			return "(Replaced " + type + " with List<" + replaced + ">)";
 		}
 	}
-
-
-
 }

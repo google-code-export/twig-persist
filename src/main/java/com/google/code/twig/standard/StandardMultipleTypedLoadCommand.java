@@ -34,7 +34,7 @@ public class StandardMultipleTypedLoadCommand<T, I>
 	{
 		// the stored type of the id can be defined for the id field
 		Field keyField = datastore.keyField(command.type);
-		String kind = datastore.getFieldStrategy().typeToKind(command.type);
+		String kind = datastore.getConfiguration().typeToKind(command.type);
 		Map<I, Key> idsToKeys = new LinkedHashMap<I, Key>(ids.size());
 		for (I id : ids)
 		{

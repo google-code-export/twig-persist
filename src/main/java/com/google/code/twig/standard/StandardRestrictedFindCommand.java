@@ -27,7 +27,7 @@ abstract class StandardRestrictedFindCommand<C extends RestrictedFindCommand<C>>
 	Restriction<Entity> entityRestriction;
 	Restriction<Property> propertyRestriction;
 
-	StandardRestrictedFindCommand(StrategyObjectDatastore datastore)
+	StandardRestrictedFindCommand(TranslatorObjectDatastore datastore)
 	{
 		super(datastore);
 	}

@@ -15,10 +15,10 @@ import com.google.code.twig.translator.DecoratingTranslator;
 
 final class KeyFieldTranslator extends DecoratingTranslator
 {
-	private final StrategyObjectDatastore datastore;
+	private final TranslatorObjectDatastore datastore;
 	private final TypeConverter converters;
 
-	KeyFieldTranslator(StrategyObjectDatastore datastore, PropertyTranslator chained, TypeConverter converters)
+	KeyFieldTranslator(TranslatorObjectDatastore datastore, PropertyTranslator chained, TypeConverter converters)
 	{
 		super(chained);
 		this.datastore = datastore;

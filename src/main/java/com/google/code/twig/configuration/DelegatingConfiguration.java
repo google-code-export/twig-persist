@@ -1,13 +1,13 @@
-package com.google.code.twig.strategy;
+package com.google.code.twig.configuration;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 
-public class DelegatingCombinedStrategy implements CombinedStrategy
+public class DelegatingConfiguration implements Configuration
 {
-	private final CombinedStrategy delegate;
+	private final Configuration delegate;
 
-	public DelegatingCombinedStrategy(CombinedStrategy delegate)
+	public DelegatingConfiguration(Configuration delegate)
 	{
 		this.delegate = delegate;
 	}
@@ -42,9 +42,9 @@ public class DelegatingCombinedStrategy implements CombinedStrategy
 		return delegate.typeToKind(type);
 	}
 
-	public boolean key(Field field)
+	public boolean id(Field field)
 	{
-		return delegate.key(field);
+		return delegate.id(field);
 	}
 
 	public Type kindToType(String kind)
@@ -75,5 +75,12 @@ public class DelegatingCombinedStrategy implements CombinedStrategy
 	public boolean polymorphic(Field field)
 	{
 		return delegate.polymorphic(field);
+	}
+
+	@Override
+	public long allocateIdsFor(Type type)
+	{
+		// TODO Auto-generated method stub
+		return 0;
 	}
 }
