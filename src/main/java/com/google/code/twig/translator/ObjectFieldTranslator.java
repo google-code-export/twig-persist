@@ -308,11 +308,19 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 					// get the type that we need to store
 					Type type = typeFromField(field);
 
-					Path childPath = new Path.Builder(path).field(fieldToPartName(field)).build();
+					Object value = field.get(object);
+					
 
 					// we may need to convert the object if it is not assignable
-					Object value = field.get(object);
-					if (value == null)
+					value = converters.convert(value, type);
+
+					onBeforeEncode(field, value);
+					
+					PropertyTranslator translator = encoder(field, value);
+					Path childPath = new Path.Builder(path).field(fieldToPartName(field)).build();
+					Set<Property> properties = translator.encode(value, childPath, indexed(field));
+					
+					if (value == NULL_VALUE)
 					{
 						if (isNullStored())
 						{
@@ -321,12 +329,6 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 						continue;
 					}
 
-					value = converters.convert(value, type);
-
-					onBeforeEncode(field, value);
-					
-					PropertyTranslator translator = encoder(field, value);
-					Set<Property> properties = translator.encode(value, childPath, indexed(field));
 					if (properties == null)
 					{
 						throw new IllegalStateException("Could not translate value to properties: " + value);
