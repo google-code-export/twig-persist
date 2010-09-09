@@ -120,6 +120,11 @@ public class ListTranslator extends DecoratingTranslator
 
 	public Set<Property> encode(Object object, Path path, boolean indexed)
 	{
+		if (object == null)
+		{
+			return PropertySets.singletonPropertySet(path, null, indexed);
+		}
+		
 		if (object instanceof List<?>)
 		{
 			List<?> list = (List<?>) object;

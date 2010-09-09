@@ -54,14 +54,7 @@ class RelationTranslator implements PropertyTranslator
 		{
 			if (value instanceof Key)
 			{
-				Key key = (Key) value;
-				Object result = this.datastore.load().key(key).now();
-				if (result == null)
-				{
-					result = NULL_VALUE;
-					logger.warning("No entity found for referenced key " + key);
-				}
-				return result;
+				return keyToInstance((Key) value);
 			}
 			else
 			{
