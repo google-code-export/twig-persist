@@ -56,24 +56,26 @@ class StandardCommonLoadCommand<C extends StandardCommonLoadCommand<C>> extends 
 		if (keyField != null)
 		{
 			keyType = datastore.getConfiguration().typeOf(keyField);
+			id = datastore.getConverter().convert(id, keyType);
 		}
 		else
 		{
 			// no key field so id must have been set explicitly when stored
-			assert id instanceof Long || id instanceof String;
-			keyType = id.getClass();
+			if (id instanceof Long == false || id instanceof String == false)
+			{
+				throw new IllegalArgumentException("Id must be String or Long but was " + id.getClass());
+			}
 		}
 		
 		// convert the id to the same type as was stored
-		Object converted = datastore.getConverter().convert(id, keyType);
 
 		Key key;
 		
 		// the key name is not stored in the fields but only in key
-		if (converted instanceof Number)
+		if (id instanceof Number)
 		{
 			// only set the id if it is not 0 otherwise auto-generate
-			long longValue = ((Number) converted).longValue();
+			long longValue = ((Number) id).longValue();
 			if (parentKey == null)
 			{
 				key = KeyFactory.createKey(kind, longValue);
@@ -86,7 +88,7 @@ class StandardCommonLoadCommand<C extends StandardCommonLoadCommand<C>> extends 
 		else
 		{
 			// make into string
-			String keyName = datastore.getConverter().convert(converted, String.class);
+			String keyName = datastore.getConverter().convert(id, String.class);
 
 			if (parentKey == null)
 			{
