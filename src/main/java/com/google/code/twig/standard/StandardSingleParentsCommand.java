@@ -19,7 +19,7 @@ class StandardSingleParentsCommand<P> extends StandardCommonParentsCommand<P>
 	public Iterator<P> now()
 	{
 		// no need to cache entities because there are no duplicates
-		Iterator<Entity> filtered = applyEntityFilter(childEntities);
+		Iterator<Entity> filtered = childCommand.applyEntityFilter(childEntities);
 		Iterator<Entity> parentEntities = new PrefetchParentIterator(filtered, datastore, getFetchSize());
 		parentEntities = applyEntityFilter(parentEntities);
 		return childCommand.entitiesToInstances(parentEntities, propertyRestriction);

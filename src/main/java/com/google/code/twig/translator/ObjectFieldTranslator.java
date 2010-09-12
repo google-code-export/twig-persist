@@ -16,6 +16,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.google.appengine.api.datastore.DataTypeUtils;
 import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
@@ -346,6 +347,17 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 		catch (IllegalAccessException e)
 		{
 			throw new IllegalStateException(e);
+		}
+		catch (IllegalArgumentException e)
+		{
+			if (DataTypeUtils.isSupportedType(object.getClass()))
+			{
+				throw new IllegalStateException("Native data type " + object.getClass() + " should not be configured as embedded");
+			}
+			else
+			{
+				throw e;
+			}
 		}
 	}
 

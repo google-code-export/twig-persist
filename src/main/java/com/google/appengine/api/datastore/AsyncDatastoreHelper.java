@@ -16,6 +16,7 @@ import com.google.apphosting.api.DatastorePb;
 import com.google.apphosting.api.DatastorePb.GetRequest;
 import com.google.apphosting.api.DatastorePb.GetResponse;
 import com.google.code.twig.util.FutureAdaptor;
+import com.google.code.twig.util.ImmediateFuture;
 import com.google.storage.onestore.v3.OnestoreEntity;
 import com.google.storage.onestore.v3.OnestoreEntity.Reference;
 
@@ -28,6 +29,9 @@ import com.google.storage.onestore.v3.OnestoreEntity.Reference;
  */
 public class AsyncDatastoreHelper
 {
+	// flag that makes all async calls actually run sync
+	private static boolean runAllSync;
+	
 	public static Future<List<Key>> put(final Transaction txn, final Iterable<Entity> entities)
 	{
 		DatastorePb.PutRequest request = new DatastorePb.PutRequest();
@@ -126,7 +130,14 @@ public class AsyncDatastoreHelper
 	{
 		try
 		{
-			return ApiProxy.makeAsyncCall("datastore_v3", method, request.toByteArray());
+			if (!runAllSync)
+			{
+				return ApiProxy.makeAsyncCall("datastore_v3", method, request.toByteArray());
+			}
+			else
+			{
+				return new ImmediateFuture<byte[]>(ApiProxy.makeSyncCall("datastore_v3", method, request.toByteArray()));
+			}
 		}
 		catch (ApiProxy.ApplicationException exception)
 		{
@@ -137,5 +148,10 @@ public class AsyncDatastoreHelper
 	public static Comparator<Entity> newEntityComparator(List<SortPredicate> sorts)
 	{
 		return new PreparedMultiQuery.EntityComparator(sorts);
+	}
+	
+	public static void setAlwaysUseSync(boolean runAllSync)
+	{
+		AsyncDatastoreHelper.runAllSync = runAllSync;
 	}
 }
