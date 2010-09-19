@@ -52,15 +52,7 @@ class RelationTranslator implements PropertyTranslator
 		}
 		else
 		{
-			if (value instanceof Key)
-			{
-				return keyToInstance((Key) value);
-			}
-			else
-			{
-				// signal we cannot handle this property
-				return null;
-			}
+			return keyToInstance((Key) value);
 		}
 	}
 
