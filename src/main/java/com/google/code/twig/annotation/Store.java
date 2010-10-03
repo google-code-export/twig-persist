@@ -10,4 +10,5 @@ import java.lang.annotation.Target;
 public @interface Store
 {
 	boolean value() default true;
+	String name() default "";
 }

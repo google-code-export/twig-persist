@@ -106,7 +106,7 @@ public abstract class DefaultConfiguration implements Configuration
 	 *
 	 * @see com.google.code.twig.strategy.KeyStrategy#name(java.lang.reflect.Field)
 	 */
-	public final String name(Field field)
+	public String name(Field field)
 	{
 		String name = field.getName();
 		if (name.charAt(0) == '_')
@@ -120,6 +120,7 @@ public abstract class DefaultConfiguration implements Configuration
 	{
 		String kind = typeToName(type);
 		
+		// replace . with _ and _ with __
 		kind = kind.replace('.', ' ');
 		kind = kind.replaceAll("_", "__");
 		kind = kind.replace(' ', '_');
@@ -133,7 +134,7 @@ public abstract class DefaultConfiguration implements Configuration
 	}
 
 	/**
-	 * The converse method nametoType must understand how to "decode" type
+	 * The converse method {@link #nameToType(String)} must understand how to "decode" type
 	 * names encoded by this method
 	 * 
 	 * @return A representation that can unambiguously specify the type

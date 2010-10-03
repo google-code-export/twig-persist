@@ -78,20 +78,21 @@ public class AnnotationConfiguration extends DefaultConfiguration implements Con
 			{
 				return false;
 			}
-			
+
 			if (Modifier.isFinal(modifiers))
 			{
 				String name = field.getName();
 				if (name.matches(".*this\\$[0-9]+"))
 				{
-					throw new IllegalStateException("Inner class " + field.getDeclaringClass() + " must be declared static");
+					throw new IllegalStateException("Inner class " + field.getDeclaringClass()
+							+ " must be declared static");
 				}
 				else
 				{
 					throw new IllegalStateException("Final field " + field + " cannot be stored");
 				}
 			}
-			
+
 			return true;
 		}
 	}
@@ -132,19 +133,19 @@ public class AnnotationConfiguration extends DefaultConfiguration implements Con
 			return annotation.value();
 		}
 	}
-	
-//	@Override
-//	protected String typeToName(java.lang.reflect.Type type)
-//	{
-//		Class<?> erased = GenericTypeReflector.erase(type);
-//		Entity annotation = erased.getAnnotation(Entity.class);
-//		if (annotation != null && annotation.kind().length() > 0)
-//		{
-//			return annotation.kind();
-//		}
-//		
-//		return super.typeToName(type);
-//	}
+
+	// @Override
+	// protected String typeToName(java.lang.reflect.Type type)
+	// {
+	// Class<?> erased = GenericTypeReflector.erase(type);
+	// Entity annotation = erased.getAnnotation(Entity.class);
+	// if (annotation != null && annotation.kind().length() > 0)
+	// {
+	// return annotation.kind();
+	// }
+	//
+	// return super.typeToName(type);
+	// }
 
 	public boolean polymorphic(Field field)
 	{
@@ -153,7 +154,7 @@ public class AnnotationConfiguration extends DefaultConfiguration implements Con
 		{
 			annotation = field.getType().getAnnotation(Embedded.class);
 		}
-		
+
 		if (annotation != null)
 		{
 			return annotation.polymorphic();
@@ -167,9 +168,8 @@ public class AnnotationConfiguration extends DefaultConfiguration implements Con
 
 	public boolean entity(Field field)
 	{
-		return field.isAnnotationPresent(Parent.class) ||
-		field.isAnnotationPresent(Child.class) ||
-		field.isAnnotationPresent(Independent.class);
+		return field.isAnnotationPresent(Parent.class) || field.isAnnotationPresent(Child.class)
+				|| field.isAnnotationPresent(Independent.class);
 	}
 
 	public int activationDepth(Field field, int depth)
@@ -211,6 +211,20 @@ public class AnnotationConfiguration extends DefaultConfiguration implements Con
 		else
 		{
 			return 0;
+		}
+	}
+
+	@Override
+	public final String name(Field field)
+	{
+		Store annotation = field.getAnnotation(Store.class);
+		if (annotation != null && !annotation.name().isEmpty())
+		{
+			return annotation.name();
+		}
+		else
+		{
+			return super.name(field);
 		}
 	}
 }
