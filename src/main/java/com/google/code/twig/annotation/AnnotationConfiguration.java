@@ -17,6 +17,11 @@ public class AnnotationConfiguration extends DefaultConfiguration implements Con
 		this.indexed = indexPropertiesDefault;
 	}
 
+	public AnnotationConfiguration(boolean indexPropertiesDefault)
+	{
+		this(indexPropertiesDefault, 0);
+	}
+
 	public boolean child(Field field)
 	{
 		return field.isAnnotationPresent(Child.class);
