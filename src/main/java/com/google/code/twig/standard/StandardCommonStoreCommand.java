@@ -22,6 +22,7 @@ import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.StoreCommand.CommonStoreCommand;
 import com.vercer.util.reference.ObjectReference;
+import com.vercer.util.reference.SimpleObjectReference;
 
 abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreCommand<T, C>> extends StandardEncodeCommand implements CommonStoreCommand<T, C>
 {
@@ -208,7 +209,27 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 		datastore.encodeKeySpec = new KeySpecification(kind, parentKey, id);
 
 		// if we are updating the key is already in the key cache
-		if (!command.update)
+		if (command.update)
+		{
+			// get the key associated with this instance
+			Key associatedKey = datastore.associatedKey(instance);
+			
+			// set the id and parent to ensure entity will be overwritten
+			if (associatedKey.getName() == null)
+			{
+				datastore.encodeKeySpec.setId(associatedKey.getId());
+			}
+			else
+			{
+				datastore.encodeKeySpec.setName(associatedKey.getName());
+			}
+			
+			if (associatedKey.getParent() != null)
+			{
+				datastore.encodeKeySpec.setParentKeyReference(new SimpleObjectReference<Key>(associatedKey.getParent()));
+			}
+		}
+		else
 		{
 			// set incomplete key reference before stored for back references 
 			datastore.keyCache.cacheKeyReferenceForInstance(instance, datastore.encodeKeySpec.toObjectReference());
