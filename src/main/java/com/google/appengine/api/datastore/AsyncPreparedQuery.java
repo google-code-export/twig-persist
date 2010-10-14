@@ -7,6 +7,7 @@ import java.util.concurrent.Future;
 import com.google.apphosting.api.ApiBasePb;
 import com.google.apphosting.api.DatastorePb;
 import com.google.code.twig.util.FutureAdaptor;
+import com.google.code.twig.util.ImmediateFuture;
 
 public class AsyncPreparedQuery extends BasePreparedQuery
 {
@@ -30,7 +31,7 @@ public class AsyncPreparedQuery extends BasePreparedQuery
 		{
 			fetchOptions = new FetchOptions(fetchOptions).compile(true);
 		}
-		return runAsyncQuery(this.query, fetchOptions);
+			return runAsyncQuery(this.query, fetchOptions);
 	}
 
 	public Future<Integer> countEntitiesAsync()
@@ -60,15 +61,25 @@ public class AsyncPreparedQuery extends BasePreparedQuery
 			@Override
 			protected QueryResultIterator<Entity> adapt(byte[] bytes)
 			{
-				DatastorePb.QueryResult result = new DatastorePb.QueryResult();
-				if (bytes != null)
+				try
 				{
-					result.mergeFrom(bytes);
+					DatastorePb.QueryResult result = new DatastorePb.QueryResult();
+					if (bytes != null)
+					{
+						result.mergeFrom(bytes);
+					}
+					QueryResultsSourceImpl src = new QueryResultsSourceImpl(null, fetchOptions, txn);
+					List<Entity> prefetchedEntities = src.loadFromPb(result);
+					return new QueryResultIteratorImpl(AsyncPreparedQuery.this, prefetchedEntities,
+							src, fetchOptions, txn);
 				}
-				QueryResultsSourceImpl src = new QueryResultsSourceImpl(null, fetchOptions, txn);
-				List<Entity> prefetchedEntities = src.loadFromPb(result);
-				return new QueryResultIteratorImpl(AsyncPreparedQuery.this, prefetchedEntities,
-						src, fetchOptions, txn);
+				catch (NoSuchMethodError e)
+				{
+					DatastoreService service = DatastoreServiceFactory.getDatastoreService();
+					PreparedQuery prepared = service.prepare(txn, query);
+					QueryResultIterator<Entity> iterator = prepared.asQueryResultIterator();
+					return iterator;
+				}
 			}
 		};
 	}

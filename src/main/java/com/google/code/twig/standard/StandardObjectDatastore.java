@@ -28,7 +28,6 @@ public class StandardObjectDatastore extends TranslatorObjectDatastore
 		EngineConverters.registerAll(converter);
 		CoreConverters.registerAll(converter);
 		return converter;
-		
 	}
 
 	@Override
