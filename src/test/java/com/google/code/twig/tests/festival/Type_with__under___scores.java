@@ -1,4 +1,4 @@
-package com.google.code.twig.festival;
+package com.google.code.twig.tests.festival;
 
 import com.google.code.twig.annotation.Version;
 

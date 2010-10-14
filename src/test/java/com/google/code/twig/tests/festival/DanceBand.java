@@ -1,7 +1,7 @@
 /**
  *
  */
-package com.google.code.twig.festival;
+package com.google.code.twig.tests.festival;
 
 public class DanceBand extends Band
 {

@@ -1,4 +1,4 @@
-package com.google.code.twig.translators;
+package com.google.code.twig.tests.unit.translators;
 
 
 import static org.junit.Assert.assertEquals;

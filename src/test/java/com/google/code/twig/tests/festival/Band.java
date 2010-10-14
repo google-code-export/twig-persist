@@ -1,7 +1,7 @@
 /**
  *
  */
-package com.google.code.twig.festival;
+package com.google.code.twig.tests.festival;
 
 import java.util.LinkedList;
 import java.util.List;

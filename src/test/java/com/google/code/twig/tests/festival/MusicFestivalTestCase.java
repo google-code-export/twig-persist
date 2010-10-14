@@ -1,4 +1,4 @@
-package com.google.code.twig.festival;
+package com.google.code.twig.tests.festival;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
@@ -32,8 +32,8 @@ import com.google.code.twig.ObjectDatastore;
 import com.google.code.twig.annotation.AnnotationObjectDatastore;
 import com.google.code.twig.annotation.Embedded;
 import com.google.code.twig.annotation.Id;
-import com.google.code.twig.festival.Album.Track;
-import com.google.code.twig.festival.Band.HairStyle;
+import com.google.code.twig.tests.festival.Album.Track;
+import com.google.code.twig.tests.festival.Band.HairStyle;
 import com.google.code.twig.util.PredicateToRestrictionAdaptor;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;

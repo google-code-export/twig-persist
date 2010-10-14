@@ -1,4 +1,4 @@
-package com.google.code.twig;
+package com.google.code.twig.tests.unit;
 
 import java.util.List;
 
@@ -7,6 +7,8 @@ import junit.framework.Assert;
 import org.junit.Test;
 
 import com.google.appengine.api.datastore.Key;
+import com.google.code.twig.LocalDatastoreTestCase;
+import com.google.code.twig.ObjectDatastore;
 import com.google.code.twig.annotation.Activate;
 import com.google.code.twig.annotation.AnnotationObjectDatastore;
 import com.google.code.twig.annotation.Id;
@@ -32,7 +34,7 @@ public class ActivationTest extends LocalDatastoreTestCase
 	}
 
 	@Test
-	public void noActivation()
+	public void activationIsLimitedByAnnotation()
 	{
 		A a = new A();
 		B b1 = new B();
@@ -91,6 +93,5 @@ public class ActivationTest extends LocalDatastoreTestCase
 		X reloaded = datastore.load(key);
 		
 		Assert.assertNotNull(reloaded.y.field);
-		
 	}
 }
