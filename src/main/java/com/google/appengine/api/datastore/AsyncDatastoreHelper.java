@@ -54,28 +54,43 @@ public class AsyncDatastoreHelper
 			@Override
 			protected List<Key> adapt(byte[] bytes)
 			{
-				DatastorePb.PutResponse response = new DatastorePb.PutResponse();
-				if (bytes != null)
+				try
 				{
-					response.mergeFrom(bytes);
-			    }
-				Iterator<Entity> entitiesIterator = entities.iterator();
-				Iterator<Reference> keyReferenceIterator = response.keys().iterator();
-				List<Key> keysInOrder = new ArrayList<Key>(response.keySize());
-				while (entitiesIterator.hasNext())
-				{
-					Entity entity = entitiesIterator.next();
-					OnestoreEntity.Reference reference = keyReferenceIterator.next();
-					KeyTranslator.updateKey(reference, entity.getKey());
-					keysInOrder.add(entity.getKey());
+					DatastorePb.PutResponse response = new DatastorePb.PutResponse();
+					if (bytes != null)
+					{
+						response.mergeFrom(bytes);
+				    }
+					Iterator<Entity> entitiesIterator = entities.iterator();
+					Iterator<Reference> keyReferenceIterator = response.keys().iterator();
+					List<Key> keysInOrder = new ArrayList<Key>(response.keySize());
+					while (entitiesIterator.hasNext())
+					{
+						Entity entity = entitiesIterator.next();
+						OnestoreEntity.Reference reference = keyReferenceIterator.next();
+						KeyTranslator.updateKey(reference, entity.getKey());
+						keysInOrder.add(entity.getKey());
+					}
+	
+					return keysInOrder;
 				}
-
-				return keysInOrder;
+				catch (NoSuchMethodError e)
+				{
+					DatastoreService service = DatastoreServiceFactory.getDatastoreService();
+					List<Key> result = service.put(txn, entities);
+					return result;
+				}
 			}
 		};
 	}
 	
 	public static Future<Map<Key, Entity>> get(Transaction txn, final Iterable<Key> keys, Consistency consistency)
+	{
+			return asyncGet(txn, keys, consistency);
+	}
+
+	private static Future<Map<Key, Entity>> asyncGet(final Transaction txn, final Iterable<Key> keys,
+			Consistency consistency)
 	{
 		GetRequest request = new GetRequest();
 		if (txn != null)
@@ -101,29 +116,37 @@ public class AsyncDatastoreHelper
 			@Override
 			protected Map<Key, Entity> adapt(byte[] bytes)
 			{
-				Map<Key, Entity> result = new HashMap<Key, Entity>();
-				GetResponse response = new GetResponse();
-				if (bytes != null)
+				try
 				{
-					response.mergeFrom(bytes);
-			    }
-				
-				Iterator<Key> keyIterator = keys.iterator();
-				Iterator<GetResponse.Entity> entityReferenceIterator = response.entitys().iterator();
-				while (keyIterator.hasNext())
-				{
-					Key key = keyIterator.next();
-					GetResponse.Entity entityReference = entityReferenceIterator.next();
-					if (entityReference.hasEntity())
+					Map<Key, Entity> result = new HashMap<Key, Entity>();
+					GetResponse response = new GetResponse();
+					if (bytes != null)
 					{
-						result.put(key, EntityTranslator.createFromPb(entityReference.getEntity()));
+						response.mergeFrom(bytes);
+				    }
+					
+					Iterator<Key> keyIterator = keys.iterator();
+					Iterator<GetResponse.Entity> entityReferenceIterator = response.entitys().iterator();
+					while (keyIterator.hasNext())
+					{
+						Key key = keyIterator.next();
+						GetResponse.Entity entityReference = entityReferenceIterator.next();
+						if (entityReference.hasEntity())
+						{
+							result.put(key, EntityTranslator.createFromPb(entityReference.getEntity()));
+						}
 					}
+					
+					return result;
 				}
-				
-				return result;
+				catch (NoSuchMethodError e)
+				{
+					DatastoreService service = DatastoreServiceFactory.getDatastoreService();
+					Map<Key, Entity> result = service.get(txn, keys);
+					return result;
+				}
 			}
 		};
-		
 	}
 
 	static Future<byte[]> makeAsyncCall(String method, ProtocolMessage<?> request)
