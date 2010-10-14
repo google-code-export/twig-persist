@@ -13,7 +13,7 @@ import com.google.appengine.api.datastore.Blob;
 import com.google.appengine.tools.development.testing.LocalDatastoreServiceTestConfig;
 import com.google.appengine.tools.development.testing.LocalServiceTestHelper;
 import com.google.code.twig.annotation.AnnotationObjectDatastore;
-import com.google.code.twig.annotation.Embed;
+import com.google.code.twig.annotation.Embedded;
 import com.google.code.twig.annotation.Id;
 import com.google.code.twig.annotation.Type;
 
@@ -54,7 +54,7 @@ public class HashMapTest
 	{
 		@Id
 		String myKey;
-		@Embed
+		@Embedded
 		InnerFoo innerFoo;
 		@Type(Blob.class)
 		HashMap<String, InnerFoo> moreInnerFoos;
