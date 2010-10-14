@@ -1,13 +1,13 @@
 /**
  *
  */
-package com.google.code.twig.festival;
+package com.google.code.twig.tests.festival;
 
 import java.util.Arrays;
 import java.util.Date;
 
 import com.google.appengine.api.datastore.Text;
-import com.google.code.twig.annotation.Embed;
+import com.google.code.twig.annotation.Embedded;
 import com.google.code.twig.annotation.Id;
 import com.google.code.twig.annotation.Type;
 
@@ -24,7 +24,7 @@ public class Album
 	boolean rocksTheHouse;
 	long sold;
 
-	@Embed
+	@Embedded
 	Track[] tracks;
 
 	public static class Track

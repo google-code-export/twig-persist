@@ -1,4 +1,4 @@
-package com.google.code.twig.festival;
+package com.google.code.twig.tests.festival;
 
 import java.util.Date;
 

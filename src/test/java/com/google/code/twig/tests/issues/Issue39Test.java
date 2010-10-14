@@ -1,4 +1,4 @@
-package com.google.code.twig;
+package com.google.code.twig.tests.issues;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -8,9 +8,11 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.google.code.twig.LocalDatastoreTestCase;
+import com.google.code.twig.ObjectDatastore;
 import com.google.code.twig.annotation.AnnotationObjectDatastore;
 
-public class StoreUpdateWithoutIdTest extends LocalDatastoreTestCase
+public class Issue39Test extends LocalDatastoreTestCase
 {
 	public static class Restaurant implements Serializable
 	{
@@ -22,7 +24,7 @@ public class StoreUpdateWithoutIdTest extends LocalDatastoreTestCase
 	{
 		private static final long serialVersionUID = 1L;
 		String cityName;
-		List<Restaurant> restaurants = new ArrayList<StoreUpdateWithoutIdTest.Restaurant>();
+		List<Restaurant> restaurants = new ArrayList<Issue39Test.Restaurant>();
 
 		public City(String name)
 		{
