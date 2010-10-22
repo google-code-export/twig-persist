@@ -236,7 +236,11 @@ final class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFin
 
 				Query query = queries.iterator().next();
 				PreparedQuery prepared = datastore.servicePrepare(query);
-				return prepared.countEntities();
+				if (options == null)
+				{
+					options = FetchOptions.Builder.withDefaults();
+				}
+				return prepared.countEntities(options);
 			}
 			
 			@Override

@@ -6,6 +6,7 @@ import java.util.concurrent.Future;
 
 import com.google.apphosting.api.ApiBasePb;
 import com.google.apphosting.api.DatastorePb;
+import com.google.apphosting.api.DatastorePb.QueryResult;
 import com.google.code.twig.util.FutureAdaptor;
 import com.google.code.twig.util.ImmediateFuture;
 
@@ -31,7 +32,7 @@ public class AsyncPreparedQuery extends BasePreparedQuery
 		{
 			fetchOptions = new FetchOptions(fetchOptions).compile(true);
 		}
-			return runAsyncQuery(this.query, fetchOptions);
+		return runAsyncQuery(this.query, fetchOptions);
 	}
 
 	public Future<Integer> countEntitiesAsync()
@@ -51,7 +52,8 @@ public class AsyncPreparedQuery extends BasePreparedQuery
 		};
 	}
 
-	private Future<QueryResultIterator<Entity>> runAsyncQuery(Query q, final FetchOptions fetchOptions)
+	private Future<QueryResultIterator<Entity>> runAsyncQuery(Query q,
+			final FetchOptions fetchOptions)
 	{
 		DatastorePb.Query queryProto = convertToPb(q, fetchOptions);
 		Future<byte[]> futureBytes = AsyncDatastoreHelper.makeAsyncCall("RunQuery", queryProto);
@@ -68,13 +70,13 @@ public class AsyncPreparedQuery extends BasePreparedQuery
 					{
 						result.mergeFrom(bytes);
 					}
-					QueryResultsSourceImpl src = new QueryResultsSourceImpl(null, fetchOptions, txn);
-					List<Entity> prefetchedEntities = src.loadFromPb(result);
-					return new QueryResultIteratorImpl(AsyncPreparedQuery.this, prefetchedEntities,
-							src, fetchOptions, txn);
+					Future<QueryResult> future = new ImmediateFuture<DatastorePb.QueryResult>(result);
+					QueryResultsSourceImpl src = new QueryResultsSourceImpl(null, fetchOptions,	txn, future);
+					return new QueryResultIteratorImpl(AsyncPreparedQuery.this, src, fetchOptions, txn);
 				}
 				catch (NoSuchMethodError e)
 				{
+					// revert to sync operation if unpublished interface fails
 					DatastoreService service = DatastoreServiceFactory.getDatastoreService();
 					PreparedQuery prepared = service.prepare(txn, query);
 					QueryResultIterator<Entity> iterator = prepared.asQueryResultIterator();
@@ -129,5 +131,11 @@ public class AsyncPreparedQuery extends BasePreparedQuery
 	public int countEntities()
 	{
 		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public int countEntities(FetchOptions fetchoptions)
+	{
+		return 0;
 	}
 }

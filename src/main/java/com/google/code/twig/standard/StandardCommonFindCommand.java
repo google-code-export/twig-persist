@@ -104,6 +104,7 @@ abstract class StandardCommonFindCommand<C extends CommonFindCommand<C>> extends
 		return child;
 	}
 
+	// TODO put many methods like this into SRFC
 	protected Collection<Query> queries()
 	{
 		if (children == null)
