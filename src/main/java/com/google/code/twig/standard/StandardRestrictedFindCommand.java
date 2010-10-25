@@ -68,15 +68,8 @@ abstract class StandardRestrictedFindCommand<C extends RestrictedFindCommand<C>>
 	Iterator<Entity> mergeEntities(List<Iterator<Entity>> iterators, List<SortPredicate> sorts)
 	{
 		Iterator<Entity> merged;
-		if (sorts != null && !sorts.isEmpty())
-		{
-			Comparator<Entity> comparator = AsyncDatastoreHelper.newEntityComparator(sorts);
-			merged = new SortedMergeIterator<Entity>(comparator, iterators);
-		}
-		else
-		{
-			merged = Iterators.concat(iterators.iterator());
-		}
+		Comparator<Entity> comparator = AsyncDatastoreHelper.newEntityComparator(sorts);
+		merged = new SortedMergeIterator<Entity>(comparator, iterators);
 		return merged;
 	}
 	
