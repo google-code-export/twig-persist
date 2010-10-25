@@ -6,13 +6,14 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -35,18 +36,11 @@ import com.vercer.util.collections.MergeSet;
  */
 public abstract class ObjectFieldTranslator implements PropertyTranslator
 {
-	private static final Comparator<Field> comparator = new Comparator<Field>()
-	{
-		public int compare(Field o1, Field o2)
-		{
-			return o1.getName().compareTo(o2.getName());
-		}
-	};
 	private static final PropertyComparator COMPARATOR = new PropertyComparator();
 	private final TypeConverter converters;
 
 	// permanent cache of class fields to reduce reflection
-	private static Map<Class<?>, List<Field>> classFields = new ConcurrentHashMap<Class<?>, List<Field>>();
+	private static Map<Class<?>, SortedMap<String, Field>> classFields = new ConcurrentHashMap<Class<?>, SortedMap<String, Field>>();
 	private static Map<Class<?>, Constructor<?>> constructors = new ConcurrentHashMap<Class<?>, Constructor<?>>();
 
 	public ObjectFieldTranslator(TypeConverter converters)
@@ -78,7 +72,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 		}
 
 		// both fields and properties are sorted by name
-		List<Field> fields = getSortedFields(instance);
+		Collection<Field> fields = getSortedAccessibleFields(instance.getClass()).values();
 		Iterator<PrefixPropertySet> ppss = PropertySets.prefixPropertySets(properties, path).iterator();
 		PrefixPropertySet pps = null;
 		for (Field field : fields)
@@ -300,7 +294,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 
 		try
 		{
-			List<Field> fields = getSortedFields(object);
+			Collection<Field> fields = getSortedAccessibleFields(object.getClass()).values();
 			MergeSet<Property> merged = new MergeSet<Property>(fields.size());
 			for (Field field : fields)
 			{
@@ -377,23 +371,28 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 	{
 	}
 
-	protected List<Field> getSortedFields(Object object)
+	public static SortedMap<String, Field> getSortedAccessibleFields(Class<?> clazz)
 	{
 		// fields are cached and stored as a map because reading more common than writing
-		List<Field> fields = classFields.get(object.getClass());
+		SortedMap<String, Field> fields = classFields.get(clazz);
 		if (fields == null)
 		{
-			fields = Reflection.getAccessibleFields(object.getClass());
+			List<Field> ordered = Reflection.getAccessibleFields(clazz);
 
 			// sort the fields by name
-			Collections.sort(fields, comparator);
+			fields = new TreeMap<String, Field>();
 
+			for (Field field : ordered)
+			{
+				fields.put(field.getName(), field);
+			}
+			
 			// cache because reflection is costly
-			classFields.put(object.getClass(), fields);
+			classFields.put(clazz, fields);
 		}
 		return fields;
 	}
-
+	
 	protected abstract boolean isNullStored();
 
 	protected abstract boolean indexed(Field field);

@@ -1,11 +1,15 @@
 package com.google.code.twig.standard;
 
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.StringTokenizer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -21,12 +25,19 @@ import com.google.appengine.api.datastore.Query.SortPredicate;
 import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.appengine.api.datastore.Transaction;
 import com.google.code.twig.FindCommand;
+import com.google.code.twig.Path;
+import com.google.code.twig.Path.Part;
+import com.google.code.twig.translator.ObjectFieldTranslator;
+import com.google.code.twig.Property;
+import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.FindCommand.BranchFindCommand;
 import com.google.code.twig.FindCommand.ChildFindCommand;
 import com.google.code.twig.FindCommand.MergeOperator;
 import com.google.code.twig.FindCommand.CommonFindCommand;
 import com.google.common.base.Predicate;
 import com.google.common.collect.AbstractIterator;
+import com.vercer.util.Strings;
+import com.vercer.util.reference.ObjectReference;
 
 abstract class StandardCommonFindCommand<C extends CommonFindCommand<C>> extends StandardRestrictedFindCommand<C> implements CommonFindCommand<C>, BranchFindCommand
 {
@@ -65,13 +76,51 @@ abstract class StandardCommonFindCommand<C extends CommonFindCommand<C>> extends
 	abstract StandardRootFindCommand<?> getRootCommand();
 
 	@SuppressWarnings("unchecked")
-	public C addFilter(String field, FilterOperator operator, Object value)
+	public C addFilter(String fieldPathName, FilterOperator operator, Object value)
 	{
 		if (filters == null)
 		{
 			filters = new ArrayList<Filter>(2);
 		}
-		filters.add(new Filter(field, operator, value));
+		
+		
+		Class<?> type = (Class<?>) getRootCommand().getType();
+		Field field = null;
+		
+		String[] fieldNames = Strings.split(fieldPathName, false, '.');
+		Path path = Path.EMPTY_PATH;
+		for (String fieldName : fieldNames)
+		{
+			SortedMap<String,Field> fields = ObjectFieldTranslator.getSortedAccessibleFields(type);
+			field = fields.get(fieldName);
+			
+			if (field == null)
+			{
+				throw new IllegalArgumentException("Could not find field " + fieldName + " in type " + type);
+			}
+			
+			// the property name stored in the datastore may use a short name
+			String propertyName = datastore.getConfiguration().name(field);
+			path = new Path.Builder(path).field(propertyName).build();
+			
+			type = field.getType();
+		}
+		
+		PropertyTranslator translator = datastore.encoder(field, value);
+		Set<Property> properties = translator.encode(value, path, true);
+		
+		if (properties.size() != 1)
+		{
+			throw new IllegalArgumentException("Encoder for field " + field + " must return one value for " + value + " but returned " + properties);
+		}
+		
+		Object encoded = properties.iterator().next().getValue();
+		if (encoded instanceof ObjectReference<?>)
+		{
+			encoded = ((ObjectReference<Object>) encoded).get();
+		}
+		filters.add(new Filter(path.toString(), operator, encoded));
+		
 		return (C) this;
 	}
 	
