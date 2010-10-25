@@ -60,6 +60,11 @@ final class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFin
 	{
 		return this;
 	}
+	
+	Type getType()
+	{
+		return type;
+	}
 
 	@Override
 	public RootFindCommand<T> ancestor(Object ancestor)

@@ -237,7 +237,7 @@ public class Path implements Comparable<Path>
 					{
 						if (index < 0)
 						{
-							return null;
+							return endOfData();
 						}
 
 						int nextIndex = Strings.firstIndexOf(value, index + 1, SEPERATORS);
