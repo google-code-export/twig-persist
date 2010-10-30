@@ -40,19 +40,22 @@ final class ParentRelationTranslator extends RelationTranslator
 
 	public Set<Property> encode(final Object instance, final Path prefix, final boolean indexed)
 	{
-		ReadOnlyObjectReference<Key> keyReference = new ReadOnlyObjectReference<Key>()
+		if (instance != null)
 		{
-			public Key get()
+			ReadOnlyObjectReference<Key> keyReference = new ReadOnlyObjectReference<Key>()
 			{
-				return instanceToKey(instance);
+				public Key get()
+				{
+					return instanceToKey(instance);
+				}
+			};
+	
+			// an existing parent key ref shows parent is still being stored
+			if (datastore.encodeKeySpec != null && datastore.encodeKeySpec.getParentKeyReference() == null)
+			{
+				// store the parent key inside the current key
+				datastore.encodeKeySpec.setParentKeyReference(keyReference);
 			}
-		};
-
-		// an existing parent key ref shows parent is still being stored
-		if (datastore.encodeKeySpec != null && datastore.encodeKeySpec.getParentKeyReference() == null)
-		{
-			// store the parent key inside the current key
-			datastore.encodeKeySpec.setParentKeyReference(keyReference);
 		}
 
 		// no fields are stored for parent
