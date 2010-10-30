@@ -61,7 +61,7 @@ class StandardCommonLoadCommand<C extends StandardCommonLoadCommand<C>> extends 
 		else
 		{
 			// no key field so id must have been set explicitly when stored
-			if (id instanceof Long == false || id instanceof String == false)
+			if (id instanceof Long == false && id instanceof String == false)
 			{
 				throw new IllegalArgumentException("Id must be String or Long but was " + id.getClass());
 			}

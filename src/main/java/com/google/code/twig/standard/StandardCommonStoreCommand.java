@@ -91,14 +91,19 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 		Field field = datastore.keyField(instance.getClass());
 		try
 		{
-			// if there is a key field
+			// check that we have an id field
 			if (field != null)
 			{
-				// see if its current value is null or 0
+				// only update if its current value is numeric and null or 0 
 				Object current = field.get(instance);
 				if (current == null || current instanceof Number && ((Number) current).longValue() == 0)
 				{
 					Class<?> type = field.getType();
+					if (!Number.class.isAssignableFrom(type) && !type.isPrimitive())
+					{
+						throw new IllegalStateException("You must set an id value if the id field is not a numeric type.");
+					}
+					
 					Object idOrName = key.getId();
 					
 					// the key name could have been set explicitly when storing 
@@ -113,7 +118,7 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 				}
 			}
 		}
-		catch (Exception e)
+		catch (IllegalAccessException e)
 		{
 			throw new IllegalStateException(e);
 		}
