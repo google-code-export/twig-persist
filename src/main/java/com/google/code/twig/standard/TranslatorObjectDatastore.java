@@ -68,6 +68,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	private final PropertyTranslator keyFieldTranslator;
 	private final PropertyTranslator childTranslator;
 	private final ChainedTranslator valueTranslatorChain;
+	private final PropertyTranslator gaeKeyFieldTranslator;
 	private final PropertyTranslator defaultTranslator;
 
 	private static final Map<Class<?>, Field> keyFields = new ConcurrentHashMap<Class<?>, Field>();
@@ -99,6 +100,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 
 		parentTranslator = new ParentRelationTranslator(this);
 		independantTranslator = new RelationTranslator(this);
+		gaeKeyFieldTranslator = new GaeKeyTranslator(this);
 		keyFieldTranslator = new KeyFieldTranslator(this, valueTranslatorChain, converter);
 		childTranslator = new ChildRelationTranslator(this);
 
@@ -359,6 +361,9 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 			{
 				return embedTranslator;
 			}
+		}
+		else if (configuration.gaeKey(field)) {
+			return gaeKeyFieldTranslator;
 		}
 		else
 		{

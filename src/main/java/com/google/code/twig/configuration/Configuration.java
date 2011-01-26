@@ -109,6 +109,13 @@ public interface Configuration
 	 */
 	boolean polymorphic(Field field);
 	
+	/**
+	 * Can this field hold GAE Keys?
+	 * @param field
+	 * @return true if the field holds a GAE key
+	 */
+	boolean gaeKey(Field field);
+	
 
 	/**
 	 * @return The Type that field values should be converted to
