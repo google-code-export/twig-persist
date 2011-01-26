@@ -42,6 +42,7 @@ class StandardCommonLoadCommand<C extends StandardCommonLoadCommand<C>> extends 
 	@SuppressWarnings("unchecked")
 	public final C parent(Object parent)
 	{
+		assert parent != null;
 		parentKey = datastore.associatedKey(parent);
 		if (parentKey == null)
 		{

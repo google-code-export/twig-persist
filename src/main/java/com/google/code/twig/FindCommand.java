@@ -89,7 +89,7 @@ public interface FindCommand
 		
 		
 		RootFindCommand<T> fetchMaximum(int limit);
-		RootFindCommand<T> fetchNoFields();
+		RootFindCommand<T> unactivated();
 		RootFindCommand<T> fetchNextBy(int size);
 		RootFindCommand<T> fetchFirst(int size);
 

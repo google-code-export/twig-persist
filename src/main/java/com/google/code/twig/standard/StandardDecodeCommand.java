@@ -153,7 +153,7 @@ class StandardDecodeCommand extends StandardCommand
 			}
 		}
 		
-		if (!missing.isEmpty())
+		if (missing != null && !missing.isEmpty())
 		{
 			Map<Key, Entity> entities = keysToEntities(missing);
 			if (!entities.isEmpty())
