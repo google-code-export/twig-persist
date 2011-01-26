@@ -74,7 +74,7 @@ final class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFin
 	}
 
 	@Override
-	public RootFindCommand<T> fetchNoFields()
+	public RootFindCommand<T> unactivated()
 	{
 		keysOnly = true;
 		return this;
@@ -260,6 +260,7 @@ final class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFin
 	@Override
 	public CommandTerminator<T> returnUnique()
 	{
+		fetchFirst(1);
 		return new CommandTerminator<T>()
 		{
 			@Override

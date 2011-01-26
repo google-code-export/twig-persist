@@ -140,18 +140,24 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	@Override
 	public final Key store(Object instance)
 	{
+		assert instance != null;
 		return store().instance(instance).now();
 	}
 
 	@Override
 	public final Key store(Object instance, long id)
 	{
+		assert instance != null;
+		assert id > 0;
 		return store().instance(instance).id(id).now();
 	}
 
 	@Override
 	public final Key store(Object instance, String id)
 	{
+		assert instance != null;
+		assert id != null;
+		assert id.length() > 0;
 		return store().instance(instance).id(id).now();
 	}
 
@@ -211,6 +217,8 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	@Override
 	public final void update(Object instance)
 	{
+		assert instance != null;
+		
 		// store but set the internal update flag so
 		store().update(true).instance(instance).now();
 	}
@@ -218,12 +226,15 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	@Override
 	public void updateAll(Collection<?> instances)
 	{
+		assert instances != null;
+		
 		store().update(true).instances(instances).now();
 	}
 
 	@Override
 	public final void storeOrUpdate(Object instance)
 	{
+		assert instance != null;
 		if (associatedKey(instance) != null)
 		{
 			update(instance);
@@ -237,6 +248,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	@Override
 	public final void delete(Object instance)
 	{
+		assert instance != null;
 		Key key = keyCache.getKey(instance);
 		if (key == null)
 		{
@@ -248,12 +260,14 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	@Override
 	public final void deleteAll(Collection<?> instances)
 	{
+		assert instances != null;
 		deleteKeys(Collections2.transform(instances, cachedInstanceToKeyFunction));
 	}
 
 	@Override
 	public final void refresh(Object instance)
 	{
+		assert instance != null;
 		Key key = associatedKey(instance);
 
 		if (key == null)
@@ -279,6 +293,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	@Override
 	public void refreshAll(Collection<?> instances)
 	{
+		assert instances != null;
 		// TODO optimise! add to a stack then pop instances off the stack
 		for (Object instance : instances)
 		{
@@ -549,7 +564,15 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		@Override
 		protected boolean stored(Field field)
 		{
-			return TranslatorObjectDatastore.this.configuration.store(field);
+			if (associating)
+			{
+				// if associating only decode fields required for the key
+				return configuration.id(field) || configuration.parent(field);
+			}
+			else
+			{
+				return TranslatorObjectDatastore.this.configuration.store(field);
+			}
 		}
 
 		@Override
@@ -694,8 +717,8 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 
 	protected abstract boolean isNullStored();
 
-	// null values are not permitted in a concurrent hash map so need a
-	// "missing" value
+	// null values are not permitted in a concurrent hash map so 
+	// need a special value to represent a missing field
 	private static final Field NO_KEY_FIELD;
 	static
 	{
