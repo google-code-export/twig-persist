@@ -111,6 +111,7 @@ public interface ObjectDatastore extends Activator
 	 */
 	void associate(Object instance);
 	
+	void associate(Object instance, Object parent);
 	
 	void associateAll(Collection<?> instances);
 	
@@ -164,5 +165,6 @@ public interface ObjectDatastore extends Activator
 	Transaction getTransaction();
 	
 	DatastoreService getService();
+
 	
 }
