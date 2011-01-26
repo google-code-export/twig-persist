@@ -76,6 +76,11 @@ public class DelegatingConfiguration implements Configuration
 	{
 		return delegate.polymorphic(field);
 	}
+	
+	public boolean gaeKey(Field field)
+	{
+		return delegate.gaeKey(field);
+	}
 
 	@Override
 	public long allocateIdsFor(Type type)

@@ -21,6 +21,12 @@ public class AnnotationConfiguration extends DefaultConfiguration implements Con
 	{
 		this(indexPropertiesDefault, 0);
 	}
+	
+	@Override
+	public boolean gaeKey(Field field)
+	{
+		return field.isAnnotationPresent(GaeKey.class);
+	}
 
 	public boolean child(Field field)
 	{
