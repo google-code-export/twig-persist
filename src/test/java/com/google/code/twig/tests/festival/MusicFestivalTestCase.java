@@ -487,7 +487,7 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		datastore.find()
 			.type(Album.class)
 			.ancestor(band)
-			.fetchNoFields()
+			.unactivated()
 			.now();
 	}
 	

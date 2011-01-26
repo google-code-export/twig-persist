@@ -66,7 +66,7 @@ public class PolymorphicCollectionsTest extends LocalDatastoreTestCase
 			datastore.store(new Driver(new Lorry(new Long(50+i))));
 		}
 		
-		QueryResultIterator<Driver> result = datastore.find().type(Driver.class).fetchNoFields().now();
+		QueryResultIterator<Driver> result = datastore.find().type(Driver.class).unactivated().now();
 		
 		Assert.assertTrue(result.hasNext());
 	}
