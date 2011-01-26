@@ -305,7 +305,6 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 
 					Object value = field.get(object);
 					
-
 					// we may need to convert the object if it is not assignable
 					value = converters.convert(value, type);
 

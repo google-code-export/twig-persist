@@ -13,7 +13,7 @@ import com.vercer.util.Pair;
 
 public class CombinedConverter implements TypeConverter
 {	
-	private static Map<Pair<Type, Class<?>>, Boolean> superTypes = new ConcurrentHashMap<Pair<Type, Class<?>>, Boolean>();
+	private static Map<Pair<Type, Type>, Boolean> superTypes = new ConcurrentHashMap<Pair<Type, Type>, Boolean>();
 
 	private final List<SpecificConverter<?, ?>> specifics = new ArrayList<SpecificConverter<?,?>>();
 	private final List<TypeConverter> generals = new ArrayList<TypeConverter>();
@@ -68,22 +68,39 @@ public class CombinedConverter implements TypeConverter
 		}
 	}
 	
-	private static boolean isSuperType(Type type, Class<? extends Object> clazz)
+	private static boolean isSuperType(Type superType, Type subType)
 	{
-		if (type == clazz)
+		if (superType == subType)
 		{
 			return true;
 		}
 
-		Pair<Type, Class<?>> key = new Pair<Type, Class<?>>(type, clazz);
-		Boolean superType = superTypes.get(key);
-		if (superType != null)
+		Pair<Type, Type> key = new Pair<Type, Type>(superType, subType);
+		Boolean isSuperType = superTypes.get(key);
+		if (isSuperType != null)
 		{
-			return superType;
+			return isSuperType;
 		}
 		else
 		{
-			boolean result = GenericTypeReflector.isSuperType(type, clazz);
+			boolean result;
+			Class<?> superClass = GenericTypeReflector.erase(superType);
+			Class<?> subClass = GenericTypeReflector.erase(subType);
+			
+			// reflector assumes we have already checked classes are assignable
+			if (!superClass.isAssignableFrom(subClass))
+			{
+				result = false;
+			}
+			else if (!(superType instanceof Class<?>) && subType instanceof Class<?>)
+			{
+				// super class has parameters but subclass does not so we are not sure
+				result = false;
+			}
+			else
+			{
+				result = GenericTypeReflector.isSuperType(superType, subType);
+			}
 			superTypes.put(key, result);
 			return result;
 		}

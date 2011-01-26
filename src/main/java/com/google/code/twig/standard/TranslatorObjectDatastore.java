@@ -409,6 +409,15 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		store(instance);
 		associating = false;
 	}
+	
+	@Override
+	public final void associate(Object instance, Object parent)
+	{
+		// encode the instance so we can get its id and parent to make a key
+		associating = true;
+		store().instance(instance).parent(parent).now();
+		associating = false;
+	}
 
 	@Override
 	public final void associateAll(Collection<?> instances)
