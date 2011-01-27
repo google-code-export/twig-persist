@@ -71,7 +71,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	private final PropertyTranslator gaeKeyFieldTranslator;
 	private final PropertyTranslator defaultTranslator;
 
-	private static final Map<Class<?>, Field> keyFields = new ConcurrentHashMap<Class<?>, Field>();
+	private static final Map<Class<?>, Field> idFields = new ConcurrentHashMap<Class<?>, Field>();
 
 	// indicates we are only associating instances so do not store them
 	boolean associating;
@@ -100,8 +100,8 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 
 		parentTranslator = new ParentRelationTranslator(this);
 		independantTranslator = new RelationTranslator(this);
-		gaeKeyFieldTranslator = new GaeKeyTranslator(this);
-		keyFieldTranslator = new KeyFieldTranslator(this, valueTranslatorChain, converter);
+		gaeKeyFieldTranslator = new KeyTranslator(this);
+		keyFieldTranslator = new IdFieldTranslator(this, valueTranslatorChain, converter);
 		childTranslator = new ChildRelationTranslator(this);
 
 		embedTranslator = new ListTranslator(new MapTranslator(objectFieldTranslator, converter));
@@ -362,7 +362,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 				return embedTranslator;
 			}
 		}
-		else if (configuration.gaeKey(field)) {
+		else if (configuration.key(field)) {
 			return gaeKeyFieldTranslator;
 		}
 		else
@@ -674,13 +674,12 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		
 	}
 
-	@SuppressWarnings("deprecation")
-	Field keyField(Class<?> type)
+	Field idField(Class<?> type)
 	{
 		Field result = null;
-		if (keyFields.containsKey(type))
+		if (idFields.containsKey(type))
 		{
-			result = keyFields.get(type);
+			result = idFields.get(type);
 		}
 		else
 		{
@@ -698,12 +697,12 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 			// null cannot be stored in a concurrent hash map
 			if (result == null)
 			{
-				result = NO_KEY_FIELD;
+				result = NO_ID_FIELD;
 			}
-			keyFields.put(type, result);
+			idFields.put(type, result);
 		}
 
-		if (result == NO_KEY_FIELD)
+		if (result == NO_ID_FIELD)
 		{
 			return null;
 		}
@@ -733,12 +732,12 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 
 	// null values are not permitted in a concurrent hash map so 
 	// need a special value to represent a missing field
-	private static final Field NO_KEY_FIELD;
+	private static final Field NO_ID_FIELD;
 	static
 	{
 		try
 		{
-			NO_KEY_FIELD = TranslatorObjectDatastore.class.getDeclaredField("NO_KEY_FIELD");
+			NO_ID_FIELD = TranslatorObjectDatastore.class.getDeclaredField("NO_ID_FIELD");
 		}
 		catch (Exception e)
 		{

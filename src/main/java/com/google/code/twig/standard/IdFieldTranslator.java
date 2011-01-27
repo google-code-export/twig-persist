@@ -13,12 +13,12 @@ import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.conversion.TypeConverter;
 import com.google.code.twig.translator.DecoratingTranslator;
 
-final class KeyFieldTranslator extends DecoratingTranslator
+final class IdFieldTranslator extends DecoratingTranslator
 {
 	private final TranslatorObjectDatastore datastore;
 	private final TypeConverter converters;
 
-	KeyFieldTranslator(TranslatorObjectDatastore datastore, PropertyTranslator chained, TypeConverter converters)
+	IdFieldTranslator(TranslatorObjectDatastore datastore, PropertyTranslator chained, TypeConverter converters)
 	{
 		super(chained);
 		this.datastore = datastore;
@@ -49,8 +49,8 @@ final class KeyFieldTranslator extends DecoratingTranslator
 				}
 				else
 				{
-					String keyName = converters.convert(instance, String.class);
-					datastore.encodeKeySpec.setName(keyName);
+					String name = converters.convert(instance, String.class);
+					datastore.encodeKeySpec.setName(name);
 				}
 			}
 		}
@@ -60,11 +60,11 @@ final class KeyFieldTranslator extends DecoratingTranslator
 	public Object decode(Set<Property> properties, Path prefix, Type type)
 	{
 		// the key value is not stored in the properties but in the key
-		Object keyValue = datastore.decodeKey.getName();
-		if (keyValue == null)
+		Object id = datastore.decodeKey.getName();
+		if (id == null)
 		{
-			keyValue = datastore.decodeKey.getId();
+			id = datastore.decodeKey.getId();
 		}
-		return converters.convert(keyValue, type);
+		return converters.convert(id, type);
 	}
 }

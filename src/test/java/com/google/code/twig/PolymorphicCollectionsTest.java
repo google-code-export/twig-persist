@@ -9,11 +9,11 @@ import org.junit.Test;
 import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.code.twig.annotation.AnnotationObjectDatastore;
 import com.google.code.twig.annotation.Embed;
-import com.google.code.twig.annotation.Key;
+import com.google.code.twig.annotation.Id;
 
 @SuppressWarnings("deprecation")
 class Driver {
-	@Key public Long id;
+	@Id public Long id;
 	@Embed(polymorphic=true) public Vehicle vehicle;
 	public Driver() {}
 	public Driver(Vehicle vehicle) {this.vehicle = vehicle;}

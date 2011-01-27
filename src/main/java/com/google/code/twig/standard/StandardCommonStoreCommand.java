@@ -88,7 +88,7 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 
 	protected void setInstanceId(Object instance, Key key)
 	{
-		Field field = datastore.keyField(instance.getClass());
+		Field field = datastore.idField(instance.getClass());
 		try
 		{
 			// check that we have an id field

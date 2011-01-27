@@ -8,13 +8,14 @@ import junit.framework.Assert;
 import org.junit.Test;
 
 import com.google.code.twig.annotation.AnnotationObjectDatastore;
-import com.google.code.twig.annotation.Id;
+import com.google.code.twig.annotation.Key;
 
+@SuppressWarnings("deprecation")
 public class LoadMultiple extends LocalDatastoreTestCase
 {
 	static class Item
 	{
-		@Id long id;
+		@Key long id;
 		String name;
 		@SuppressWarnings("unused")
 		private Item () {};
