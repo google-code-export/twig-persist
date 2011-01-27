@@ -114,7 +114,7 @@ public interface Configuration
 	 * @param field
 	 * @return true if the field holds a GAE key
 	 */
-	boolean gaeKey(Field field);
+	boolean key(Field field);
 	
 
 	/**

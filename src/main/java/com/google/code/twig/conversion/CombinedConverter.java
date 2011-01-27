@@ -92,11 +92,6 @@ public class CombinedConverter implements TypeConverter
 			{
 				result = false;
 			}
-			else if (!(superType instanceof Class<?>) && subType instanceof Class<?>)
-			{
-				// super class has parameters but subclass does not so we are not sure
-				result = false;
-			}
 			else
 			{
 				result = GenericTypeReflector.isSuperType(superType, subType);

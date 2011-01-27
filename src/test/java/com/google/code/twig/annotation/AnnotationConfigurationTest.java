@@ -22,14 +22,14 @@ public class AnnotationConfigurationTest {
 	@Test
 	public void testGaeKeyPresent() throws NoSuchFieldException {
 		
-		boolean present = config.gaeKey(getClass().getField("gaeKey"));
+		boolean present = config.key(getClass().getField("gaeKey"));
 		assertTrue(present);
 	}
 	
 	@Test
 	public void testGaeKeyNotPresent() throws NoSuchFieldException {
 		
-		boolean present = config.gaeKey(getClass().getField("naked"));
+		boolean present = config.key(getClass().getField("naked"));
 		assertFalse(present);
 	}
 }

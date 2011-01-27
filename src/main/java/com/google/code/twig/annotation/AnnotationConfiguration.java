@@ -23,7 +23,7 @@ public class AnnotationConfiguration extends DefaultConfiguration implements Con
 	}
 	
 	@Override
-	public boolean gaeKey(Field field)
+	public boolean key(Field field)
 	{
 		return field.isAnnotationPresent(GaeKey.class);
 	}

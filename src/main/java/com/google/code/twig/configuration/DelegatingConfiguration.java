@@ -77,9 +77,9 @@ public class DelegatingConfiguration implements Configuration
 		return delegate.polymorphic(field);
 	}
 	
-	public boolean gaeKey(Field field)
+	public boolean key(Field field)
 	{
-		return delegate.gaeKey(field);
+		return delegate.key(field);
 	}
 
 	@Override
