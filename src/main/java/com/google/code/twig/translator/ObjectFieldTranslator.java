@@ -115,14 +115,14 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 		PropertyTranslator translator = decoder(field, properties);
 
 		// get the type that we need to store
-		Type fieldType = typeFromField(field);
+		Type type = type(field);
 
 		onBeforeDecode(field, properties);
 
 		Object value;
 		try
 		{
-			value = translator.decode(properties, path, fieldType);
+			value = translator.decode(properties, path, type);
 		}
 		catch (Exception e)
 		{
@@ -147,6 +147,14 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 		if (value == NULL_VALUE)
 		{
 			value = null;
+		}
+		
+		// the stored type may not be the same as the declared type
+		// due to the ability to define what type to store an instance
+		// as using FieldTypeStrategy.type(Field) or @Type annotation
+		if (type.equals(field.getGenericType()) == false)
+		{
+			value = converters.convert(value, field.getGenericType());
 		}
 		
 		setFieldValue(instance, field, value);
@@ -199,13 +207,6 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 				throw new IllegalStateException(e);
 			}
 		}
-
-		// the stored type may not be the same as the declared type
-		// due to the ability to define what type to store an instance
-		// as using FieldTypeStrategy.type(Field) or @Type annotation
-		
-		// convert value to actual field type before setting
-		value = converters.convert(value, field.getGenericType());
 		
 		try
 		{
@@ -243,7 +244,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 		return field.getName();
 	}
 
-	protected Type typeFromField(Field field)
+	protected Type type(Field field)
 	{
 		return field.getType();
 	}
@@ -301,7 +302,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 				if (stored(field))
 				{
 					// get the type that we need to store
-					Type type = typeFromField(field);
+					Type type = type(field);
 
 					Object value = field.get(object);
 					

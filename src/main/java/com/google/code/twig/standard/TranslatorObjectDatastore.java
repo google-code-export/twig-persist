@@ -590,7 +590,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		}
 
 		@Override
-		protected Type typeFromField(Field field)
+		protected Type type(Field field)
 		{
 			return TranslatorObjectDatastore.this.configuration.typeOf(field);
 		}

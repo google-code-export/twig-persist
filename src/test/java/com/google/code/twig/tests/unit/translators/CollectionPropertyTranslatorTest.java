@@ -16,6 +16,7 @@ import org.junit.Test;
 import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
+import com.google.code.twig.conversion.PrimitiveConverter;
 import com.google.code.twig.translator.DirectTranslator;
 import com.google.code.twig.translator.ListTranslator;
 import com.google.code.twig.util.SimpleProperty;
@@ -37,7 +38,7 @@ public class CollectionPropertyTranslatorTest
 	public void writeReadSimpleList() throws SecurityException, NoSuchFieldException
 	{
 		// create dummy translator that always returns a single property containing the instance
-		PropertyTranslator chained = new DirectTranslator();
+		PropertyTranslator chained = new DirectTranslator(new PrimitiveConverter());
 
 		ListTranslator translator = new ListTranslator(chained);
 		Set<Property> encoded = translator.encode(values, Path.EMPTY_PATH, true);
