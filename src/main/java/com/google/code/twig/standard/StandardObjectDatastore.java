@@ -6,6 +6,7 @@ import com.google.code.twig.conversion.CollectionConverter;
 import com.google.code.twig.conversion.CombinedConverter;
 import com.google.code.twig.conversion.CoreConverters;
 import com.google.code.twig.conversion.EngineConverters;
+import com.google.code.twig.conversion.MapConverters;
 import com.google.code.twig.conversion.PrimitiveConverter;
 import com.google.code.twig.translator.ChainedTranslator;
 import com.google.code.twig.translator.ConvertableTypeTranslator;
@@ -25,6 +26,7 @@ public class StandardObjectDatastore extends TranslatorObjectDatastore
 		CombinedConverter converter = new CombinedConverter();
 		converter.append(new PrimitiveConverter());
 		converter.append(new CollectionConverter(converter));
+		MapConverters.registerAll(converter);
 		EngineConverters.registerAll(converter);
 		CoreConverters.registerAll(converter);
 		return converter;
@@ -34,7 +36,7 @@ public class StandardObjectDatastore extends TranslatorObjectDatastore
 	protected ChainedTranslator createValueTranslatorChain()
 	{
 		ChainedTranslator result = new ChainedTranslator();
-		result.append(new NativeDirectTranslator());
+		result.append(new NativeDirectTranslator(getConverter()));
 		result.append(new ConvertableTypeTranslator(getConverter()));
 		result.append(new EnumTranslator());
 		return result;

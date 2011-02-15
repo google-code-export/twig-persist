@@ -75,14 +75,18 @@ public class CombinedConverter implements TypeConverter
 			return true;
 		}
 
+		// look for cached results
 		Pair<Type, Type> key = new Pair<Type, Type>(superType, subType);
 		Boolean isSuperType = superTypes.get(key);
+		
+		// if we already figured this one out returnthe same result
 		if (isSuperType != null)
 		{
 			return isSuperType;
 		}
 		else
 		{
+			// this is the first time we encounter this conversion
 			boolean result;
 			Class<?> superClass = GenericTypeReflector.erase(superType);
 			Class<?> subClass = GenericTypeReflector.erase(subType);
@@ -92,11 +96,25 @@ public class CombinedConverter implements TypeConverter
 			{
 				result = false;
 			}
+			else if (superType instanceof Class<?> && subType instanceof Class<?>)
+			{
+				// both types are Classes (not generic types) and they are assignable 
+				result = true;
+			}
+			else if (!(superType instanceof Class<?>) && subType instanceof Class<?>)
+			{
+				// super class has parameters but subclass does not so we are not sure
+				result = false;
+			}
 			else
 			{
+				// base classes are assignable so check type parameters
 				result = GenericTypeReflector.isSuperType(superType, subType);
 			}
+			
+			// remember this result
 			superTypes.put(key, result);
+			
 			return result;
 		}
 	}

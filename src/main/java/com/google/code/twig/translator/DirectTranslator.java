@@ -6,10 +6,20 @@ import java.util.Set;
 import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
+import com.google.code.twig.conversion.PrimitiveConverter;
+import com.google.code.twig.conversion.TypeConverter;
 import com.google.code.twig.util.PropertySets;
+import com.google.code.twig.util.generic.GenericTypeReflector;
 
 public class DirectTranslator implements PropertyTranslator
 {
+	private final TypeConverter converter;
+
+	public DirectTranslator(TypeConverter converter)
+	{
+		this.converter = converter;
+	}
+	
 	public Object decode(Set<Property> properties, Path path, Type type)
 	{
 		if (isDirectType(type))
@@ -18,7 +28,17 @@ public class DirectTranslator implements PropertyTranslator
 			{
 				return NULL_VALUE;
 			}
-			return PropertySets.firstValue(properties);
+			Object value = PropertySets.firstValue(properties);
+			if (type instanceof Class<?> && 
+					(value.getClass() == type || 
+					PrimitiveConverter.getWrapperClassForPrimitive((Class<?>) type) == value.getClass()))
+			{
+				return value;
+			}
+			else
+			{
+				return converter.convert(value, type);
+			}
 		}
 		else
 		{

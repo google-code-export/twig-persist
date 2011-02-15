@@ -1,12 +1,15 @@
 package com.google.code.twig.conversion;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
 
+import com.google.code.twig.util.generic.GenericTypeReflector;
 import com.vercer.util.Pair;
 
 public class MapConverters
@@ -41,5 +44,57 @@ public class MapConverters
 			}
 			return map;
 		}
+	}
+	
+	public static class MapKeyAndValueConverter implements TypeConverter
+	{
+		private final TypeConverter converter;
+		public MapKeyAndValueConverter(TypeConverter converter)
+		{
+			this.converter = converter;
+		}
+		
+		@SuppressWarnings("unchecked")
+		@Override
+		public <T> T convert(Object source, Type type)
+		{
+			Class<?> erased = GenericTypeReflector.erase(type);
+			if (source instanceof Map<?, ?> && erased.isAssignableFrom(LinkedHashMap.class))
+			{
+				Type keyType = GenericTypeReflector.getTypeParameter(type, Map.class.getTypeParameters()[0]);
+				Type valueType = GenericTypeReflector.getTypeParameter(type, Map.class.getTypeParameters()[1]);
+				Map<?, ?> map = (Map<?, ?>) source;
+				
+				Map<Object, Object> result = createMapInstance();
+				for (Object key : map.keySet())
+				{
+					key = converter.convert(key, keyType);
+					
+					Object value = map.get(key);
+					value = converter.convert(value, valueType);
+					
+					result.put(key, value);
+				}
+				
+				return (T) result;
+			}
+			else
+			{
+				return null;
+			}
+		}
+
+		protected Map<Object, Object> createMapInstance()
+		{
+			// preserve the ordering 
+			return new LinkedHashMap<Object, Object>();
+		}
+	}
+
+	public static void registerAll(CombinedConverter converter)
+	{
+		converter.append(new MapKeyAndValueConverter(converter));
+		converter.append(new MapToEntrySet());
+		converter.append(new EntrySetToMap());
 	}
 }

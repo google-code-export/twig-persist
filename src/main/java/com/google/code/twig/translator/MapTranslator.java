@@ -57,7 +57,8 @@ public class MapTranslator extends DecoratingTranslator
 		Type valueType = ((ParameterizedType) exact).getActualTypeArguments()[1];
 
 		// type erasure means we can use object as the generic parameters
-		Map<Object, Object> result = new HashMap<Object, Object>(ppss.size());
+		int size = ppss.size();
+		Map<Object, Object> result = createMapInstance(size);
 		for (PrefixPropertySet pps : ppss)
 		{
 			// the key must be converted from a String
@@ -69,6 +70,12 @@ public class MapTranslator extends DecoratingTranslator
 
 			result.put(key, value);
 		}
+		return result;
+	}
+
+	protected Map<Object, Object> createMapInstance(int size)
+	{
+		Map<Object, Object> result = new HashMap<Object, Object>(size);
 		return result;
 	}
 
