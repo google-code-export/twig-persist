@@ -79,7 +79,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	// set when all entities should be collected and stored in one call
 	Map<Object, Entity> batched;
 
-	Map<String, KeyRange> allocatedIdRanges;
+	Map<String, Iterator<Key>> allocatedIdRanges;
 	
 	// set when an instance is to be refreshed rather than instantiated
 	private Object refresh;
