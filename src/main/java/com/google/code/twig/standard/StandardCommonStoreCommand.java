@@ -287,28 +287,29 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 				}
 				
 				String kindAndParent = kindAndParentBuilder.toString();
-				KeyRange range = null;
+				Iterator<Key> range = null;
 				if (datastore.allocatedIdRanges == null)
 				{
-					datastore.allocatedIdRanges = new HashMap<String, KeyRange>();
+					datastore.allocatedIdRanges = new HashMap<String, Iterator<Key>>();
 				}
 				else
 				{
 					range = datastore.allocatedIdRanges.get(kindAndParent);
 				}
 				
-				if (range == null || range.iterator().hasNext() == false)
+				if (range == null || range.hasNext() == false)
 				{
 					range = datastore.getService().allocateIds(
 									parentKey,
 									datastore.encodeKeySpec.getKind(), 
-									allocateIdsForType);
+									allocateIdsForType)
+									.iterator();
 					
 					datastore.allocatedIdRanges.put(kindAndParent, range);
 				}
 				
 				// get the id from the key - the rest of the key spec should be the same
-				datastore.encodeKeySpec.setId(range.iterator().next().getId());
+				datastore.encodeKeySpec.setId(range.next().getId());
 			}
 		}
 	}
