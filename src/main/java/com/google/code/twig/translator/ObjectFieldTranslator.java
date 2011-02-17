@@ -149,20 +149,24 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 			value = null;
 		}
 		
-		// the stored type may not be the same as the declared type
-		// due to the ability to define what type to store an instance
-		// as using FieldTypeStrategy.type(Field) or @Type annotation
-		if (type.equals(field.getGenericType()) == false)
+		// for collections we can reuse an existing instance
+		if (reusedExistingImplementation(value, field, instance) == false)
 		{
-			value = converters.convert(value, field.getGenericType());
+			// the stored type may not be the same as the declared type
+			// due to the ability to define what type to store an instance
+			// as using FieldTypeStrategy.type(Field) or @Type annotation
+			if (type.equals(field.getGenericType()) == false)
+			{
+				value = converters.convert(value, field.getGenericType());
+			}
+			
+			setFieldValue(instance, field, value);
 		}
-		
-		setFieldValue(instance, field, value);
 		
 		onAfterDecode(field, value);
 	}
 
-	private void setFieldValue(Object instance, Field field, Object value)
+	private boolean reusedExistingImplementation(Object value, Field field, Object instance)
 	{
 		// check for a default implementations of collections and reuse
 		if (Collection.class.isAssignableFrom(field.getType()))
@@ -174,11 +178,14 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 				if (existing != null && value!= null && existing.getClass() != value.getClass())
 				{
 					// make sure the value is a list - could be a blob
-					value = converters.convert(value, ArrayList.class);
+					if (!Collection.class.isAssignableFrom(value.getClass()))
+					{
+						value = converters.convert(value, ArrayList.class);
+					}
 					
 					existing.clear();
 					typesafeAddAll((Collection<?>) value, existing);
-					return;
+					return true;
 				}
 			}
 			catch (Exception e)
@@ -195,11 +202,14 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 				if (existing != null && value!= null && existing.getClass() != value.getClass())
 				{
 					// make sure the value is a map - could be a blob
-					value = converters.convert(value, HashMap.class);
+					if (!Map.class.isAssignableFrom(value.getClass()))
+					{
+						value = converters.convert(value, HashMap.class);
+					}
 					
 					existing.clear();
 					typesafePutAll((Map<?, ?>) value, existing);
-					return;
+					return true;
 				}
 			}
 			catch (Exception e)
@@ -207,7 +217,11 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 				throw new IllegalStateException(e);
 			}
 		}
-		
+		return false;
+	}
+
+	private void setFieldValue(Object instance, Field field, Object value)
+	{
 		try
 		{
 			field.set(instance, value);

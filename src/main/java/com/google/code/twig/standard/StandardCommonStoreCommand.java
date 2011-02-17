@@ -14,7 +14,6 @@ import java.util.concurrent.Future;
 import com.google.appengine.api.datastore.AsyncDatastoreHelper;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
-import com.google.appengine.api.datastore.KeyRange;
 import com.google.appengine.api.datastore.Transaction;
 import com.google.appengine.api.utils.FutureWrapper;
 import com.google.code.twig.Path;

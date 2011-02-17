@@ -85,6 +85,7 @@ abstract class StandardCommonFindCommand<C extends CommonFindCommand<C>> extends
 		Class<?> type = (Class<?>) getRootCommand().getType();
 		Field field = null;
 		
+		// get the stored path from the object navigation path
 		String[] fieldNames = Strings.split(fieldPathName, false, '.');
 		Path path = Path.EMPTY_PATH;
 		for (String fieldName : fieldNames)
@@ -105,8 +106,33 @@ abstract class StandardCommonFindCommand<C extends CommonFindCommand<C>> extends
 		}
 		
 		PropertyTranslator translator = datastore.encoder(field, value);
-		Set<Property> properties = translator.encode(value, path, true);
+		Object encoded;
 		
+		// for IN we need to encode each value of the collection
+		if (operator == FilterOperator.IN)
+		{
+			Collection<?> values = (Collection<?>) value;
+			Collection<Object> encodeds = new ArrayList<Object>(values.size()); 
+			for (Object item : values)
+			{
+				encodeds.add(encodeFieldValue(translator, item, field, path));
+			}
+			encoded = encodeds;
+		}
+		else
+		{
+			encoded = encodeFieldValue(translator, value, field, path);
+		}
+		
+		filters.add(new Filter(path.toString(), operator, encoded));
+		
+		return (C) this;
+	}
+
+	@SuppressWarnings("unchecked")
+	private Object encodeFieldValue(PropertyTranslator translator, Object value, Field field, Path path)
+	{
+		Set<Property> properties = translator.encode(value, path, true);
 		if (properties.size() != 1)
 		{
 			throw new IllegalArgumentException("Encoder for field " + field + " must return one value for " + value + " but returned " + properties);
@@ -117,9 +143,7 @@ abstract class StandardCommonFindCommand<C extends CommonFindCommand<C>> extends
 		{
 			encoded = ((ObjectReference<Object>) encoded).get();
 		}
-		filters.add(new Filter(path.toString(), operator, encoded));
-		
-		return (C) this;
+		return encoded;
 	}
 	
 	@SuppressWarnings("unchecked")
