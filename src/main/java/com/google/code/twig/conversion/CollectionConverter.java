@@ -156,8 +156,7 @@ public class CollectionConverter implements TypeConverter
 		}
 		else
 		{
-			throw new IllegalArgumentException("Unsupported Collection type " + erased
-					+ ". Try declaring the interface instead of the concrete collection type.");
+			return null;
 		}
 	}
 }

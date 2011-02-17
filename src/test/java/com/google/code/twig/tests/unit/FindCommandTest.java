@@ -2,6 +2,10 @@ package com.google.code.twig.tests.unit;
 
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertSame;
+
+import java.util.ArrayList;
+import java.util.Collection;
+
 import junit.framework.Assert;
 
 import org.junit.Before;
@@ -9,6 +13,7 @@ import org.junit.Test;
 
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.Query.FilterOperator;
+import com.google.appengine.repackaged.com.google.common.collect.Lists;
 import com.google.code.twig.LocalDatastoreTestCase;
 import com.google.code.twig.annotation.AnnotationObjectDatastore;
 import com.google.code.twig.tests.unit.FindCommandTest.Spaceship.Planet;
@@ -84,7 +89,7 @@ public class FindCommandTest extends LocalDatastoreTestCase
 		
 		assertSame(uriGaragrin, shouldBeUri);
 	}
-	
+
 	@Test
 	public void filterOnRelatedInstanceByKey()
 	{
@@ -101,5 +106,26 @@ public class FindCommandTest extends LocalDatastoreTestCase
 			.now();
 		
 		assertSame(laikaSpaceDog, shouldBeLaika);
+	}
+	
+	@Test
+	public void filterOnRelatedInstanceDirectlyUsingIN()
+	{
+		Spaceship neilsSpaceship = new Spaceship(Planet.MARS);
+		Pilot neilArmstrong = new Pilot("Neil Armstrong", neilsSpaceship);
+		datastore.store(neilArmstrong);
+		
+		Spaceship redDwarf = new Spaceship(Planet.MERCURY);
+		datastore.store(redDwarf);
+		
+		Collection<Spaceship> ships = Lists.newArrayList(redDwarf, neilsSpaceship);
+		
+		Pilot shouldBeUri = datastore.find()
+			.type(Pilot.class)
+			.addFilter("spaceship", FilterOperator.IN, ships)
+			.returnUnique()
+			.now();
+		
+		assertSame(neilArmstrong, shouldBeUri);
 	}
 }

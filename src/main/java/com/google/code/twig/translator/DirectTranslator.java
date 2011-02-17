@@ -9,7 +9,6 @@ import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.conversion.PrimitiveConverter;
 import com.google.code.twig.conversion.TypeConverter;
 import com.google.code.twig.util.PropertySets;
-import com.google.code.twig.util.generic.GenericTypeReflector;
 
 public class DirectTranslator implements PropertyTranslator
 {
