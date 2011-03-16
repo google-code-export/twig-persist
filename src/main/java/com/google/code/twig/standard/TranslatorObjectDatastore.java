@@ -535,7 +535,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		return new Query(configuration.typeToKind(type));
 	}
 
-	public final void deleteAll(Type type)
+	public final void deleteAll(Class<?> type)
 	{
 		Query query = createQuery(type);
 		query.setKeysOnly();
@@ -548,7 +548,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 			deleteKeys(partitioned.next());
 		}
 	}
-
+	
 	protected void deleteKeys(Collection<Key> keys)
 	{
 		serviceDelete(keys);

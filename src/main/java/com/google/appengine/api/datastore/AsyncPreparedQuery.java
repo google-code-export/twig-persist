@@ -3,9 +3,12 @@ package com.google.appengine.api.datastore;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.google.apphosting.api.ApiBasePb;
 import com.google.apphosting.api.DatastorePb;
+import com.google.apphosting.api.ApiProxy.ApiConfig;
 import com.google.apphosting.api.DatastorePb.QueryResult;
 import com.google.code.twig.util.FutureAdaptor;
 import com.google.code.twig.util.ImmediateFuture;
@@ -14,6 +17,7 @@ public class AsyncPreparedQuery extends BasePreparedQuery
 {
 	private final Query query;
 	private final Transaction txn;
+	private static final Logger logger = Logger.getLogger(AsyncPreparedQuery.class.getName());
 
 	public AsyncPreparedQuery(Query query, Transaction txn)
 	{
@@ -71,12 +75,14 @@ public class AsyncPreparedQuery extends BasePreparedQuery
 						result.mergeFrom(bytes);
 					}
 					Future<QueryResult> future = new ImmediateFuture<DatastorePb.QueryResult>(result);
-					QueryResultsSourceImpl src = new QueryResultsSourceImpl(null, fetchOptions,	txn, future);
+					
+					QueryResultsSourceImpl src = new QueryResultsSourceImpl(new ApiConfig(), fetchOptions,	txn, future);
 					return new QueryResultIteratorImpl(AsyncPreparedQuery.this, src, fetchOptions, txn);
 				}
 				catch (NoSuchMethodError e)
 				{
 					// revert to sync operation if unpublished interface fails
+					logger.log(Level.SEVERE, "Problem with async interface", e);
 					DatastoreService service = DatastoreServiceFactory.getDatastoreService();
 					PreparedQuery prepared = service.prepare(txn, query);
 					QueryResultIterator<Entity> iterator = prepared.asQueryResultIterator();

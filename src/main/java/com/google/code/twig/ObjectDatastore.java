@@ -77,7 +77,7 @@ public interface ObjectDatastore extends Activator
 
 	// convenience delete methods
 	void delete(Object instance);
-	void deleteAll(Type type);
+	void deleteAll(Class<?> type);
 	void deleteAll(Collection<?> instances);
 
 	// activation
