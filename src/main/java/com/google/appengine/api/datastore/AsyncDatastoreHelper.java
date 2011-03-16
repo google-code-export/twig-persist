@@ -7,6 +7,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.google.appengine.api.datastore.Query.SortPredicate;
 import com.google.appengine.api.datastore.ReadPolicy.Consistency;
@@ -31,6 +33,7 @@ public class AsyncDatastoreHelper
 {
 	// flag that makes all async calls actually run sync
 	private static boolean runAllSync;
+	private static final Logger logger = Logger.getLogger(AsyncDatastoreHelper.class.getName());
 	
 	public static Future<List<Key>> put(final Transaction txn, final Iterable<Entity> entities)
 	{
@@ -76,6 +79,7 @@ public class AsyncDatastoreHelper
 				}
 				catch (NoSuchMethodError e)
 				{
+					logger.log(Level.SEVERE, "Problem with async interface", e);
 					DatastoreService service = DatastoreServiceFactory.getDatastoreService();
 					List<Key> result = service.put(txn, entities);
 					return result;
@@ -141,6 +145,7 @@ public class AsyncDatastoreHelper
 				}
 				catch (NoSuchMethodError e)
 				{
+					logger.log(Level.SEVERE, "Problem with async interface", e);
 					DatastoreService service = DatastoreServiceFactory.getDatastoreService();
 					Map<Key, Entity> result = service.get(txn, keys);
 					return result;

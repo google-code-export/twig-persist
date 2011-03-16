@@ -127,7 +127,7 @@ class RelationTranslator implements PropertyTranslator
 				public List<Key> get()
 				{
 					// get keys for each item
-					List<?> instances = (List<?>) instance;
+					Collection<?> instances = (Collection<?>) instance;
 					Map<?, Key> instancesToKeys = instancesToKeys(instances, getParentKey());
 					
 					// need to make sure keys are in same order as original instances

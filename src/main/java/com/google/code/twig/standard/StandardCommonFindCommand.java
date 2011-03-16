@@ -293,8 +293,7 @@ abstract class StandardCommonFindCommand<C extends CommonFindCommand<C>> extends
 	<R> Future<Iterator<R>> futureMultiQueryInstanceIterator()
 	{
 		Collection<Query> queries = getValidatedQueries();
-
-			return futureMultipleQueriesInstanceIterator(queries);
+		return futureMultipleQueriesInstanceIterator(queries);
 	}
 
 	protected <R> Iterator<R> nowMultiQueryInstanceIterator()
