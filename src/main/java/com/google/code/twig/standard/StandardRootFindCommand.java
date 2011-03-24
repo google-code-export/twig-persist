@@ -30,7 +30,7 @@ import com.google.common.collect.Lists;
 final class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFindCommand<T>>
 		implements RootFindCommand<T>
 {
-	private final Type type;
+	private final Class<?> type;
 	private FetchOptions options;
 	private Object ancestor;
 	List<Sort> sorts;
@@ -49,7 +49,7 @@ final class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFin
 		String field;
 	}
 
-	StandardRootFindCommand(Type type, TranslatorObjectDatastore datastore)
+	StandardRootFindCommand(Class<?> type, TranslatorObjectDatastore datastore)
 	{
 		super(datastore);
 		this.type = type;
@@ -61,7 +61,7 @@ final class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFin
 		return this;
 	}
 	
-	Type getType()
+	Class<?> getType()
 	{
 		return type;
 	}
