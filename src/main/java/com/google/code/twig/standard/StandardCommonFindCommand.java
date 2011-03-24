@@ -2,6 +2,8 @@ package com.google.code.twig.standard;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,6 +34,7 @@ import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.translator.ObjectFieldTranslator;
+import com.google.code.twig.util.generic.GenericTypeReflector;
 import com.google.common.base.Predicate;
 import com.google.common.collect.AbstractIterator;
 import com.vercer.util.Strings;
@@ -81,8 +84,7 @@ abstract class StandardCommonFindCommand<C extends CommonFindCommand<C>> extends
 			filters = new ArrayList<Filter>(2);
 		}
 		
-		
-		Class<?> type = (Class<?>) getRootCommand().getType();
+		Type type = getRootCommand().getType();
 		Field field = null;
 		
 		// get the stored path from the object navigation path
@@ -90,19 +92,29 @@ abstract class StandardCommonFindCommand<C extends CommonFindCommand<C>> extends
 		Path path = Path.EMPTY_PATH;
 		for (String fieldName : fieldNames)
 		{
-			SortedMap<String,Field> fields = ObjectFieldTranslator.getSortedAccessibleFields(type);
+			Class<?> erased = GenericTypeReflector.erase(type);
+
+			// collections use the element type
+			if (Collection.class.isAssignableFrom(erased))
+			{
+				type = ((ParameterizedType) GenericTypeReflector.getExactSuperType(type, Collection.class)).getActualTypeArguments()[0];
+				erased = GenericTypeReflector.erase(type);
+			}
+			
+			SortedMap<String,Field> fields = ObjectFieldTranslator.getSortedAccessibleFields(erased);
 			field = fields.get(fieldName);
 			
 			if (field == null)
 			{
 				throw new IllegalArgumentException("Could not find field " + fieldName + " in type " + type);
 			}
-			
+
+			type = GenericTypeReflector.getExactFieldType(field, type);
+
 			// the property name stored in the datastore may use a short name
 			String propertyName = datastore.getConfiguration().name(field);
 			path = new Path.Builder(path).field(propertyName).build();
 			
-			type = field.getType();
 		}
 		
 		PropertyTranslator translator = datastore.encoder(field, value);
