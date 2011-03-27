@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.code.twig.util.Pair;
-import com.google.code.twig.util.generic.GenericTypeReflector;
+import com.google.code.twig.util.generic.Generics;
 
 public class CombinedConverter implements TypeConverter
 {	
@@ -88,8 +88,8 @@ public class CombinedConverter implements TypeConverter
 		{
 			// this is the first time we encounter this conversion
 			boolean result;
-			Class<?> superClass = GenericTypeReflector.erase(superType);
-			Class<?> subClass = GenericTypeReflector.erase(subType);
+			Class<?> superClass = Generics.erase(superType);
+			Class<?> subClass = Generics.erase(subType);
 			
 			// reflector assumes we have already checked classes are assignable
 			if (!superClass.isAssignableFrom(subClass))
@@ -109,7 +109,7 @@ public class CombinedConverter implements TypeConverter
 			else
 			{
 				// base classes are assignable so check type parameters
-				result = GenericTypeReflector.isSuperType(superType, subType);
+				result = Generics.isSuperType(superType, subType);
 			}
 			
 			// remember this result
@@ -150,10 +150,10 @@ public class CombinedConverter implements TypeConverter
 		{
 			for (SpecificConverter<?, ?> converter : specifics)
 			{
-				Type type = GenericTypeReflector.getExactSuperType(converter.getClass(), SpecificConverter.class);
+				Type type = Generics.getExactSuperType(converter.getClass(), SpecificConverter.class);
 				Type[] arguments = ((ParameterizedType) type).getActualTypeArguments();
-				if (GenericTypeReflector.isSuperType(arguments[0], from) &&
-						GenericTypeReflector.isSuperType(to, arguments[1]))
+				if (Generics.isSuperType(arguments[0], from) &&
+						Generics.isSuperType(to, arguments[1]))
 				{
 					cache.put(pair, converter);
 					return converter;

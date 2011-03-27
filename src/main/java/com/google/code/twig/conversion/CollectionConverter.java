@@ -13,7 +13,7 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 
-import com.google.code.twig.util.generic.GenericTypeReflector;
+import com.google.code.twig.util.generic.Generics;
 
 /**
  * Handles conversions from any Collection type or Array to either a HashSet,
@@ -70,7 +70,7 @@ public class CollectionConverter implements TypeConverter
 		else
 		{
 			// get the item type so we can convert them
-			Class<?> erased = GenericTypeReflector.erase(type);
+			Class<?> erased = Generics.erase(type);
 			Type componentType = null;
 			if (type instanceof GenericArrayType)
 			{
@@ -85,7 +85,7 @@ public class CollectionConverter implements TypeConverter
 			else if (Collection.class.isAssignableFrom(erased))
 			{
 				// we need some type of collection like Set<Twig>
-				Type exact = GenericTypeReflector.getExactSuperType(type, Collection.class);
+				Type exact = Generics.getExactSuperType(type, Collection.class);
 				componentType = ((ParameterizedType) exact).getActualTypeArguments()[0];
 			}
 			else
@@ -149,7 +149,7 @@ public class CollectionConverter implements TypeConverter
 		}
 		else if (erased.isArray())
 		{
-			Class<?> arrayClass = GenericTypeReflector.erase(componentType);
+			Class<?> arrayClass = Generics.erase(componentType);
 			Object[] array = (Object[]) Array.newInstance(arrayClass, convertedItems.size());
 			T result = (T) convertedItems.toArray(array);
 			return result;

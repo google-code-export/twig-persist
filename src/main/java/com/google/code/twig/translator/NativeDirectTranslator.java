@@ -7,7 +7,7 @@ import java.lang.reflect.Type;
 
 import com.google.appengine.api.datastore.DataTypeUtils;
 import com.google.code.twig.conversion.TypeConverter;
-import com.google.code.twig.util.generic.GenericTypeReflector;
+import com.google.code.twig.util.generic.Generics;
 
 public final class NativeDirectTranslator extends DirectTranslator
 {
@@ -20,7 +20,7 @@ public final class NativeDirectTranslator extends DirectTranslator
 	protected boolean isDirectType(Type type)
 	{
 		// get the non-parameterised class
-		Class<?> erased = GenericTypeReflector.erase(type);
+		Class<?> erased = Generics.erase(type);
 		return erased.isPrimitive() || DataTypeUtils.isSupportedType(erased);
 	}
 }

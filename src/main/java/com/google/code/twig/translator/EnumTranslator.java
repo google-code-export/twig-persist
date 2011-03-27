@@ -8,7 +8,7 @@ import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.util.SimpleProperty;
-import com.google.code.twig.util.generic.GenericTypeReflector;
+import com.google.code.twig.util.generic.Generics;
 
 public class EnumTranslator implements PropertyTranslator
 {
@@ -16,7 +16,7 @@ public class EnumTranslator implements PropertyTranslator
 	@SuppressWarnings("unchecked")
 	public Object decode(Set<Property> properties, Path path, Type type)
 	{
-		Class<?> clazz = GenericTypeReflector.erase(type);
+		Class<?> clazz = Generics.erase(type);
 		if (clazz.isEnum())
 		{
 			Property property = properties.iterator().next();

@@ -14,7 +14,7 @@ import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.Locale;
 
-import com.google.code.twig.util.generic.GenericTypeReflector;
+import com.google.code.twig.util.generic.Generics;
 
 public class CoreConverters
 {
@@ -201,14 +201,14 @@ public class CoreConverters
 		{
 			if (source instanceof Long 
 					&& type instanceof ParameterizedType 
-					&& EnumSet.class.isAssignableFrom(GenericTypeReflector.erase(type)))
+					&& EnumSet.class.isAssignableFrom(Generics.erase(type)))
 			{
 				Long value = (Long) source;
-				Type enumSetType = GenericTypeReflector.getExactSuperType(type, EnumSet.class);
+				Type enumSetType = Generics.getExactSuperType(type, EnumSet.class);
 				Type enumType = ((ParameterizedType) enumSetType).getActualTypeArguments()[0];
 				
 				@SuppressWarnings("rawtypes")  // not sure how to define enum class safely
-				Class<? extends Enum> enumClass = (Class<? extends Enum>) GenericTypeReflector.erase(enumType);
+				Class<? extends Enum> enumClass = (Class<? extends Enum>) Generics.erase(enumType);
 				
 				EnumSet<?> result = bitsToEnums(value, enumClass);
 				

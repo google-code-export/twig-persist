@@ -28,7 +28,7 @@ import com.google.code.twig.util.PropertySets;
 import com.google.code.twig.util.Reflection;
 import com.google.code.twig.util.SimpleProperty;
 import com.google.code.twig.util.collections.MergeSet;
-import com.google.code.twig.util.generic.GenericTypeReflector;
+import com.google.code.twig.util.generic.Generics;
 
 /**
  * @author John Patterson <john@vercer.com>
@@ -60,7 +60,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 		}
 		
 		// create the instance
-		Class<?> clazz = GenericTypeReflector.erase(type);
+		Class<?> clazz = Generics.erase(type);
 		Object instance = createInstance(clazz);
 		
 		// ensure the properties are sorted

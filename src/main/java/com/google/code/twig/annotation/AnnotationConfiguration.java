@@ -5,7 +5,7 @@ import java.lang.reflect.Modifier;
 
 import com.google.code.twig.configuration.Configuration;
 import com.google.code.twig.configuration.DefaultConfiguration;
-import com.google.code.twig.util.generic.GenericTypeReflector;
+import com.google.code.twig.util.generic.Generics;
 
 public class AnnotationConfiguration extends DefaultConfiguration implements Configuration
 {
@@ -195,7 +195,7 @@ public class AnnotationConfiguration extends DefaultConfiguration implements Con
 	@Override
 	protected int version(java.lang.reflect.Type type)
 	{
-		Class<?> clazz = GenericTypeReflector.erase(type);
+		Class<?> clazz = Generics.erase(type);
 		if (clazz.isAnnotationPresent(Version.class))
 		{
 			return clazz.getAnnotation(Version.class).value();
@@ -209,7 +209,7 @@ public class AnnotationConfiguration extends DefaultConfiguration implements Con
 	@Override
 	public long allocateIdsFor(java.lang.reflect.Type type)
 	{
-		Class<?> clazz = GenericTypeReflector.erase(type);
+		Class<?> clazz = Generics.erase(type);
 		if (clazz.isAnnotationPresent(Entity.class))
 		{
 			return clazz.getAnnotation(Entity.class).allocateIdsBy();

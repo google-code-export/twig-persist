@@ -10,7 +10,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import com.google.code.twig.util.Pair;
-import com.google.code.twig.util.generic.GenericTypeReflector;
+import com.google.code.twig.util.generic.Generics;
 
 public class MapConverters
 {
@@ -58,11 +58,11 @@ public class MapConverters
 		@Override
 		public <T> T convert(Object source, Type type)
 		{
-			Class<?> erased = GenericTypeReflector.erase(type);
+			Class<?> erased = Generics.erase(type);
 			if (source instanceof Map<?, ?> && erased.isAssignableFrom(LinkedHashMap.class))
 			{
-				Type keyType = GenericTypeReflector.getTypeParameter(type, Map.class.getTypeParameters()[0]);
-				Type valueType = GenericTypeReflector.getTypeParameter(type, Map.class.getTypeParameters()[1]);
+				Type keyType = Generics.getTypeParameter(type, Map.class.getTypeParameters()[0]);
+				Type valueType = Generics.getTypeParameter(type, Map.class.getTypeParameters()[1]);
 				Map<?, ?> map = (Map<?, ?>) source;
 				
 				Map<Object, Object> result = createMapInstance();

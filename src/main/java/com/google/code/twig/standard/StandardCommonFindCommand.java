@@ -35,7 +35,7 @@ import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.translator.ObjectFieldTranslator;
 import com.google.code.twig.util.Strings;
-import com.google.code.twig.util.generic.GenericTypeReflector;
+import com.google.code.twig.util.generic.Generics;
 import com.google.code.twig.util.reference.ObjectReference;
 import com.google.common.base.Predicate;
 import com.google.common.collect.AbstractIterator;
@@ -92,13 +92,13 @@ abstract class StandardCommonFindCommand<C extends CommonFindCommand<C>> extends
 		Path path = Path.EMPTY_PATH;
 		for (String fieldName : fieldNames)
 		{
-			Class<?> erased = GenericTypeReflector.erase(type);
+			Class<?> erased = Generics.erase(type);
 
 			// collections use the element type
 			if (Collection.class.isAssignableFrom(erased))
 			{
-				type = ((ParameterizedType) GenericTypeReflector.getExactSuperType(type, Collection.class)).getActualTypeArguments()[0];
-				erased = GenericTypeReflector.erase(type);
+				type = ((ParameterizedType) Generics.getExactSuperType(type, Collection.class)).getActualTypeArguments()[0];
+				erased = Generics.erase(type);
 			}
 			
 			SortedMap<String,Field> fields = ObjectFieldTranslator.getSortedAccessibleFields(erased);
@@ -109,7 +109,7 @@ abstract class StandardCommonFindCommand<C extends CommonFindCommand<C>> extends
 				throw new IllegalArgumentException("Could not find field " + fieldName + " in type " + type);
 			}
 
-			type = GenericTypeReflector.getExactFieldType(field, type);
+			type = Generics.getExactFieldType(field, type);
 
 			// the property name stored in the datastore may use a short name
 			String propertyName = datastore.getConfiguration().name(field);

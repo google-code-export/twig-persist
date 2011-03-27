@@ -20,7 +20,7 @@ import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.util.PropertySets;
 import com.google.code.twig.util.SimpleProperty;
 import com.google.code.twig.util.SinglePropertySet;
-import com.google.code.twig.util.generic.GenericTypeReflector;
+import com.google.code.twig.util.generic.Generics;
 import com.google.common.collect.Lists;
 
 public class ListTranslator extends DecoratingTranslator
@@ -32,6 +32,13 @@ public class ListTranslator extends DecoratingTranslator
 
 	public Object decode(final Set<Property> properties, final Path path, Type type)
 	{
+		// only handle lists
+		if (!Generics.erase(type).isAssignableFrom(ArrayList.class))
+		{
+			// pass on all other types down the chain
+			return chained.decode(properties, path, type);
+		}
+
 		if (properties.isEmpty())
 		{
 			// do not decode empty missing properties
@@ -43,13 +50,6 @@ public class ListTranslator extends DecoratingTranslator
 			return NULL_VALUE;
 		}
 		
-		// only handle lists
-		if (!GenericTypeReflector.erase(type).isAssignableFrom(ArrayList.class))
-		{
-			// pass on all other types down the chain
-			return chained.decode(properties, path, type);
-		}
-
 		// need to adapt a set of property lists into a list of property sets
 		List<Set<Property>> propertySets = Lists.newArrayList();
 		boolean complete = false;
@@ -96,7 +96,7 @@ public class ListTranslator extends DecoratingTranslator
 		}
 
 		// handles the tricky task of finding what type of list we have
-		Type exact = GenericTypeReflector.getExactSuperType(type, List.class);
+		Type exact = Generics.getExactSuperType(type, List.class);
 		Type componentType = ((ParameterizedType) exact).getActualTypeArguments()[0];
 
 		// decode each item of the list

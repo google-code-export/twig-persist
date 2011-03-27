@@ -15,7 +15,7 @@ import com.google.code.twig.conversion.TypeConverter;
 import com.google.code.twig.util.PrefixPropertySet;
 import com.google.code.twig.util.PropertySets;
 import com.google.code.twig.util.collections.MergeSet;
-import com.google.code.twig.util.generic.GenericTypeReflector;
+import com.google.code.twig.util.generic.Generics;
 
 public class MapTranslator extends DecoratingTranslator
 {
@@ -42,7 +42,7 @@ public class MapTranslator extends DecoratingTranslator
 		}
 		
 		// only try if we can set a map to the field
-		if (!GenericTypeReflector.erase(type).isAssignableFrom(HashMap.class))
+		if (!Generics.erase(type).isAssignableFrom(HashMap.class))
 		{
 			// pass on all other types down the chain
 			return chained.decode(properties, path, type);
@@ -52,7 +52,7 @@ public class MapTranslator extends DecoratingTranslator
 		Collection<PrefixPropertySet> ppss = PropertySets.prefixPropertySets(properties, path);
 
 		// find the types of the key and value from the generic parameters
-		Type exact = GenericTypeReflector.getExactSuperType(type, Map.class);
+		Type exact = Generics.getExactSuperType(type, Map.class);
 		Type keyType = ((ParameterizedType) exact).getActualTypeArguments()[0];
 		Type valueType = ((ParameterizedType) exact).getActualTypeArguments()[1];
 
