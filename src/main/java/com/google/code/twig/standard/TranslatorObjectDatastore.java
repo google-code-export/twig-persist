@@ -673,6 +673,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		
 	}
 
+	@SuppressWarnings("deprecation")
 	Field idField(Class<?> type)
 	{
 		Field result = null;
