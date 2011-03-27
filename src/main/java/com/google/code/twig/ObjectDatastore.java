@@ -1,6 +1,5 @@
 package com.google.code.twig;
 
-import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.Future;

@@ -1,4 +1,4 @@
-package com.vercer.util;
+package com.google.code.twig.util;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;

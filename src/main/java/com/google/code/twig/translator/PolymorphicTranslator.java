@@ -11,9 +11,9 @@ import com.google.code.twig.configuration.Configuration;
 import com.google.code.twig.util.PathPrefixPredicate;
 import com.google.code.twig.util.PropertySets;
 import com.google.code.twig.util.SimpleProperty;
+import com.google.code.twig.util.collections.PrependSet;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Sets;
-import com.vercer.util.collections.PrependSet;
 
 public class PolymorphicTranslator extends DecoratingTranslator
 {

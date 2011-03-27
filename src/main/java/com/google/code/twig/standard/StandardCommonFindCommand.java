@@ -34,11 +34,11 @@ import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.translator.ObjectFieldTranslator;
+import com.google.code.twig.util.Strings;
 import com.google.code.twig.util.generic.GenericTypeReflector;
+import com.google.code.twig.util.reference.ObjectReference;
 import com.google.common.base.Predicate;
 import com.google.common.collect.AbstractIterator;
-import com.vercer.util.Strings;
-import com.vercer.util.reference.ObjectReference;
 
 abstract class StandardCommonFindCommand<C extends CommonFindCommand<C>> extends StandardRestrictedFindCommand<C> implements CommonFindCommand<C>, BranchFindCommand
 {

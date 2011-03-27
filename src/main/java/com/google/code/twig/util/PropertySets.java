@@ -9,7 +9,7 @@ import java.util.Set;
 import com.google.code.twig.Path;
 import com.google.code.twig.Path.Part;
 import com.google.code.twig.Property;
-import com.vercer.util.collections.ArraySortedSet;
+import com.google.code.twig.util.collections.ArraySortedSet;
 
 public class PropertySets
 {

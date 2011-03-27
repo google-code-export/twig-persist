@@ -1,7 +1,4 @@
-/**
- *
- */
-package com.vercer.util.collections;
+package com.google.code.twig.util.collections;
 
 import java.util.AbstractSet;
 import java.util.Arrays;
