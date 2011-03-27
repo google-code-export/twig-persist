@@ -20,8 +20,8 @@ import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.util.PropertySets;
 import com.google.code.twig.util.SinglePropertySet;
-import com.vercer.util.reference.ObjectReference;
-import com.vercer.util.reference.ReadOnlyObjectReference;
+import com.google.code.twig.util.reference.ObjectReference;
+import com.google.code.twig.util.reference.ReadOnlyObjectReference;
 
 class RelationTranslator implements PropertyTranslator
 {

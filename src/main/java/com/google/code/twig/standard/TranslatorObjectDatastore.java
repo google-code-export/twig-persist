@@ -30,10 +30,10 @@ import com.google.code.twig.translator.MapTranslator;
 import com.google.code.twig.translator.ObjectFieldTranslator;
 import com.google.code.twig.translator.PolymorphicTranslator;
 import com.google.code.twig.util.EntityToKeyFunction;
+import com.google.code.twig.util.Reflection;
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Iterators;
-import com.vercer.util.Reflection;
 
 /**
  * Stateful layer responsible for caching key-object references and creating a

@@ -5,9 +5,9 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 import com.google.appengine.api.datastore.Key;
+import com.google.code.twig.util.reference.ObjectReference;
+import com.google.code.twig.util.reference.SimpleObjectReference;
 import com.google.common.collect.MapMaker;
-import com.vercer.util.reference.ObjectReference;
-import com.vercer.util.reference.SimpleObjectReference;
 
 public class InstanceKeyCache
 {

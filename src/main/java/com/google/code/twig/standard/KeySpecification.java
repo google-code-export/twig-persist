@@ -2,9 +2,9 @@ package com.google.code.twig.standard;
 
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
-import com.vercer.util.reference.ObjectReference;
-import com.vercer.util.reference.ReadOnlyObjectReference;
-import com.vercer.util.reference.SimpleObjectReference;
+import com.google.code.twig.util.reference.ObjectReference;
+import com.google.code.twig.util.reference.ReadOnlyObjectReference;
+import com.google.code.twig.util.reference.SimpleObjectReference;
 
 public class KeySpecification
 {

@@ -10,7 +10,7 @@ import java.util.Set;
 import com.google.appengine.api.datastore.Key;
 import com.google.code.twig.Path;
 import com.google.code.twig.Property;
-import com.vercer.util.reference.ReadOnlyObjectReference;
+import com.google.code.twig.util.reference.ReadOnlyObjectReference;
 
 final class ParentRelationTranslator extends RelationTranslator
 {

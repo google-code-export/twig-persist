@@ -1,5 +1,4 @@
-
-package com.vercer.util;
+package com.google.code.twig.util;
 
 import java.util.ArrayList;
 import java.util.Collection;

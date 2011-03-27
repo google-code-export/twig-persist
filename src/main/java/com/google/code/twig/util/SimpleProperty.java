@@ -2,7 +2,6 @@ package com.google.code.twig.util;
 
 import com.google.code.twig.Path;
 import com.google.code.twig.Property;
-import com.vercer.util.Reflection;
 
 public class SimpleProperty implements Property
 {

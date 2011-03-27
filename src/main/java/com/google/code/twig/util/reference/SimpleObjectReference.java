@@ -1,4 +1,4 @@
-package com.vercer.util.reference;
+package com.google.code.twig.util.reference;
 
 import java.io.Serializable;
 

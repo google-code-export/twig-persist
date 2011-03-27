@@ -25,10 +25,10 @@ import com.google.code.twig.conversion.TypeConverter;
 import com.google.code.twig.util.PrefixPropertySet;
 import com.google.code.twig.util.PropertyComparator;
 import com.google.code.twig.util.PropertySets;
+import com.google.code.twig.util.Reflection;
 import com.google.code.twig.util.SimpleProperty;
+import com.google.code.twig.util.collections.MergeSet;
 import com.google.code.twig.util.generic.GenericTypeReflector;
-import com.vercer.util.Reflection;
-import com.vercer.util.collections.MergeSet;
 
 /**
  * @author John Patterson <john@vercer.com>

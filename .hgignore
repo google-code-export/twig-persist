@@ -9,3 +9,4 @@ WEB-INF/appengine-generated
 .settings
 .classpath
 .project
+.externalToolBuilders

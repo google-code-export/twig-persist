@@ -1,4 +1,4 @@
-package com.vercer.util;
+package com.google.code.twig.util;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -108,7 +108,7 @@ public class Reflection
 			}
 		}
 		
-		if (constructors == null)
+		if (constructor == null)
 		{
 			throw new IllegalArgumentException("Could not find constructor");
 		}

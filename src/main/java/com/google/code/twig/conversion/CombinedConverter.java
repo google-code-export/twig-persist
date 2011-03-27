@@ -8,8 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.google.code.twig.util.Pair;
 import com.google.code.twig.util.generic.GenericTypeReflector;
-import com.vercer.util.Pair;
 
 public class CombinedConverter implements TypeConverter
 {	

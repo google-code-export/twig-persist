@@ -20,8 +20,8 @@ import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.StoreCommand.CommonStoreCommand;
-import com.vercer.util.reference.ObjectReference;
-import com.vercer.util.reference.SimpleObjectReference;
+import com.google.code.twig.util.reference.ObjectReference;
+import com.google.code.twig.util.reference.SimpleObjectReference;
 
 abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreCommand<T, C>> extends StandardEncodeCommand implements CommonStoreCommand<T, C>
 {

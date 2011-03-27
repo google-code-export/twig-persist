@@ -5,8 +5,8 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import com.google.code.twig.util.Strings;
 import com.google.common.collect.AbstractIterator;
-import com.vercer.util.Strings;
 
 public class Path implements Comparable<Path>
 {
