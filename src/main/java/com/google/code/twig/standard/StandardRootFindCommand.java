@@ -1,6 +1,5 @@
 package com.google.code.twig.standard;
 
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -20,9 +19,9 @@ import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.appengine.api.datastore.Query.SortPredicate;
 import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.appengine.api.utils.FutureWrapper;
+import com.google.code.twig.CommandTerminator;
 import com.google.code.twig.FindCommand.ParentsCommand;
 import com.google.code.twig.FindCommand.RootFindCommand;
-import com.google.code.twig.CommandTerminator;
 import com.google.code.twig.util.FutureAdaptor;
 import com.google.common.collect.ForwardingIterator;
 import com.google.common.collect.Lists;

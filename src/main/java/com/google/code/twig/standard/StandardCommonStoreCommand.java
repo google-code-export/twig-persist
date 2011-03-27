@@ -156,7 +156,7 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 		Map<T, Entity> entities = new LinkedHashMap<T, Entity>(instances.size());
 		if (batch)
 		{
-			// indicates that all entities should be collected for one put
+			// all entities will  be collected for one bulk put
 			datastore.batched = (Map<Object, Entity>) entities;
 		}
 
@@ -239,6 +239,8 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 			datastore.keyCache.cacheKeyReferenceForInstance(instance, datastore.encodeKeySpec.toObjectReference());
 		}
 			
+		maybeSetAllocatedId(instance);
+
 		// translate fields to properties - sets key parent and id
 		PropertyTranslator encoder = datastore.encoder(instance);
 		Set<Property> properties = encoder.encode(instance, Path.EMPTY_PATH, datastore.indexed);
@@ -246,8 +248,6 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 		{
 			throw new IllegalStateException("Could not translate instance: " + instance);
 		}
-
-		maybeSetAllocatedId(instance);
 		
 		// the key will now be set with id and parent
 		Entity entity = createEntity();

@@ -13,5 +13,5 @@ public @interface Entity
 {
 	String kind() default "";
 
-	long allocateIdsBy();
+	long allocateIdsBy() default 0;
 }
