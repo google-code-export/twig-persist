@@ -6,7 +6,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.code.twig.util.generic.GenericTypeReflector;
+import com.google.code.twig.util.generic.Generics;
 
 public class PrimitiveConverter implements TypeConverter
 {
@@ -31,7 +31,7 @@ public class PrimitiveConverter implements TypeConverter
 	@SuppressWarnings("unchecked")
 	public <T> T convert(Object source, Type type)
 	{
-		Class<?> erased = GenericTypeReflector.erase(type);
+		Class<?> erased = Generics.erase(type);
 		if (source == null && !erased.isPrimitive())
 		{
 			// consider null a primitive value

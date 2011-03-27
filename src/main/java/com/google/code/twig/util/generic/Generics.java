@@ -21,7 +21,7 @@ import java.util.List;
  *
  * @author Wouter Coekaerts <wouter@coekaerts.be>
  */
-public class GenericTypeReflector
+public class Generics
 {
 	private static final Type UNBOUND_WILDCARD = new WildcardTypeImpl(new Type[] { Object.class },
 			new Type[] {});

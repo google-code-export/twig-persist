@@ -13,7 +13,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.google.code.twig.conversion.PrimitiveConverter;
-import com.google.code.twig.util.generic.GenericTypeReflector;
+import com.google.code.twig.util.generic.Generics;
 
 /**
  * @author John Patterson <john@vercer.com>
@@ -149,7 +149,7 @@ public abstract class DefaultConfiguration implements Configuration
 				return name;
 			}
 		}
-		Class<?> clazz = GenericTypeReflector.erase(type);
+		Class<?> clazz = Generics.erase(type);
 		String kind = clazz.getName();
 		return kind;
 	}
@@ -177,7 +177,7 @@ public abstract class DefaultConfiguration implements Configuration
 	{
 		// turn every collection or array into an array list
 		Type componentType = null;
-		Class<?> erased = GenericTypeReflector.erase(type);
+		Class<?> erased = Generics.erase(type);
 		if (type instanceof TypeVariable<?>)
 		{
 			return erased;
@@ -196,7 +196,7 @@ public abstract class DefaultConfiguration implements Configuration
 		else if (Collection.class.isAssignableFrom(erased) && !ArrayList.class.isAssignableFrom(erased))
 		{
 			// we have some kind of collection like Set<Twig>
-			Type exact = GenericTypeReflector.getExactSuperType(type, Collection.class);
+			Type exact = Generics.getExactSuperType(type, Collection.class);
 			componentType = ((ParameterizedType) exact).getActualTypeArguments()[0];
 		}
 		else
@@ -209,7 +209,7 @@ public abstract class DefaultConfiguration implements Configuration
 		Type replaced = replaceCollectionWithList(componentType);
 		
 		// use wrapper type for primitives
-		if (GenericTypeReflector.erase(replaced).isPrimitive())
+		if (Generics.erase(replaced).isPrimitive())
 		{
 			replaced = PrimitiveConverter.getWrapperClassForPrimitive((Class<?>) replaced);
 		}

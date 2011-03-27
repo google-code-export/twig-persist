@@ -8,7 +8,7 @@ import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.util.PropertySets;
 import com.google.code.twig.util.SinglePropertySet;
-import com.google.code.twig.util.generic.GenericTypeReflector;
+import com.google.code.twig.util.generic.Generics;
 
 public abstract class AbstractTypeTranslator<T> implements PropertyTranslator
 {
@@ -24,7 +24,7 @@ public abstract class AbstractTypeTranslator<T> implements PropertyTranslator
 
 	public final Object decode(Set<Property> properties, Path path, Type type)
 	{
-		if (GenericTypeReflector.erase(type) == clazz)
+		if (Generics.erase(type) == clazz)
 		{
 			return decode(PropertySets.firstValue(properties));
 		}
