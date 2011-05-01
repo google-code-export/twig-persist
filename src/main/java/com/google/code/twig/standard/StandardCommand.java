@@ -6,6 +6,12 @@ class StandardCommand
 
 	StandardCommand(TranslatorObjectDatastore datastore)
 	{
+		// check we have the same thread
+		if (datastore.thread != Thread.currentThread())
+		{
+			throw new IllegalStateException("Dectected use by more than one thread");
+		}
+		
 		this.datastore = datastore;
 		if (datastore.getTransaction() != null && datastore.getTransaction().isActive() == false)
 		{
