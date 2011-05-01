@@ -85,11 +85,13 @@ abstract class StandardCommonFindCommand<C extends CommonFindCommand<C>> extends
 		}
 		
 		Type type = getRootCommand().getType();
+		
 		Field field = null;
 		
 		// get the stored path from the object navigation path
 		String[] fieldNames = Strings.split(fieldPathName, false, '.');
 		Path path = Path.EMPTY_PATH;
+		String property = null;
 		for (String fieldName : fieldNames)
 		{
 			Class<?> erased = Generics.erase(type);
@@ -101,6 +103,7 @@ abstract class StandardCommonFindCommand<C extends CommonFindCommand<C>> extends
 				erased = Generics.erase(type);
 			}
 			
+			// get fields that were already cached
 			SortedMap<String,Field> fields = ObjectFieldTranslator.getSortedAccessibleFields(erased);
 			field = fields.get(fieldName);
 			
@@ -109,18 +112,36 @@ abstract class StandardCommonFindCommand<C extends CommonFindCommand<C>> extends
 				throw new IllegalArgumentException("Could not find field " + fieldName + " in type " + type);
 			}
 
+			// field type could have type variable if defined in superclass
 			type = Generics.getExactFieldType(field, type);
 
+			// if the field is an @Id we need to create a Key value
+			if (datastore.getConfiguration().id(field))
+			{
+				if (!path.isEmpty())
+				{
+					throw new IllegalArgumentException("Id field must be at root of filter");
+				}
+				property = Entity.KEY_RESERVED_PROPERTY;
+				break;
+			}
+			
 			// the property name stored in the datastore may use a short name
 			String propertyName = datastore.getConfiguration().name(field);
 			path = new Path.Builder(path).field(propertyName).build();
-			
+		}
+		
+		// path will only be empty if we are filtering on id
+		if (!path.isEmpty())
+		{
+			assert property == null; 
+			property = path.toString();
 		}
 		
 		PropertyTranslator translator = datastore.encoder(field, value);
-		Object encoded;
 		
 		// for IN we need to encode each value of the collection
+		Object encoded;
 		if (operator == FilterOperator.IN)
 		{
 			Collection<?> values = (Collection<?>) value;
@@ -136,7 +157,14 @@ abstract class StandardCommonFindCommand<C extends CommonFindCommand<C>> extends
 			encoded = encodeFieldValue(translator, value, field, path);
 		}
 		
-		filters.add(new Filter(path.toString(), operator, encoded));
+		if (path.isEmpty())
+		{
+			// this is an @id field so we need to create a Key value
+			String kind = datastore.getConfiguration().typeToKind(type);
+			encoded = StandardCommonLoadCommand.idToKey(encoded, field, kind, datastore, null);
+		}
+		
+		filters.add(new Filter(property, operator, encoded));
 		
 		return (C) this;
 	}
