@@ -51,7 +51,7 @@ class StandardCommonLoadCommand<C extends StandardCommonLoadCommand<C>> extends 
 		return (C) this;
 	}
 
-	Key idToKey(Object id, Field keyField, String kind)
+	static Key idToKey(Object id, Field keyField, String kind, TranslatorObjectDatastore datastore, Key parentKey)
 	{
 		Type keyType;
 		if (keyField != null)

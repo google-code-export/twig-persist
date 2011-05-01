@@ -38,7 +38,7 @@ public class StandardMultipleTypedLoadCommand<T, I>
 		Map<I, Key> idsToKeys = new LinkedHashMap<I, Key>(ids.size());
 		for (I id : ids)
 		{
-			idsToKeys.put(id, idToKey(id, keyField, kind));
+			idsToKeys.put(id, idToKey(id, keyField, kind, datastore, parentKey));
 		}
 		final Map<Key, T> keysToInstances = keysToInstances(idsToKeys.values(), propertyRestriction);
 		
