@@ -18,7 +18,14 @@ final class StandardSingleStoreCommand<T> extends StandardCommonStoreCommand<T, 
 		instances = Collections.singletonList(instance);
 		if (!command.update && command.datastore.associatedKey(instance) != null)
 		{
-			throw new IllegalArgumentException("Cannot store associated instance. Use update instead.");
+			if (command.datastore.associating)
+			{
+				throw new IllegalArgumentException("Cannot associate an already associated instance.");
+			}
+			else
+			{
+				throw new IllegalArgumentException("Cannot store associated instance. Use update instead.");
+			}
 		}
 		else if (command.update && command.datastore.associatedKey(instance) == null)
 		{
