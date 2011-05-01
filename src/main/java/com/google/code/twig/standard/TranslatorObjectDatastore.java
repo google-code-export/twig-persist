@@ -46,6 +46,9 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	// keeps track of which instances are associated with which keys
 	protected final InstanceKeyCache keyCache;
 	
+	// ensure only used be a single thread
+	protected Thread thread;
+	
 	// are properties indexed by default
 	protected boolean indexed;
 
@@ -91,6 +94,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	{
 		this.configuration = configuration;
 		this.converter = createTypeConverter();
+		this.thread = Thread.currentThread();
 		
 		// the main translator which converts to and from objects
 		objectFieldTranslator = new StrategyObjectFieldTranslator(converter);
