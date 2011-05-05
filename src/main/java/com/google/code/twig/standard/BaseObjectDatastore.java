@@ -3,6 +3,8 @@ package com.google.code.twig.standard;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceConfig;
@@ -19,14 +21,17 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 {
 	private DatastoreService service;
 	private Transaction transaction;
-
-	public BaseObjectDatastore()
+	private final int retries;
+	private static final Logger logger = Logger.getLogger(BaseObjectDatastore.class.getName());
+	
+	public BaseObjectDatastore(int retries)
 	{
-		this(DatastoreServiceConfig.Builder.withDefaults());
+		this(DatastoreServiceConfig.Builder.withDefaults(), retries);
 	}
 	
-	public BaseObjectDatastore(DatastoreServiceConfig config)
+	public BaseObjectDatastore(DatastoreServiceConfig config, int retries)
 	{
+		this.retries = retries;
 		setConfiguration(config);
 	}
 	
@@ -44,7 +49,21 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 	{
 		if (transaction == null)
 		{
-			return service.put(entity);
+			RuntimeException last = null;
+			for (int tries = 0; tries < retries; tries++)
+			{
+				try
+				{
+					return service.put(entity);
+				}
+				catch (RuntimeException e)
+				{
+					last = e;
+					logger.log(Level.WARNING, "Problem during try " + tries, e);
+				}
+			}
+			
+			throw last;
 		}
 		else
 		{
@@ -56,7 +75,21 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 	{
 		if (transaction == null)
 		{
-			return service.put(entities);
+			RuntimeException last = null;
+			for (int tries = 0; tries < retries; tries++)
+			{
+				try
+				{
+					return service.put(entities);
+				}
+				catch (RuntimeException e)
+				{
+					last = e;
+					logger.log(Level.WARNING, "Problem during try " + tries, e);
+				}
+			}
+			
+			throw last;
 		}
 		else
 		{

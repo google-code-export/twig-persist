@@ -150,6 +150,8 @@ public interface ObjectDatastore extends Activator
 	 * @return The Key that is associated with this instance.
 	 */
 	Key associatedKey(Object instance);
+	
+	boolean isAssociated(Object instance);
 
 	/**
 	 * Sets the configuration to use for all datastore operations. This is useful to
