@@ -62,16 +62,16 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	// current activation depth
 	int activationDepth = Integer.MAX_VALUE;
 	
-	// translators are selected for particular fields by a strategy
-	private final PropertyTranslator objectFieldTranslator;
+	// translators are selected for particular fields by the configuration
+	private final PropertyTranslator configurationFieldTranslator;
 	private final PropertyTranslator embedTranslator;
 	private final PropertyTranslator polyMorphicComponentTranslator;
 	private final PropertyTranslator parentTranslator;
 	private final PropertyTranslator independantTranslator;
-	private final PropertyTranslator keyFieldTranslator;
+	private final PropertyTranslator idFieldTranslator;
 	private final PropertyTranslator childTranslator;
 	private final ChainedTranslator valueTranslatorChain;
-	private final PropertyTranslator gaeKeyFieldTranslator;
+	private final PropertyTranslator keyFieldTranslator;
 	private final PropertyTranslator defaultTranslator;
 
 	private static final Map<Class<?>, Field> idFields = new ConcurrentHashMap<Class<?>, Field>();
@@ -101,26 +101,33 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		this.converter = createTypeConverter();
 		this.thread = Thread.currentThread();
 		
-		// the main translator which converts to and from objects
-		objectFieldTranslator = new StrategyObjectFieldTranslator(converter);
+		// top level translator which examines object field values
+		configurationFieldTranslator = new ConfigurationFieldTranslator(converter);
 
+		// simple values encoded as a single value
 		valueTranslatorChain = createValueTranslatorChain();
 
+		// referenced instances stored as separate entities
 		parentTranslator = new ParentRelationTranslator(this);
-		independantTranslator = new RelationTranslator(this);
-		gaeKeyFieldTranslator = new KeyTranslator(this);
-		keyFieldTranslator = new IdFieldTranslator(this, valueTranslatorChain, converter);
 		childTranslator = new ChildRelationTranslator(this);
+		independantTranslator = new RelationTranslator(this);
 
-		embedTranslator = new ListTranslator(new MapTranslator(objectFieldTranslator, converter));
+		// @Id and @GaeKey fields
+		keyFieldTranslator = new KeyTranslator(this);
+		idFieldTranslator = new IdFieldTranslator(this, valueTranslatorChain, converter);
 
+		// embed a field value in the current entity
+		embedTranslator = new ListTranslator(new MapTranslator(configurationFieldTranslator, converter));
+
+		// similar to embedding but stores a class discriminator
 		polyMorphicComponentTranslator = new ListTranslator(
 				new MapTranslator(
 						new PolymorphicTranslator(
-								new ChainedTranslator(valueTranslatorChain, objectFieldTranslator), 
+								new ChainedTranslator(valueTranslatorChain, configurationFieldTranslator), 
 								configuration), 
 						converter));
 
+		// the translator to use with unconfigured field values
 		defaultTranslator = new ListTranslator(
 				new MapTranslator(
 						new ChainedTranslator(valueTranslatorChain, getFallbackTranslator()),
@@ -318,12 +325,12 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 
 	protected PropertyTranslator decoder(Entity entity)
 	{
-		return objectFieldTranslator;
+		return configurationFieldTranslator;
 	}
 
 	protected PropertyTranslator encoder(Object instance)
 	{
-		return objectFieldTranslator;
+		return configurationFieldTranslator;
 	}
 
 	protected PropertyTranslator decoder(Field field, Set<Property> properties)
@@ -357,7 +364,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		}
 		else if (configuration.id(field))
 		{
-			return keyFieldTranslator;
+			return idFieldTranslator;
 		}
 		else if (configuration.embed(field))
 		{
@@ -371,7 +378,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 			}
 		}
 		else if (configuration.key(field)) {
-			return gaeKeyFieldTranslator;
+			return keyFieldTranslator;
 		}
 		else
 		{
@@ -474,6 +481,11 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	{
 		return independantTranslator;
 	}
+	
+	protected ChainedTranslator getValueTranslatorChain()
+	{
+		return this.valueTranslatorChain;
+	}
 
 	protected final PropertyTranslator getChildTranslator()
 	{
@@ -490,9 +502,9 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		return polyMorphicComponentTranslator;
 	}
 	
-	protected final PropertyTranslator getObjectFieldTranslator()
+	protected final PropertyTranslator getConfigurationFieldTranslator()
 	{
-		return objectFieldTranslator;
+		return configurationFieldTranslator;
 	}
 
 	protected final PropertyTranslator getEmbedTranslator()
@@ -500,9 +512,9 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		return embedTranslator;
 	}
 
-	protected final PropertyTranslator getKeyFieldTranslator()
+	protected final PropertyTranslator getIdFieldTranslator()
 	{
-		return keyFieldTranslator;
+		return idFieldTranslator;
 	}
 
 	protected final PropertyTranslator getDefaultTranslator()
@@ -576,9 +588,11 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		}
 	}
 
-	private final class StrategyObjectFieldTranslator extends ObjectFieldTranslator
+	// top level translator that uses the Configuration to decide which translator
+	// to use for each Field value.
+	private final class ConfigurationFieldTranslator extends ObjectFieldTranslator
 	{
-		private StrategyObjectFieldTranslator(TypeConverter converters)
+		private ConfigurationFieldTranslator(TypeConverter converters)
 		{
 			super(converters);
 		}

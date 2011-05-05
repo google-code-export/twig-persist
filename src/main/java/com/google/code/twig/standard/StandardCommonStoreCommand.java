@@ -22,6 +22,8 @@ import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.StoreCommand.CommonStoreCommand;
 import com.google.code.twig.util.reference.ObjectReference;
 import com.google.code.twig.util.reference.SimpleObjectReference;
+import com.google.common.base.Predicates;
+import com.google.common.collect.Collections2;
 
 abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreCommand<T, C>> extends StandardEncodeCommand implements CommonStoreCommand<T, C>
 {
@@ -158,11 +160,14 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 	{
 		// convert to entities ready to store
 		final Map<T, Entity> entities = instancesToEntities();
-		
+
+		// we can get null entities when they are already stored
+		Collection<Entity> filtered = Collections2.filter(entities.values(), Predicates.notNull());
+
 		Transaction transaction = datastore.getTransaction();
 		
 		// actually put the entities in the datastore without blocking
-		final Future<List<Key>> put = AsyncDatastoreHelper.put(transaction, entities.values());
+		final Future<List<Key>> put = AsyncDatastoreHelper.put(transaction, new ArrayList<Entity>(filtered));
 	
 		return new FutureWrapper<List<Key>, Map<T,Key>>(put)
 		{
@@ -198,8 +203,15 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 
 		for (T instance : instances)
 		{
-			// cannot define a key name
-			Entity entity = instanceToEntity(instance, parentKey, null);
+			// check instance was not stored while storing another instance
+			Entity entity = null;
+			if (datastore.associatedKey(instance) == null)
+			{
+				// cannot define a key name
+				entity = instanceToEntity(instance, parentKey, null);
+			}
+			
+			// put null if we do not have the entity
 			entities.put(instance, entity);
 		}
 		
@@ -221,8 +233,23 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 		Iterator<Key> keyator = keys.iterator();
 		while (instances.hasNext())
 		{
-			Key key = keyator.next();
 			T instance = instances.next();
+			Key key;
+
+			// we may not have stored the entity
+			if (entities.get(instance) == null)
+			{
+				// entity was stored in a previous put
+				key = datastore.associatedKey(instance);
+			}
+			else
+			{
+				// entity was stored now so get key
+				key = keyator.next();
+			}
+			
+			assert key != null;
+			
 			result.put(instance, key);
 			datastore.associate(instance, key);
 			setInstanceId(instance, key);

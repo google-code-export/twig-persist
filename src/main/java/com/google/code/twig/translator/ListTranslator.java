@@ -45,7 +45,7 @@ public class ListTranslator extends DecoratingTranslator
 			return null;
 		}
 		
-		if (PropertySets.firstValue(properties) == null)
+		if (PropertySets.firstValue(properties) == null && properties.size() == 1)
 		{
 			return NULL_VALUE;
 		}
@@ -97,8 +97,16 @@ public class ListTranslator extends DecoratingTranslator
 
 		// handles the tricky task of finding what type of list we have
 		Type exact = Generics.getExactSuperType(type, List.class);
-		Type componentType = ((ParameterizedType) exact).getActualTypeArguments()[0];
-
+		Type componentType;
+		if (exact instanceof ParameterizedType)
+		{
+			componentType = ((ParameterizedType) exact).getActualTypeArguments()[0];
+		}
+		else
+		{
+			componentType = Object.class;
+		}
+		
 		// decode each item of the list
 		List<Object> objects = new ArrayList<Object>();
 		for (Set<Property> itemProperties : propertySets)

@@ -381,4 +381,9 @@ public class Path implements Comparable<Path>
 		return new Builder(path);
 	}
 
+	public Part getLastPart()
+	{
+		return new Part(value.substring(Strings.lastIndexOf(value, 0, SEPERATORS)));
+	}
+
 }
