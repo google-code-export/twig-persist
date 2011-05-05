@@ -45,22 +45,7 @@ public class PrimitiveConverter implements TypeConverter
 			wrapper = primitives.get(erased);
 			if (source == null)
 			{
-				if (Number.class.isAssignableFrom(wrapper))
-				{
-					source = 0;
-				}
-				else if (Boolean.class == wrapper)
-				{
-					source = false;
-				}
-				else if (Character.class == wrapper)
-				{
-					 source = Character.MIN_VALUE;
-				}
-				else
-				{
-					throw new IllegalStateException("Unkonwn primitive default " + type);
-				}
+				source = defaultPrimitiveValue(wrapper);
 			}
 
 			if (source.getClass() == wrapper)
@@ -156,6 +141,26 @@ public class PrimitiveConverter implements TypeConverter
 			}
 
 			throw new IllegalArgumentException("Could not convert from " + source + " to wrapper " + wrapper);
+		}
+	}
+
+	public static Object defaultPrimitiveValue(Class<?> wrapper)
+	{
+		if (Number.class.isAssignableFrom(wrapper))
+		{
+			return 0;
+		}
+		else if (Boolean.class == wrapper)
+		{
+			return false;
+		}
+		else if (Character.class == wrapper)
+		{
+			 return Character.MIN_VALUE;
+		}
+		else
+		{
+			throw new IllegalStateException("Unkonwn primitive default " + wrapper);
 		}
 	}
 

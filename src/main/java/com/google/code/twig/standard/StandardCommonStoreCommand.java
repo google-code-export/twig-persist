@@ -93,27 +93,57 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 			// check that we have an id field
 			if (field != null)
 			{
-				// only update if its current value is numeric and null or 0 
-				Object current = field.get(instance);
-				if (current == null || current instanceof Number && ((Number) current).longValue() == 0)
+					// only update if its current value is numeric and null or 0 
+					Object current = field.get(instance);
+					if (current == null || current instanceof Number && ((Number) current).longValue() == 0)
+					{
+						Class<?> type = field.getType();
+						if (!Number.class.isAssignableFrom(type) && !type.isPrimitive())
+						{
+							throw new IllegalStateException("You must set an id value if the id field is not a numeric type.");
+						}
+						
+						Object idOrName = key.getId();
+						
+						// the key name could have been set explicitly when storing 
+						if (idOrName == null)
+						{
+							idOrName = key.getName();
+						}
+						
+						// convert the long or String to the declared key type
+						Object converted = datastore.getConverter().convert(idOrName, type);
+						field.set(instance, converted);
+					}
+			}
+		}
+		catch (IllegalAccessException e)
+		{
+			throw new IllegalStateException(e);
+		}
+	}
+	
+
+	protected void setInstanceKey(Object instance, Key key)
+	{
+		Field field = datastore.keyField(instance.getClass());
+		try
+		{
+			// check that we have an id field
+			if (field != null)
+			{
+				// must be a gae key field
+				if (field.getType() == Key.class)
 				{
-					Class<?> type = field.getType();
-					if (!Number.class.isAssignableFrom(type) && !type.isPrimitive())
-					{
-						throw new IllegalStateException("You must set an id value if the id field is not a numeric type.");
-					}
-					
-					Object idOrName = key.getId();
-					
-					// the key name could have been set explicitly when storing 
-					if (idOrName == null)
-					{
-						idOrName = key.getName();
-					}
-					
-					// convert the long or String to the declared key type
-					Object converted = datastore.getConverter().convert(idOrName, type);
-					field.set(instance, converted);
+					field.set(instance, key);
+				}
+				else if (field.getType() == String.class)
+				{
+					field.set(instance, key.toString());
+				}
+				else
+				{
+					throw new IllegalStateException("Cannot set key to field " + field);
 				}
 			}
 		}
@@ -188,14 +218,15 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 		// build a map of instance to key
 		HashMap<T, Key> result = new HashMap<T, Key>(keys.size());
 		Iterator<T> instances = entities.keySet().iterator();
-		Iterator<Key> keyor = keys.iterator();
+		Iterator<Key> keyator = keys.iterator();
 		while (instances.hasNext())
 		{
-			Key key = keyor.next();
+			Key key = keyator.next();
 			T instance = instances.next();
 			result.put(instance, key);
 			datastore.associate(instance, key);
 			setInstanceId(instance, key);
+			setInstanceKey(instance, key);
 		}
 		return result;
 	}

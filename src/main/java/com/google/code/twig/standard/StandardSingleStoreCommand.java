@@ -65,6 +65,7 @@ final class StandardSingleStoreCommand<T> extends StandardCommonStoreCommand<T, 
 		
 		datastore.associate(instance, key);
 		setInstanceId(instance, key);
+		setInstanceKey(instance, key);
 		
 		return key;
 	}

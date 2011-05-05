@@ -175,17 +175,25 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 			{
 				// see if there is a default value
 				Collection<?> existing = (Collection<?>) field.get(instance);
-				if (existing != null && value!= null && existing.getClass() != value.getClass())
+				if (existing != null)
 				{
-					// make sure the value is a list - could be a blob
-					if (!Collection.class.isAssignableFrom(value.getClass()))
+					if (value == null)
 					{
-						value = converters.convert(value, ArrayList.class);
+						// just leave default if we have a null collection
+						return true;
 					}
-					
-					existing.clear();
-					typesafeAddAll((Collection<?>) value, existing);
-					return true;
+					else if (existing.getClass() != value.getClass())
+					{
+						// make sure the value is a list - could be a blob
+						if (!Collection.class.isAssignableFrom(value.getClass()))
+						{
+							value = converters.convert(value, ArrayList.class);
+						}
+						
+						existing.clear();
+						typesafeAddAll((Collection<?>) value, existing);
+						return true;
+					}
 				}
 			}
 			catch (Exception e)
@@ -199,17 +207,24 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 			{
 				// see if there is a default value
 				Map<?, ?> existing = (Map<?, ?>) field.get(instance);
-				if (existing != null && value!= null && existing.getClass() != value.getClass())
+				if (existing != null)
 				{
-					// make sure the value is a map - could be a blob
-					if (!Map.class.isAssignableFrom(value.getClass()))
+					if (value == null)
 					{
-						value = converters.convert(value, HashMap.class);
+						return true;
 					}
-					
-					existing.clear();
-					typesafePutAll((Map<?, ?>) value, existing);
-					return true;
+					else if (existing.getClass() != value.getClass())
+					{
+						// make sure the value is a map - could be a blob
+						if (!Map.class.isAssignableFrom(value.getClass()))
+						{
+							value = converters.convert(value, HashMap.class);
+						}
+						
+						existing.clear();
+						typesafePutAll((Map<?, ?>) value, existing);
+						return true;
+					}
 				}
 			}
 			catch (Exception e)

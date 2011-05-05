@@ -20,6 +20,7 @@ import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
+import com.google.code.twig.annotation.GaeKey;
 import com.google.code.twig.annotation.Id;
 import com.google.code.twig.configuration.Configuration;
 import com.google.code.twig.conversion.CombinedConverter;
@@ -74,6 +75,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	private final PropertyTranslator defaultTranslator;
 
 	private static final Map<Class<?>, Field> idFields = new ConcurrentHashMap<Class<?>, Field>();
+	private static final Map<Class<?>, Field> keyFields = new ConcurrentHashMap<Class<?>, Field>();
 
 	// indicates we are only associating instances so do not store them
 	boolean associating;
@@ -92,6 +94,9 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 
 	public TranslatorObjectDatastore(Configuration configuration)
 	{
+		// retry non-transactional puts 3 times
+		super(3);
+		
 		this.configuration = configuration;
 		this.converter = createTypeConverter();
 		this.thread = Thread.currentThread();
@@ -441,6 +446,12 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	{
 		return keyCache.getKey(instance);
 	}
+	
+	@Override
+	public boolean isAssociated(Object instance)
+	{
+		return associatedKey(instance) != null;
+	}
 
 	@Override
 	public final int getActivationDepth()
@@ -677,7 +688,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		
 	}
 
-	@SuppressWarnings("deprecation")
+	// TODO roll this meta-data into a single class that is looked up once only
 	Field idField(Class<?> type)
 	{
 		Field result = null;
@@ -690,8 +701,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 			List<Field> fields = Reflection.getAccessibleFields(type);
 			for (Field field : fields)
 			{
-				if (field.isAnnotationPresent(com.google.code.twig.annotation.Key.class)
-						|| field.isAnnotationPresent(Id.class))
+				if (configuration.id(field))
 				{
 					result = field;
 					break;
@@ -704,6 +714,43 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 				result = NO_ID_FIELD;
 			}
 			idFields.put(type, result);
+		}
+
+		if (result == NO_ID_FIELD)
+		{
+			return null;
+		}
+		else
+		{
+			return result;
+		}
+	}
+
+	Field keyField(Class<?> type)
+	{
+		Field result = null;
+		if (keyFields.containsKey(type))
+		{
+			result = keyFields.get(type);
+		}
+		else
+		{
+			List<Field> fields = Reflection.getAccessibleFields(type);
+			for (Field field : fields)
+			{
+				if (configuration.key(field))
+				{
+					result = field;
+					break;
+				}
+			}
+
+			// null cannot be stored in a concurrent hash map
+			if (result == null)
+			{
+				result = NO_ID_FIELD;
+			}
+			keyFields.put(type, result);
 		}
 
 		if (result == NO_ID_FIELD)
