@@ -101,12 +101,12 @@ public class CombinedConverter implements TypeConverter
 				// both types are Classes (not generic types) and they are assignable 
 				result = true;
 			}
-			else if (!(superType instanceof Class<?>) && subType instanceof Class<?>)
-			{
-				// super class has parameters but subclass does not so we are not sure
-				result = false;
-			}
-			else
+//			else if (!(superType instanceof Class<?>) && subType instanceof Class<?>)
+//			{
+//				// super class has parameters but subclass does not so we are not sure
+//				result = false;
+//			}
+//			else
 			{
 				// base classes are assignable so check type parameters
 				result = Generics.isSuperType(superType, subType);

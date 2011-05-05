@@ -85,7 +85,6 @@ public class DelegatingConfiguration implements Configuration
 	@Override
 	public long allocateIdsFor(Type type)
 	{
-		// TODO Auto-generated method stub
-		return 0;
+		return delegate.allocateIdsFor(type);
 	}
 }

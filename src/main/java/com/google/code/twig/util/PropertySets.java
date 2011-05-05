@@ -40,19 +40,27 @@ public class PropertySets
 		int start = 0;
 		for (int i = 0; i < array.length; i++)
 		{
-			Part firstPartAfterPrefix = array[i].getPath().firstPartAfterPrefix(prefix);
-			if (part != null && !firstPartAfterPrefix.equals(part))
+			Path path = array[i].getPath();
+			if (path.hasPrefix(prefix))
 			{
-				// if the first part has changed then add a new set
-				PrefixPropertySet ppf = createPrefixSubset(prefix, array, part, start, i);
-				result.add(ppf);
-				start = i; 
+				Part firstPartAfterPrefix = path.firstPartAfterPrefix(prefix);
+				if (part != null && !firstPartAfterPrefix.equals(part))
+				{
+					// if the first part has changed then add a new set
+					PrefixPropertySet ppf = createPrefixSubset(prefix, array, part, start, i);
+					result.add(ppf);
+					start = i; 
+				}
+				part = firstPartAfterPrefix;
 			}
-			part = firstPartAfterPrefix;
+			else
+			{
+				part = null;
+			}
 		}
 		
 		// add the last set 
-		if (array.length > 0)
+		if (array.length > 0 && part != null)
 		{
 			PrefixPropertySet ppf = createPrefixSubset(prefix, array, part, start, array.length);
 			result.add(ppf);

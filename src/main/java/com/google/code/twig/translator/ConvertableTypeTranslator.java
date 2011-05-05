@@ -15,6 +15,8 @@ import com.google.code.twig.util.PropertySets;
  * supplied TypeConverter.  Note that the type should be convertible in both
  * directions or an encoded value might not be able to be decoded again.
  * 
+ * TODO try to convert to more native types
+ * 
  * @author John Patterson <john@vercer.com>
  */
 public class ConvertableTypeTranslator implements PropertyTranslator
