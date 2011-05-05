@@ -41,8 +41,7 @@ public class ListTranslator extends DecoratingTranslator
 
 		if (properties.isEmpty())
 		{
-			// do not decode empty missing properties
-			return null;
+			return NULL_VALUE;
 		}
 		
 		if (PropertySets.firstValue(properties) == null && properties.size() == 1)

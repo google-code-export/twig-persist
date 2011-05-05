@@ -132,6 +132,12 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 
 		if (value == null)
 		{
+			throw new IllegalStateException("Could not translate path " + path);
+		}
+
+		// successfully decoded as a null value
+		if (value == NULL_VALUE)
+		{
 			if (properties.isEmpty())
 			{
 				// leave default value for fields with no stored properties
@@ -139,14 +145,8 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 			}
 			else
 			{
-				throw new IllegalStateException("Could not translate path " + path);
+				value = null;
 			}
-		}
-
-		// successfully decoded as a null value
-		if (value == NULL_VALUE)
-		{
-			value = null;
 		}
 		
 		// for collections we can reuse an existing instance
