@@ -6,16 +6,13 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedMap;
 import java.util.SortedSet;
-import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.appengine.api.datastore.DataTypeUtils;
 import com.google.code.twig.Path;
@@ -25,25 +22,20 @@ import com.google.code.twig.conversion.TypeConverter;
 import com.google.code.twig.util.PrefixPropertySet;
 import com.google.code.twig.util.PropertyComparator;
 import com.google.code.twig.util.PropertySets;
-import com.google.code.twig.util.Reflection;
 import com.google.code.twig.util.SimpleProperty;
 import com.google.code.twig.util.collections.MergeSet;
 import com.google.code.twig.util.generic.Generics;
 
 /**
- * @author John Patterson <john@vercer.com>
- *
+ * @author John Patterson <jdpatterson@gmail.com>
+ * TODO pass in model meta-data and remove abstract methods
  */
-public abstract class ObjectFieldTranslator implements PropertyTranslator
+public abstract class FieldTranslator implements PropertyTranslator
 {
 	private static final PropertyComparator COMPARATOR = new PropertyComparator();
 	private final TypeConverter converters;
 
-	// permanent cache of class fields to reduce reflection
-	private static Map<Class<?>, SortedMap<String, Field>> classFields = new ConcurrentHashMap<Class<?>, SortedMap<String, Field>>();
-	private static Map<Class<?>, Constructor<?>> constructors = new ConcurrentHashMap<Class<?>, Constructor<?>>();
-
-	public ObjectFieldTranslator(TypeConverter converters)
+	public FieldTranslator(TypeConverter converters)
 	{
 		this.converters = converters;
 	}
@@ -71,8 +63,8 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 			properties = sorted;
 		}
 
-		// both fields and properties are sorted by name
-		Collection<Field> fields = getSortedAccessibleFields(instance.getClass()).values();
+		// both fields and properties are sorted by field name
+		Collection<Field> fields = getSortedAccessibleFields(instance.getClass());
 		Iterator<PrefixPropertySet> ppss = PropertySets.prefixPropertySets(properties, path).iterator();
 		PrefixPropertySet pps = null;
 		for (Field field : fields)
@@ -107,6 +99,11 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 		}
 		
 		return instance;
+	}
+
+	protected Comparator<Field> getFieldComparator()
+	{
+		return null;
 	}
 
 	protected void decode(Object instance, Field field, Path path, Set<Property> properties)
@@ -295,25 +292,10 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 		}
 	}
 
-	private Constructor<?> getNoArgsConstructor(Class<?> clazz) throws NoSuchMethodException
-	{
-		Constructor<?> constructor = constructors.get(clazz);
-		if (constructor == null)
-		{
-			// use no-args constructor
-			constructor = clazz.getDeclaredConstructor();
-	
-			// allow access to private constructor
-			if (!constructor.isAccessible())
-			{
-				constructor.setAccessible(true);
-			}
-			
-			constructors.put(clazz, constructor);
-		}
-		return constructor;
-	}
+	protected abstract Constructor<?> getNoArgsConstructor(Class<?> clazz) throws NoSuchMethodException;
 
+	protected abstract Collection<Field> getSortedAccessibleFields(Class<?> clazz);
+	
 	public final Set<Property> encode(Object object, Path path, boolean indexed)
 	{
 		onBeforeEncode(path, object);
@@ -324,7 +306,7 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 
 		try
 		{
-			Collection<Field> fields = getSortedAccessibleFields(object.getClass()).values();
+			Collection<Field> fields = getSortedAccessibleFields(object.getClass());
 			MergeSet<Property> merged = new MergeSet<Property>(fields.size());
 			for (Field field : fields)
 			{
@@ -400,28 +382,6 @@ public abstract class ObjectFieldTranslator implements PropertyTranslator
 	{
 	}
 
-	public static SortedMap<String, Field> getSortedAccessibleFields(Class<?> clazz)
-	{
-		// fields are cached and stored as a map because reading more common than writing
-		SortedMap<String, Field> fields = classFields.get(clazz);
-		if (fields == null)
-		{
-			List<Field> ordered = Reflection.getAccessibleFields(clazz);
-
-			// sort the fields by name
-			fields = new TreeMap<String, Field>();
-
-			for (Field field : ordered)
-			{
-				fields.put(field.getName(), field);
-			}
-			
-			// cache because reflection is costly
-			classFields.put(clazz, fields);
-		}
-		return fields;
-	}
-	
 	protected abstract boolean isNullStored();
 
 	protected abstract boolean indexed(Field field);

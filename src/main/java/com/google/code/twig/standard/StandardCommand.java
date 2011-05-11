@@ -2,7 +2,7 @@ package com.google.code.twig.standard;
 
 class StandardCommand
 {
-	final TranslatorObjectDatastore datastore;
+	protected final TranslatorObjectDatastore datastore;
 
 	StandardCommand(TranslatorObjectDatastore datastore)
 	{

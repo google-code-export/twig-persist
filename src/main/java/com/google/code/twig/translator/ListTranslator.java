@@ -33,7 +33,7 @@ public class ListTranslator extends DecoratingTranslator
 	public Object decode(final Set<Property> properties, final Path path, Type type)
 	{
 		// only handle lists
-		if (!Generics.erase(type).isAssignableFrom(ArrayList.class))
+		if (!List.class.isAssignableFrom(Generics.erase(type)))
 		{
 			// pass on all other types down the chain
 			return chained.decode(properties, path, type);

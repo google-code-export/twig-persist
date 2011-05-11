@@ -31,7 +31,7 @@ public class MapTranslator extends DecoratingTranslator
 	public Object decode(Set<Property> properties, Path path, Type type)
 	{
 		// only try if we can set a map to the field
-		if (!Generics.erase(type).isAssignableFrom(HashMap.class))
+		if (!Map.class.isAssignableFrom(Generics.erase(type)))
 		{
 			// pass on all other types down the chain
 			return chained.decode(properties, path, type);
@@ -39,11 +39,10 @@ public class MapTranslator extends DecoratingTranslator
 
 		if (properties.isEmpty())
 		{
-			// do not decode empty missing properties
-			return null;
+			return NULL_VALUE;
 		}
 		
-		if (PropertySets.firstValue(properties) == null)
+		if (PropertySets.firstValue(properties) == null && properties.size() == 1)
 		{
 			return NULL_VALUE;
 		}

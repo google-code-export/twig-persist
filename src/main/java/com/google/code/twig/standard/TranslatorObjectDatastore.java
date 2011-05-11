@@ -1,14 +1,17 @@
 package com.google.code.twig.standard;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.appengine.api.datastore.Entity;
@@ -20,21 +23,20 @@ import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
-import com.google.code.twig.annotation.GaeKey;
-import com.google.code.twig.annotation.Id;
 import com.google.code.twig.configuration.Configuration;
 import com.google.code.twig.conversion.CombinedConverter;
 import com.google.code.twig.conversion.TypeConverter;
 import com.google.code.twig.translator.ChainedTranslator;
 import com.google.code.twig.translator.ListTranslator;
 import com.google.code.twig.translator.MapTranslator;
-import com.google.code.twig.translator.ObjectFieldTranslator;
+import com.google.code.twig.translator.FieldTranslator;
 import com.google.code.twig.translator.PolymorphicTranslator;
 import com.google.code.twig.util.EntityToKeyFunction;
 import com.google.code.twig.util.Reflection;
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Maps;
 
 /**
  * Stateful layer responsible for caching key-object references and creating a
@@ -95,7 +97,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	public TranslatorObjectDatastore(Configuration configuration)
 	{
 		// retry non-transactional puts 3 times
-		super(3);
+		super(5);
 		
 		this.configuration = configuration;
 		this.converter = createTypeConverter();
@@ -104,7 +106,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		// top level translator which examines object field values
 		configurationFieldTranslator = new ConfigurationFieldTranslator(converter);
 
-		// simple values encoded as a single value
+		// simple values encoded as a single property
 		valueTranslatorChain = createValueTranslatorChain();
 
 		// referenced instances stored as separate entities
@@ -137,13 +139,13 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	}
 
 	@Override
-	public final StandardFindCommand find()
+	public StandardFindCommand find()
 	{
 		return new StandardFindCommand(this);
 	}
 
 	@Override
-	public final StandardStoreCommand store()
+	public StandardStoreCommand store()
 	{
 		return new StandardStoreCommand(this);
 	}
@@ -502,7 +504,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		return polyMorphicComponentTranslator;
 	}
 	
-	protected final PropertyTranslator getConfigurationFieldTranslator()
+	protected final PropertyTranslator getFieldTranslator()
 	{
 		return configurationFieldTranslator;
 	}
@@ -587,22 +589,79 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 			}
 		}
 	}
+	
+	// permanent cache of class fields to reduce reflection
+	private static Map<Class<?>, Collection<Field>> classFields = Maps.newConcurrentMap();
+	private static Map<Class<?>, Constructor<?>> constructors = Maps.newConcurrentMap();
 
 	// top level translator that uses the Configuration to decide which translator
 	// to use for each Field value.
-	private final class ConfigurationFieldTranslator extends ObjectFieldTranslator
+	private final class ConfigurationFieldTranslator extends FieldTranslator
 	{
 		private ConfigurationFieldTranslator(TypeConverter converters)
 		{
 			super(converters);
 		}
 
+		private Comparator<Field> fieldComparator = new Comparator<Field>()
+		{
+			@Override
+			public int compare(Field o1, Field o2)
+			{
+				return configuration.name(o1).compareTo(configuration.name(o2));
+			}
+		};
+		
+		// TODO put this in a dedicated meta-data holder
+		@Override
+		protected Collection<Field> getSortedAccessibleFields(Class<?> clazz)
+		{
+			// fields are cached and stored as a map because reading more common than writing
+			Collection<Field> fields = classFields.get(clazz);
+			if (fields == null)
+			{
+				List<Field> ordered = Reflection.getAccessibleFields(clazz);
+
+				fields = new TreeSet<Field>(fieldComparator);
+
+				for (Field field : ordered)
+				{
+					fields.add(field);
+				}
+				
+				// cache because reflection is costly
+				classFields.put(clazz, fields);
+			}
+			return fields;
+		}
+
+		@Override
+		protected Constructor<?> getNoArgsConstructor(Class<?> clazz) throws NoSuchMethodException
+		{
+			Constructor<?> constructor = constructors.get(clazz);
+			if (constructor == null)
+			{
+				// use no-args constructor
+				constructor = clazz.getDeclaredConstructor();
+		
+				// allow access to private constructor
+				if (!constructor.isAccessible())
+				{
+					constructor.setAccessible(true);
+				}
+				
+				constructors.put(clazz, constructor);
+			}
+			return constructor;
+		}
+		
+
 		@Override
 		protected boolean indexed(Field field)
 		{
 			return TranslatorObjectDatastore.this.configuration.index(field);
 		}
-
+		
 		@Override
 		protected boolean stored(Field field)
 		{

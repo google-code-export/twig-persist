@@ -205,7 +205,7 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 		{
 			// check instance was not stored while storing another instance
 			Entity entity = null;
-			if (datastore.associatedKey(instance) == null)
+			if (command.update || datastore.associatedKey(instance) == null)
 			{
 				// cannot define a key name
 				entity = instanceToEntity(instance, parentKey, null);

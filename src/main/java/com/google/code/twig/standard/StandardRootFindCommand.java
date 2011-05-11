@@ -26,7 +26,7 @@ import com.google.code.twig.util.FutureAdaptor;
 import com.google.common.collect.ForwardingIterator;
 import com.google.common.collect.Lists;
 
-final class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFindCommand<T>>
+public class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFindCommand<T>>
 		implements RootFindCommand<T>
 {
 	private final Class<?> type;
@@ -48,7 +48,7 @@ final class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFin
 		String field;
 	}
 
-	StandardRootFindCommand(Class<?> type, TranslatorObjectDatastore datastore)
+	protected StandardRootFindCommand(Class<?> type, TranslatorObjectDatastore datastore)
 	{
 		super(datastore);
 		this.type = type;

@@ -51,6 +51,11 @@ public class PropertySets
 					result.add(ppf);
 					start = i; 
 				}
+				else if (part == null)
+				{
+					start = i;
+				}
+				
 				part = firstPartAfterPrefix;
 			}
 			else
