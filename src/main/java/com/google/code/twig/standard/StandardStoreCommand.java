@@ -9,7 +9,7 @@ public class StandardStoreCommand extends StandardCommand implements StoreComman
 {
 	protected boolean update;
 
-	StandardStoreCommand(TranslatorObjectDatastore datastore)
+	protected StandardStoreCommand(TranslatorObjectDatastore datastore)
 	{
 		super(datastore);
 	}

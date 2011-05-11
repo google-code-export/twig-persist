@@ -217,7 +217,7 @@ public class Path implements Comparable<Path>
 				int count = 0;
 				do
 				{
-					index = Strings.firstIndexOf(value, index + 2, SEPERATORS);
+					index = Strings.firstIndexOf(value, index + 1, SEPERATORS);
 					count++;
 				}
 				while (index > 0);
@@ -266,7 +266,7 @@ public class Path implements Comparable<Path>
 	
 	public Path head()
 	{
-		int index = Strings.lastIndexOf(value, value.length() - 1, SEPERATORS);
+		int index = Strings.lastIndexOf(value, SEPERATORS);
 		return new Path(value.substring(0, index));
 	}
 	
@@ -383,7 +383,7 @@ public class Path implements Comparable<Path>
 
 	public Part getLastPart()
 	{
-		return new Part(value.substring(Strings.lastIndexOf(value, 0, SEPERATORS)));
+		return new Part(value.substring(Strings.lastIndexOf(value, SEPERATORS)));
 	}
 
 }

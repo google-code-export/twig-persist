@@ -10,7 +10,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.SortedMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -33,7 +32,8 @@ import com.google.code.twig.FindCommand.MergeOperator;
 import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
-import com.google.code.twig.translator.ObjectFieldTranslator;
+import com.google.code.twig.util.Pair;
+import com.google.code.twig.util.Reflection;
 import com.google.code.twig.util.Strings;
 import com.google.code.twig.util.generic.Generics;
 import com.google.code.twig.util.reference.ObjectReference;
@@ -78,14 +78,50 @@ abstract class StandardCommonFindCommand<C extends CommonFindCommand<C>> extends
 
 	@SuppressWarnings("unchecked")
 	public C addFilter(String fieldPathName, FilterOperator operator, Object value)
-	{
-		if (filters == null)
+	{		
+		Pair<Field, String> fieldAndProperty = getFieldAndPropertyForPath(fieldPathName);
+		Field field = fieldAndProperty.getFirst();
+		String property = fieldAndProperty.getSecond();
+		
+		PropertyTranslator translator = datastore.encoder(field, value);
+		
+		// for IN we need to encode each value of the collection
+		Object encoded;
+		if (Entity.KEY_RESERVED_PROPERTY.equals(property))
 		{
-			filters = new ArrayList<Filter>(2);
+			// this is an @id field so we need to create a Key value
+			String kind = datastore.getConfiguration().typeToKind(getRootCommand().getType());
+			encoded = StandardCommonLoadCommand.idToKey(value, field, kind, datastore, null);
+		}
+		else
+		{
+			// the property must be a path string
+			if (operator == FilterOperator.IN)
+			{
+				Collection<?> values = (Collection<?>) value;
+				Collection<Object> encodeds = new ArrayList<Object>(values.size()); 
+				for (Object item : values)
+				{
+					encodeds.add(encodeFieldValue(translator, item, field, new Path.Builder(property).build()));
+				}
+				encoded = encodeds;
+			}
+			else
+			{
+				encoded = encodeFieldValue(translator, value, field, new Path.Builder(property).build());
+			}
+			
 		}
 		
-		Type type = getRootCommand().getType();
+		addDirectFilter(property, operator, encoded);
 		
+		return (C) this;
+	}
+	
+	// TODO user this for sort fields also
+	protected Pair<Field, String> getFieldAndPropertyForPath(String fieldPathName)
+	{
+		Type type = getRootCommand().getType();
 		Field field = null;
 		
 		// get the stored path from the object navigation path
@@ -94,8 +130,9 @@ abstract class StandardCommonFindCommand<C extends CommonFindCommand<C>> extends
 		String property = null;
 		for (String fieldName : fieldNames)
 		{
+			field = null;
 			Class<?> erased = Generics.erase(type);
-
+	
 			// collections use the element type
 			if (Collection.class.isAssignableFrom(erased))
 			{
@@ -103,18 +140,25 @@ abstract class StandardCommonFindCommand<C extends CommonFindCommand<C>> extends
 				erased = Generics.erase(type);
 			}
 			
-			// get fields that were already cached
-			SortedMap<String,Field> fields = ObjectFieldTranslator.getSortedAccessibleFields(erased);
-			field = fields.get(fieldName);
+			// get fields that were already cached in any order
+			// TODO cache fields? need to take timings. probably not worth it for filters
+			Collection<Field> fields = Reflection.getAccessibleFields(erased);
+			for (Field candidate : fields)
+			{
+				if (candidate.getName().equals(fieldName))
+				{
+					field = candidate;
+				}
+			}
 			
 			if (field == null)
 			{
 				throw new IllegalArgumentException("Could not find field " + fieldName + " in type " + type);
 			}
-
+			
 			// field type could have type variable if defined in superclass
 			type = Generics.getExactFieldType(field, type);
-
+	
 			// if the field is an @Id we need to create a Key value
 			if (datastore.getConfiguration().id(field))
 			{
@@ -138,33 +182,19 @@ abstract class StandardCommonFindCommand<C extends CommonFindCommand<C>> extends
 			property = path.toString();
 		}
 		
-		PropertyTranslator translator = datastore.encoder(field, value);
-		
-		// for IN we need to encode each value of the collection
-		Object encoded;
-		if (operator == FilterOperator.IN)
+		return new Pair<Field, String>(field, property);
+	}
+	
+	@SuppressWarnings("unchecked")
+	// by passes the search for object field in root type
+	public C addDirectFilter(String property, FilterOperator operator, Object value)
+	{
+		if (filters == null)
 		{
-			Collection<?> values = (Collection<?>) value;
-			Collection<Object> encodeds = new ArrayList<Object>(values.size()); 
-			for (Object item : values)
-			{
-				encodeds.add(encodeFieldValue(translator, item, field, path));
-			}
-			encoded = encodeds;
-		}
-		else
-		{
-			encoded = encodeFieldValue(translator, value, field, path);
+			filters = new ArrayList<Filter>(2);
 		}
 		
-		if (path.isEmpty())
-		{
-			// this is an @id field so we need to create a Key value
-			String kind = datastore.getConfiguration().typeToKind(type);
-			encoded = StandardCommonLoadCommand.idToKey(encoded, field, kind, datastore, null);
-		}
-		
-		filters.add(new Filter(property, operator, encoded));
+		filters.add(new Filter(property, operator, value));
 		
 		return (C) this;
 	}

@@ -37,7 +37,7 @@ public abstract class LazyProxy<T>
 	@SuppressWarnings("unchecked")
 	public T newProxy()
 	{
-		InvocationHandler handler = new LaxyInvocationHandler(this);
+		InvocationHandler handler = new LaxyInvocationHandler<T>(this);
 		return (T) Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[] {interfaceClass}, handler);
 	}
 

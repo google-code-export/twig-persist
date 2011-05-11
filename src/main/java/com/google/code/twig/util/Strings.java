@@ -33,9 +33,9 @@ public final class Strings
 		return -1;
 	}
 
-	public static int lastIndexOf(String source, int start, char... chars)
+	public static int lastIndexOf(String source, char... chars)
 	{
-		for (int i = start; i >= 0; i--)
+		for (int i = source.length() - 1; i >= 0; i--)
 		{
 			char c = source.charAt(i);
 			for (char d : chars)
