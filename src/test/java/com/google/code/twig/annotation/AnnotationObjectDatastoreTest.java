@@ -22,8 +22,10 @@ public class AnnotationObjectDatastoreTest extends LocalDatastoreTestCase {
 	@Test
 	public void testLoadWithGaeKeyEncodedString() {
 		
-		Key key = datastore.store(new GaeKeyStringModel());
+		GaeKeyStringModel instance = new GaeKeyStringModel();
+		Key key = datastore.store(instance);
 		assertNotNull(key);
+		assertNotNull(instance.key);
 		
 		// Avoid any internal cache scenarios
 		datastore = new AnnotationObjectDatastore();
@@ -35,8 +37,10 @@ public class AnnotationObjectDatastoreTest extends LocalDatastoreTestCase {
 	@Test
 	public void testLoadWithGaeKey() {
 		
-		Key key = datastore.store(new GaeKeyModel());
+		GaeKeyModel instance = new GaeKeyModel();
+		Key key = datastore.store(instance);
 		assertNotNull(key);
+		assertNotNull(instance.key);
 		
 		// Avoid any internal cache scenarios
 		datastore = new AnnotationObjectDatastore();

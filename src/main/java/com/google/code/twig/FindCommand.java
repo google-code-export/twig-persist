@@ -11,6 +11,10 @@ import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.appengine.api.datastore.QueryResultIterator;
 
+/**
+ * @author John Patterson <john@vercer.com>
+ *
+ */
 public interface FindCommand
 {
 	enum MergeOperator { OR, AND };
@@ -39,11 +43,6 @@ public interface FindCommand
 	{
 	}
 	
-	/**
-	 * @author John Patterson <john@vercer.com>
-	 *
-	 * @param <T>
-	 */
 	interface RootFindCommand<T> extends CommonFindCommand<RootFindCommand<T>>, CommandTerminator<QueryResultIterator<T>>
 	{
 		// methods that have side effects
