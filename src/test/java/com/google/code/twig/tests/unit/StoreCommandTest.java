@@ -47,5 +47,5 @@ public class StoreCommandTest extends LocalDatastoreTestCase
 		
 		datastore.store(parent);
 	}
-
+	
 }
