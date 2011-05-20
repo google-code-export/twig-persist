@@ -110,15 +110,17 @@ public class ListTranslator extends DecoratingTranslator
 		List<Object> objects = new ArrayList<Object>();
 		for (Set<Property> itemProperties : propertySets)
 		{
-			Object convertedChild = chained.decode(itemProperties, path, componentType);
+			Object converted = chained.decode(itemProperties, path, componentType);
 
 			// if we cannot convert every member of the list we fail
-			if (convertedChild == null)
+			if (converted == null)
 			{
 				return null;
 			}
-
-			objects.add(convertedChild);
+			else if (converted != NULL_VALUE)
+			{
+				objects.add(converted);
+			}
 		}
 
 		// result will be converted to actual collection or array type

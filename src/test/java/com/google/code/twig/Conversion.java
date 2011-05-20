@@ -1,7 +1,5 @@
 package com.google.code.twig;
 
-import java.lang.reflect.Type;
-
 import org.junit.Test;
 
 import com.google.appengine.api.datastore.Key;
@@ -27,7 +25,7 @@ public class Conversion extends LocalDatastoreTestCase
 		StandardObjectDatastore storeWith = new StandardObjectDatastore(new AnnotationConfiguration(true)
 		{
 			@Override
-			protected String typeToName(Type type)
+			protected String typeToName(Class<?> type)
 			{
 				return "name";
 			}
@@ -38,7 +36,7 @@ public class Conversion extends LocalDatastoreTestCase
 		StandardObjectDatastore loadWith = new StandardObjectDatastore(new AnnotationConfiguration(true)
 		{
 			@Override
-			protected Type nameToType(String name)
+			protected Class<?> nameToType(String name)
 			{
 				return ClassWithString.class;
 			}

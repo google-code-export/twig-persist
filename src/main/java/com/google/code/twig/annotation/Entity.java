@@ -12,6 +12,6 @@ import java.lang.annotation.Target;
 public @interface Entity
 {
 	String kind() default "";
-
 	long allocateIdsBy() default 0;
+	boolean polymorphic() default false;
 }

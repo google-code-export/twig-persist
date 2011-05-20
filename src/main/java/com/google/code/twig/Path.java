@@ -8,6 +8,14 @@ import java.util.List;
 import com.google.code.twig.util.Strings;
 import com.google.common.collect.AbstractIterator;
 
+/**
+ * @author John Patterson (jdpatterson@gmail.com)
+ *
+ */
+/**
+ * @author John Patterson (jdpatterson@gmail.com)
+ *
+ */
 public class Path implements Comparable<Path>
 {
 	private final static char FIELD = '.';
@@ -170,6 +178,17 @@ public class Path implements Comparable<Path>
 	public Path(String value)
 	{
 		this.value = value;
+	}
+	
+	/**
+	 * Check if a path name is valid.
+	 * 
+	 * @param name The name of a path part
+	 * @return true if this contains no illegal characters
+	 */
+	public static boolean isValidName(String name)
+	{
+		return Strings.firstIndexOf(name, SEPERATORS) < 0;
 	}
 
 	public List<Part> getParts()

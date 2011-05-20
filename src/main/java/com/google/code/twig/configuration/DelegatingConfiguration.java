@@ -37,7 +37,7 @@ public class DelegatingConfiguration implements Configuration
 		return delegate.embed(field);
 	}
 
-	public String typeToKind(Type type)
+	public String typeToKind(Class<?> type)
 	{
 		return delegate.typeToKind(type);
 	}
@@ -47,7 +47,7 @@ public class DelegatingConfiguration implements Configuration
 		return delegate.id(field);
 	}
 
-	public Type kindToType(String kind)
+	public Class<?> kindToType(String kind)
 	{
 		return delegate.kindToType(kind);
 	}
@@ -75,6 +75,12 @@ public class DelegatingConfiguration implements Configuration
 	public boolean polymorphic(Field field)
 	{
 		return delegate.polymorphic(field);
+	}
+	
+	@Override
+	public boolean polymorphic(Class<?> type)
+	{
+		return delegate.polymorphic(type);
 	}
 	
 	public boolean key(Field field)

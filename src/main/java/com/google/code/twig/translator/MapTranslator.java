@@ -94,6 +94,10 @@ public class MapTranslator extends DecoratingTranslator
 		{
 			Object value = map.get(key);
 			String keyString = converter.convert(key, String.class);
+			if (Path.isValidName(keyString) == false)
+			{
+				throw new IllegalArgumentException("Invalid map key: " + keyString);
+			}
 			Path childPath = Path.builder(path).key(keyString).build();
 			Set<Property> properties = chained.encode(value, childPath, indexed);
 

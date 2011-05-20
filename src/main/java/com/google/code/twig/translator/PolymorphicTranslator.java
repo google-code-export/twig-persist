@@ -3,7 +3,6 @@ package com.google.code.twig.translator;
 import java.lang.reflect.Type;
 import java.util.Set;
 
-import com.google.appengine.api.datastore.DataTypeUtils;
 import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
@@ -18,12 +17,12 @@ import com.google.common.collect.Sets;
 public class PolymorphicTranslator extends DecoratingTranslator
 {
 	public static final String CLASS_PROPERTY = "class";
-	private final Configuration strategy;
+	private final Configuration configuration;
 
 	public PolymorphicTranslator(PropertyTranslator chained, Configuration strategy)
 	{
 		super(chained);
-		this.strategy = strategy;
+		this.configuration = strategy;
 	}
 
 	public Object decode(Set<Property> properties, final Path prefix, Type type)
@@ -36,9 +35,8 @@ public class PolymorphicTranslator extends DecoratingTranslator
 		{
 			// filter out the class name
 			properties = Sets.filter(properties, Predicates.not(new PathPrefixPredicate(kindNamePath)));
-			type = strategy.kindToType(kindName);
+			type = configuration.kindToType(kindName);
 		}
-
 		return chained.decode(properties, prefix, type);
 	}
 
@@ -46,12 +44,12 @@ public class PolymorphicTranslator extends DecoratingTranslator
 	{
 		Set<Property> properties = chained.encode(object, prefix, indexed);
 		
-		// only add the type meta data for non-native types
-		if (!DataTypeUtils.isSupportedType(object.getClass()))
+		// add the type meta-data if we need to query by sub-type
+		if (configuration.polymorphic(object.getClass()))
 		{
-			String className = strategy.typeToKind(object.getClass());
-			Path classNamePath = new Path.Builder(prefix).meta(CLASS_PROPERTY).build();
-			Property property = new SimpleProperty(classNamePath, className, true);
+			String kind = configuration.typeToKind(object.getClass());
+			Path kindPath = new Path.Builder(prefix).meta(CLASS_PROPERTY).build();
+			Property property = new SimpleProperty(kindPath, kind, true);
 			
 			return new PrependSet<Property>(property, properties);
 		}

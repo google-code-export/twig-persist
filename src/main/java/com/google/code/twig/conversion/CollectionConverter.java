@@ -150,13 +150,25 @@ public class CollectionConverter implements TypeConverter
 		else if (erased.isArray())
 		{
 			Class<?> arrayClass = Generics.erase(componentType);
-			Object[] array = (Object[]) Array.newInstance(arrayClass, convertedItems.size());
-			T result = (T) convertedItems.toArray(array);
-			return result;
+			
+			// keep as object ref because primitive arrays cannot be cast to t[]
+			Object array = Array.newInstance(arrayClass, convertedItems.size());
+			return (T) unsafeConvert(convertedItems, array);
 		}
 		else
 		{
 			return null;
 		}
+	}
+	
+	// primitive arrays which cannot be cast to T[]
+	private Object unsafeConvert(List<?> tc, Object ta)
+	{
+		for (int i = 0; i < tc.size(); i++)
+		{
+			Object t = tc.get(i);
+			Array.set(ta, i, t);
+		}
+		return ta;
 	}
 }

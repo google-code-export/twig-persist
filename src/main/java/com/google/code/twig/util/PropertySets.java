@@ -11,6 +11,13 @@ import com.google.code.twig.Path.Part;
 import com.google.code.twig.Property;
 import com.google.code.twig.util.collections.ArraySortedSet;
 
+/**
+ * Utility methods for dealing with sets of propterties which knows
+ * about {@code SinglePropertySet} and so is very efficient at getting
+ * the first item or value.
+ *  
+ * @author John Patterson (jdpatterson@gmail.com)
+ */
 public class PropertySets
 {
 	private static final PropertyComparator comparator = new PropertyComparator();
