@@ -203,15 +203,29 @@ abstract class StandardCommonFindCommand<C extends CommonFindCommand<C>> extends
 	private Object encodeFieldValue(PropertyTranslator translator, Object value, Field field, Path path)
 	{
 		Set<Property> properties = translator.encode(value, path, true);
+		if (properties == null)
+		{
+			throw new IllegalArgumentException("Could not encode value " + value + " for field " + field);
+		}
+		
 		if (properties.size() != 1)
 		{
 			throw new IllegalArgumentException("Encoder for field " + field + " must return one value for " + value + " but returned " + properties);
 		}
 		
+		// can only have one value for a filter (ex IN)
 		Object encoded = properties.iterator().next().getValue();
+		
+		// is this a reference to a key which we should have already
 		if (encoded instanceof ObjectReference<?>)
 		{
-			encoded = ((ObjectReference<Object>) encoded).get();
+			// cannot dereference as can store instance
+			encoded = datastore.associatedKey(value);
+			
+			if (encoded == null)
+			{
+				throw new IllegalArgumentException("Could not find related instance " + value);
+			}
 		}
 		return encoded;
 	}

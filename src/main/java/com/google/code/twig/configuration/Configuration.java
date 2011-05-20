@@ -31,13 +31,13 @@ public interface Configuration
 	/**
 	 * @return The kind name used in the Entity that stores this type
 	 */
-	String typeToKind(Type type);
+	String typeToKind(Class<?> type);
 	
 	
 	/**
 	 * @return The Type that is represented by this kind name in the Entity
 	 */
-	Type kindToType(String kind);
+	Class<?> kindToType(String kind);
 	
 	/**
 	 * Returning a value greater than 0 will cause that number of unique ids to
@@ -108,6 +108,14 @@ public interface Configuration
 	 * @return true if sub-types are allowed
 	 */
 	boolean polymorphic(Field field);
+	
+	/**
+	 * Can this instance be queried for by sub-type?
+	 * 
+	 * @param instance
+	 * @return
+	 */
+	boolean polymorphic(Class<?> instance);
 	
 	/**
 	 * Can this field hold GAE Keys?

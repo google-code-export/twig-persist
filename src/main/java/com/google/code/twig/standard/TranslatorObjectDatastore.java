@@ -67,7 +67,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	// translators are selected for particular fields by the configuration
 	private final PropertyTranslator configurationFieldTranslator;
 	private final PropertyTranslator embedTranslator;
-	private final PropertyTranslator polyMorphicComponentTranslator;
+	private final PropertyTranslator polymorphicComponentTranslator;
 	private final PropertyTranslator parentTranslator;
 	private final PropertyTranslator independantTranslator;
 	private final PropertyTranslator idFieldTranslator;
@@ -93,6 +93,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	private final CombinedConverter converter;
 
 	private final Configuration configuration;
+
 
 	public TranslatorObjectDatastore(Configuration configuration)
 	{
@@ -122,7 +123,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		embedTranslator = new ListTranslator(new MapTranslator(configurationFieldTranslator, converter));
 
 		// similar to embedding but stores a class discriminator
-		polyMorphicComponentTranslator = new ListTranslator(
+		polymorphicComponentTranslator = new ListTranslator(
 				new MapTranslator(
 						new PolymorphicTranslator(
 								new ChainedTranslator(valueTranslatorChain, configurationFieldTranslator), 
@@ -372,7 +373,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		{
 			if (configuration.polymorphic(field))
 			{
-				return polyMorphicComponentTranslator;
+				return polymorphicComponentTranslator;
 			}
 			else
 			{
@@ -501,7 +502,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 
 	protected final PropertyTranslator getPolymorphicTranslator()
 	{
-		return polyMorphicComponentTranslator;
+		return polymorphicComponentTranslator;
 	}
 	
 	protected final PropertyTranslator getFieldTranslator()
@@ -559,7 +560,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		this.indexed = indexed;
 	}
 
-	final Query createQuery(Type type)
+	final Query createQuery(Class<?> type)
 	{
 		return new Query(configuration.typeToKind(type));
 	}

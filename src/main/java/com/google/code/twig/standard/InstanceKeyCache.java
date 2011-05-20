@@ -26,11 +26,10 @@ public class InstanceKeyCache
 		.concurrencyLevel(1)
 		.makeMap();
 
-
 	private Map<Object, ObjectReference<Key>> cacheByValue = new MapMaker()
-			.weakKeys()
-			.concurrencyLevel(1)
-			.makeMap();
+		.weakKeys()
+		.concurrencyLevel(1)
+		.makeMap();
 
 	public void cache(Key key, Object object)
 	{

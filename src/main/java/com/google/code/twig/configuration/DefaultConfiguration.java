@@ -23,20 +23,20 @@ public abstract class DefaultConfiguration implements Configuration
 {
 	private final int defaultVersion;
 
-	private static Map<String, Type> nameToType;
-	private static Map<Type,String> typeToName;
+	private static Map<String, Class<?>> nameToType;
+	private static Map<Class<?>,String> typeToName;
 	
 	public DefaultConfiguration(int defaultVersion)
 	{
 		this.defaultVersion = defaultVersion;
 	}
 
-	public static void registerTypeName(Type type, String name)
+	public static void registerTypeName(Class<?> type, String name)
 	{
 		if (nameToType == null)
 		{
-			nameToType = new ConcurrentHashMap<String, Type>();
-			typeToName = new ConcurrentHashMap<Type, String>();
+			nameToType = new ConcurrentHashMap<String, Class<?>>();
+			typeToName = new ConcurrentHashMap<Class<?>, String>();
 		}
 		
 		// put the values and check that there was no existing mappings
@@ -66,13 +66,13 @@ public abstract class DefaultConfiguration implements Configuration
 	 * 
 	 * @param name The portion of the kind name that specifies the Type
 	 */
-	protected Type nameToType(String name)
+	protected Class<?> nameToType(String name)
 	{
 		try
 		{	
 			if (nameToType != null)
 			{
-				Type type = nameToType.get(name);
+				Class<?> type = nameToType.get(name);
 				if (type != null)
 				{
 					return type;
@@ -87,7 +87,7 @@ public abstract class DefaultConfiguration implements Configuration
 	}
 
 	private final static Pattern pattern = Pattern.compile("v\\d_");
-	public final Type kindToType(String name)
+	public final Class<?> kindToType(String name)
 	{
         Matcher matcher = pattern.matcher(name);
 		if (matcher.lookingAt())
@@ -116,7 +116,7 @@ public abstract class DefaultConfiguration implements Configuration
 		return name;
 	}
 
-	public final String typeToKind(Type type)
+	public final String typeToKind(Class<?> type)
 	{
 		String kind = typeToName(type);
 		
@@ -139,7 +139,7 @@ public abstract class DefaultConfiguration implements Configuration
 	 * 
 	 * @return A representation that can unambiguously specify the type
 	 */
-	protected String typeToName(Type type)
+	protected String typeToName(Class<?> type)
 	{
 		if (typeToName != null)
 		{
@@ -149,9 +149,7 @@ public abstract class DefaultConfiguration implements Configuration
 				return name;
 			}
 		}
-		Class<?> clazz = Generics.erase(type);
-		String kind = clazz.getName();
-		return kind;
+		return type.getName();
 	}
 
 	/**

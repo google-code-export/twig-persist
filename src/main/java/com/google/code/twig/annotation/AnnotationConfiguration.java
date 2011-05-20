@@ -21,6 +21,34 @@ public class AnnotationConfiguration extends DefaultConfiguration implements Con
 	{
 		this(indexPropertiesDefault, 0);
 	}
+
+	public void register(Class<?> type)
+	{
+		Class<?> tempType = type;
+		do
+		{
+			Entity annotation = type.getAnnotation(Entity.class);
+			if (annotation != null && !annotation.kind().equals(""))
+			{
+				registerTypeName(type, annotation.kind());
+			}
+			if (!polymorphic(type)) break;
+				
+			tempType = tempType.getSuperclass();
+		}
+		while (tempType != Object.class);
+	}
+
+	@Override
+	public boolean polymorphic(Class<?> instance)
+	{
+		Entity annotation = instance.getClass().getAnnotation(Entity.class);
+		if (annotation != null)
+		{
+			return annotation.polymorphic();
+		}
+		return false;
+	}
 	
 	@Override
 	public boolean key(Field field)
