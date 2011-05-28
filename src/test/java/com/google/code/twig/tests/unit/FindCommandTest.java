@@ -16,6 +16,7 @@ import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.repackaged.com.google.common.collect.Lists;
 import com.google.code.twig.LocalDatastoreTestCase;
 import com.google.code.twig.annotation.AnnotationObjectDatastore;
+import com.google.code.twig.annotation.Id;
 import com.google.code.twig.tests.unit.FindCommandTest.Spaceship.Planet;
 
 public class FindCommandTest extends LocalDatastoreTestCase
@@ -60,6 +61,7 @@ public class FindCommandTest extends LocalDatastoreTestCase
 	
 	static class Pilot
 	{
+		@Id long id;
 		String name;
 		Spaceship spaceship;
 		
@@ -106,6 +108,21 @@ public class FindCommandTest extends LocalDatastoreTestCase
 			.now();
 		
 		assertSame(laikaSpaceDog, shouldBeLaika);
+	}
+	
+	@Test
+	public void findInstanceById()
+	{
+		Pilot chopSpaceChimp = new Pilot("Chop Chop Chang", null);
+		datastore.store(chopSpaceChimp);
+		
+		Pilot shouldBeChopChop = datastore.find()
+			.type(Pilot.class)
+			.addFilter("id", FilterOperator.EQUAL, chopSpaceChimp.id)
+			.returnUnique()
+			.now();
+		
+		assertSame(chopSpaceChimp, shouldBeChopChop);
 	}
 	
 	@Test

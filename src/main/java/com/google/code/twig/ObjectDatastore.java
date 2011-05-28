@@ -165,6 +165,9 @@ public interface ObjectDatastore extends Activator
 	Transaction beginTransaction();
 	Transaction getTransaction();
 	
+	void batch();
+	void flush();
+	
 	DatastoreService getService();
 
 	

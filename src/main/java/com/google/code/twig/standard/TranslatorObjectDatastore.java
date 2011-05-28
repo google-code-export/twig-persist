@@ -82,9 +82,6 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	// indicates we are only associating instances so do not store them
 	boolean associating;
 
-	// set when all entities should be collected and stored in one call
-	Map<Object, Entity> batched;
-
 	Map<String, Iterator<Key>> allocatedIdRanges;
 	
 	// set when an instance is to be refreshed rather than instantiated

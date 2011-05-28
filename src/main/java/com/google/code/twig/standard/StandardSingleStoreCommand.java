@@ -61,7 +61,7 @@ final class StandardSingleStoreCommand<T> extends StandardCommonStoreCommand<T, 
 		{
 			checkUniqueKeys(Collections.singleton(entity));
 		}
-		Key key = entityToKey(entity);
+		Key key = datastore.servicePut(entity);
 		
 		datastore.associate(instance, key);
 		setInstanceId(instance, key);

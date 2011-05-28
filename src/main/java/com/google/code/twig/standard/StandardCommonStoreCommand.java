@@ -14,6 +14,7 @@ import java.util.concurrent.Future;
 import com.google.appengine.api.datastore.AsyncDatastoreHelper;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Transaction;
 import com.google.appengine.api.utils.FutureWrapper;
 import com.google.code.twig.Path;
@@ -31,7 +32,6 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 	Collection<? extends T> instances;
 	List<?> ids;
 	Key parentKey;
-	boolean batch;
 	boolean unique;
 
 	StandardCommonStoreCommand(StandardStoreCommand command)
@@ -55,14 +55,6 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 	final C parentKey(Key parentKey)
 	{
 		this.parentKey = parentKey;
-		return (C) this;
-	}
-
-
-	@SuppressWarnings("unchecked")
-	public final C batch()
-	{
-		batch = true;
 		return (C) this;
 	}
 
@@ -141,7 +133,7 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 				}
 				else if (field.getType() == String.class)
 				{
-					field.set(instance, key.toString());
+					field.set(instance, KeyFactory.keyToString(key));
 				}
 				else
 				{
@@ -185,15 +177,9 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 		};
 	}
 	
-	@SuppressWarnings("unchecked")
 	final Map<T, Entity> instancesToEntities()
 	{
 		Map<T, Entity> entities = new LinkedHashMap<T, Entity>(instances.size());
-		if (batch)
-		{
-			// all entities will  be collected for one bulk put
-			datastore.batched = (Map<Object, Entity>) entities;
-		}
 
 		if (unique)
 		{
@@ -213,12 +199,6 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 			
 			// put null if we do not have the entity
 			entities.put(instance, entity);
-		}
-		
-		if (batch)
-		{
-			// we are done collecting entities for this batch
-			datastore.batched = null;
 		}
 		
 		// if we are batching this will contain all referenced entities
@@ -313,12 +293,6 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 		// will trigger referenced instances to be stored
 		transferProperties(entity, properties);
 		
-		// we can store all entities for a single batch put
-		if (datastore.batched != null)
-		{
-			datastore.batched.put(instance, entity);
-		}
-		
 		// pop the encode context
 		datastore.encodeKeySpec = existingEncodeKeySpec;
 		
@@ -368,58 +342,6 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 				// get the id from the key - the rest of the key spec should be the same
 				datastore.encodeKeySpec.setId(range.next().getId());
 			}
-		}
-	}
-	
-	/**
-	 * Potentially store an entity in the datastore.
-	 */
-	protected Key entityToKey(Entity entity)
-	{
-		// we could be just pretending to store to process the instance to get its key
-		if (datastore.associating || batch)
-		{
-			// do not save the entity because we just want the key
-			Key key = entity.getKey();
-			if (!key.isComplete())
-			{
-				// incomplete keys are no good to us
-				throw new IllegalArgumentException("Associating entity does not have complete key: " + entity);
-			}
-			return key;
-		}
-		else
-		{
-			// actually put the entity in the datastore
-			return datastore.servicePut(entity);
-		}
-	}
-
-	protected List<Key> entitiesToKeys(Collection<Entity> entities)
-	{
-		// we could be just pretending to store to process the instance to get its key
-		if (datastore.associating || batch)
-		{
-			// do not save the entity because we just want the keys
-			List<Key> keys = new ArrayList<Key>(entities.size());
-			for (Entity entity : entities)
-			{
-				Key key = entity.getKey();
-				
-				if (!key.isComplete())
-				{
-					// incomplete keys are no good to us
-					throw new IllegalArgumentException("Associating entity does not have complete key: " + entity);
-				}
-				keys.add(key);
-			}
-			
-			return keys;
-		}
-		else
-		{
-			// actually put the entity in the datastore
-			return datastore.servicePut(entities);
 		}
 	}
 }

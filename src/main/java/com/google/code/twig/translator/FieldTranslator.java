@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.logging.Logger;
 
 import com.google.appengine.api.datastore.DataTypeUtils;
 import com.google.code.twig.Path;
@@ -32,6 +33,7 @@ import com.google.code.twig.util.generic.Generics;
  */
 public abstract class FieldTranslator implements PropertyTranslator
 {
+	private static final Logger log = Logger.getLogger(FieldTranslator.class.getName());
 	private static final PropertyComparator COMPARATOR = new PropertyComparator();
 	private final TypeConverter converters;
 
@@ -75,14 +77,29 @@ public abstract class FieldTranslator implements PropertyTranslator
 				Path fieldPath = new Path.Builder(path).field(name).build();
 				
 				// handle missing class fields by ignoring the properties
-				while (ppss.hasNext() && (pps == null || pps.getPrefix().compareTo(fieldPath) < 0))
+				while (ppss.hasNext())
 				{
-					pps = ppss.next();
+					if (pps == null)
+					{
+						pps = ppss.next();
+					}
+					
+					if (pps.getPrefix().compareTo(fieldPath) < 0)
+					{
+						log.warning("No field found for properties with prefix " + pps.getPrefix() + " in class " + clazz);
+						
+						// get more properties
+						pps = null;
+					}
+					else
+					{
+						break;
+					}
 				}
 				
 				// if there are no properties for the field we must still
 				// run a translator because some translators do not require
-				// any fields to set a field value e.g. KeyTranslator
+				// any properties to set a field value e.g. KeyTranslator
 				Set<Property> childProperties;
 				if (pps == null || !fieldPath.equals(pps.getPrefix()))
 				{
@@ -92,6 +109,9 @@ public abstract class FieldTranslator implements PropertyTranslator
 				else
 				{
 					childProperties = pps.getProperties();
+					
+					// indicate we used these properties
+					pps = null;
 				}
 
 				decode(instance, field, fieldPath, childProperties);
