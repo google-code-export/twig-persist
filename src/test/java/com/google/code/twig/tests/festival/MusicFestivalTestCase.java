@@ -261,9 +261,12 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		Band band1 = musicFestival.bands.get(1);
 		Band band2 = musicFestival.bands.get(2);
 
-		Map<Band, Key> keys = datastore.store().instances(Arrays.asList(band1, band2)).batch().now();
-
-		assertTrue(keys.size() > 2);
+		datastore.batch();
+		Map<Band, Key> keys = datastore.store().instances(Arrays.asList(band1, band2)).now();
+		datastore.flush();
+		
+		// we only get keys for the instances stored
+		assertTrue(keys.size() == 2);
 	}
 	
 	@Test

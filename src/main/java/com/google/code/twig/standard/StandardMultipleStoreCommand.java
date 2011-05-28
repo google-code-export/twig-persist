@@ -1,6 +1,5 @@
 package com.google.code.twig.standard;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -35,7 +34,7 @@ class StandardMultipleStoreCommand<T> extends StandardCommonStoreCommand<T, Stan
 		Collection<Entity> filtered = Collections2.filter(entities.values(), Predicates.notNull());
 
 		// actually put the entities in the datastore
-		List<Key> keys = entitiesToKeys(new ArrayList<Entity>(filtered));
+		List<Key> keys = datastore.servicePut(filtered);
 		
 		// make a map to return
 		return createKeyMapAndUpdateCache(entities, keys);
