@@ -24,11 +24,8 @@ import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.SortPredicate;
 import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.appengine.api.datastore.Transaction;
-import com.google.code.twig.FindCommand;
-import com.google.code.twig.FindCommand.BranchFindCommand;
-import com.google.code.twig.FindCommand.ChildFindCommand;
 import com.google.code.twig.FindCommand.CommonFindCommand;
-import com.google.code.twig.FindCommand.MergeOperator;
+import com.google.code.twig.FindCommand.MergeFindCommand;
 import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
@@ -40,11 +37,10 @@ import com.google.code.twig.util.reference.ObjectReference;
 import com.google.common.base.Predicate;
 import com.google.common.collect.AbstractIterator;
 
-abstract class StandardCommonFindCommand<C extends CommonFindCommand<C>> extends StandardRestrictedFindCommand<C> implements CommonFindCommand<C>, BranchFindCommand
+abstract class StandardCommonFindCommand<C extends CommonFindCommand<C>> extends StandardRestrictedFindCommand<C> implements CommonFindCommand<C>
 {
-	protected List<StandardBranchFindCommand> children;
+	protected List<StandardMergeFindCommand> children;
 	protected List<Filter> filters;
-	private MergeOperator operator;
 
 	private static class Filter implements Serializable
 	{
@@ -199,7 +195,6 @@ abstract class StandardCommonFindCommand<C extends CommonFindCommand<C>> extends
 		return (C) this;
 	}
 
-	@SuppressWarnings("unchecked")
 	private Object encodeFieldValue(PropertyTranslator translator, Object value, Field field, Path path)
 	{
 		Set<Property> properties = translator.encode(value, path, true);
@@ -238,22 +233,12 @@ abstract class StandardCommonFindCommand<C extends CommonFindCommand<C>> extends
 		return (C) this;
 	}
 
-	public BranchFindCommand branch(FindCommand.MergeOperator operator)
+	public MergeFindCommand merge()
 	{
-		if (this.operator != null)
-		{
-			throw new IllegalStateException("Can only branch a command once");
-		}
-		this.operator = operator;
-		return this;
-	}
-	
-	public ChildFindCommand addChildCommand()
-	{
-		StandardBranchFindCommand child = new StandardBranchFindCommand(this);
+		StandardMergeFindCommand child = new StandardMergeFindCommand(this);
 		if (children == null)
 		{
-			children = new ArrayList<StandardBranchFindCommand>(2);
+			children = new ArrayList<StandardMergeFindCommand>(2);
 		}
 		children.add(child);		
 		return child;
@@ -269,7 +254,7 @@ abstract class StandardCommonFindCommand<C extends CommonFindCommand<C>> extends
 		else
 		{
 			List<Query> queries = new ArrayList<Query>(children.size() * 2);
-			for (StandardBranchFindCommand child : children)
+			for (StandardMergeFindCommand child : children)
 			{
 				queries.addAll(child.queries());
 			}

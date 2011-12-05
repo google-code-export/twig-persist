@@ -17,6 +17,7 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Transaction;
+import com.google.appengine.api.datastore.TransactionOptions;
 import com.google.code.twig.ObjectDatastore;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Collections2;
@@ -28,20 +29,20 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 	private Transaction transaction;
 	private final int retries;
 	private static final Logger logger = Logger.getLogger(BaseObjectDatastore.class.getName());
-	
+
 	private Map<Key, Entity> batched;
-	
+
 	public BaseObjectDatastore(int retries)
 	{
 		this(DatastoreServiceConfig.Builder.withDefaults(), retries);
 	}
-	
+
 	public BaseObjectDatastore(DatastoreServiceConfig config, int retries)
 	{
 		this.retries = retries;
 		setConfiguration(config);
 	}
-	
+
 	@Override
 	public void batch()
 	{
@@ -54,7 +55,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 			throw new IllegalStateException("Batch was already in progress");
 		}
 	}
-	
+
 	@Override
 	public void flush()
 	{
@@ -62,17 +63,17 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 		bulkDeleteWithTransaction(Maps.filterValues(batched, Predicates.isNull()).keySet());
 		batched.clear();
 	}
-	
+
 	public void setConfiguration(DatastoreServiceConfig config)
 	{
 		this.service = newDatastoreService(config);
 	}
-	
+
 	protected DatastoreService newDatastoreService(DatastoreServiceConfig config)
 	{
 		return DatastoreServiceFactory.getDatastoreService(config);
 	}
-	
+
 	protected final Key servicePut(Entity entity)
 	{
 		if (batched == null)
@@ -82,7 +83,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 		else
 		{
 			batched.put(entity.getKey(), entity);
-			
+
 			// assume key is complete
 			return entity.getKey();
 		}
@@ -105,7 +106,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 					logger.log(Level.WARNING, "Problem during try " + tries, e);
 				}
 			}
-			
+
 			throw last;
 		}
 		else
@@ -113,7 +114,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 			return service.put(transaction, entity);
 		}
 	}
-	
+
 	protected final List<Key> servicePut(Iterable<Entity> entities)
 	{
 		if (batched == null)
@@ -128,7 +129,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 				batched.put(entity.getKey(), entity);
 				keys.add(entity.getKey());
 			}
-			
+
 			return keys;
 		}
 	}
@@ -150,7 +151,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 					logger.log(Level.WARNING, "Problem during try " + tries, e);
 				}
 			}
-			
+
 			throw last;
 		}
 		else
@@ -170,7 +171,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 			return service.prepare(transaction, query);
 		}
 	}
-	
+
 	protected final void serviceDelete(Collection<Key> keys)
 	{
 		if (batched == null)
@@ -209,7 +210,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 			return service.get(transaction, key);
 		}
 	}
-	
+
 	protected final Map<Key, Entity> serviceGet(Iterable<Key> keys)
 	{
 		if (transaction == null)
@@ -221,7 +222,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 			return service.get(transaction, keys);
 		}
 	}
-	
+
 	public DatastoreService getService()
 	{
 		return service;
@@ -232,13 +233,27 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 		return transaction;
 	}
 
+	@Override
 	public final Transaction beginTransaction()
+	{
+		return beginTransaction(null);
+	}
+
+	public final Transaction beginTransaction(TransactionOptions options)
 	{
 		if (getTransaction() != null && getTransaction().isActive())
 		{
 			throw new IllegalStateException("Already in active transaction");
 		}
-		transaction = service.beginTransaction();
+
+		if (options == null)
+		{
+			transaction = service.beginTransaction();
+		}
+		else
+		{
+			transaction = service.beginTransaction(options);
+		}
 		return transaction;
 	}
 
@@ -246,5 +261,5 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 	{
 		transaction = null;
 	}
-	
+
 }

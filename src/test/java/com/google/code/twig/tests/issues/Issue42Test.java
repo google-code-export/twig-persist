@@ -12,10 +12,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.google.appengine.api.datastore.QueryResultIterator;
-import com.google.code.twig.LocalDatastoreTestCase;
-import com.google.code.twig.FindCommand.BranchFindCommand;
-import com.google.code.twig.FindCommand.MergeOperator;
 import com.google.code.twig.FindCommand.RootFindCommand;
+import com.google.code.twig.LocalDatastoreTestCase;
 import com.google.code.twig.annotation.AnnotationObjectDatastore;
 import com.google.common.collect.Iterators;
 
@@ -57,10 +55,9 @@ public class Issue42Test extends LocalDatastoreTestCase
 		ods.storeAll(getUserEntities());
 		ods.disassociateAll();
 		RootFindCommand<UserEntity> root = ods.find().type(UserEntity.class);
-		BranchFindCommand branch = root.branch(MergeOperator.OR);
-		branch.addChildCommand().addFilter("firstName", EQUAL, "A");
-		branch.addChildCommand().addFilter("lastName", EQUAL, "B");
-		branch.addChildCommand().addFilter("gender", EQUAL, MALE.name());
+		root.merge().addFilter("firstName", EQUAL, "A");
+		root.merge().addFilter("lastName", EQUAL, "B");
+		root.merge().addFilter("gender", EQUAL, MALE.name());
 
 		QueryResultIterator<UserEntity> results = root.now();
 		

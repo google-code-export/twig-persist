@@ -1,13 +1,13 @@
 package com.google.code.twig.standard;
 
 import com.google.appengine.api.datastore.Query;
-import com.google.code.twig.FindCommand.ChildFindCommand;
+import com.google.code.twig.FindCommand.MergeFindCommand;
 
-final class StandardBranchFindCommand extends StandardCommonFindCommand<ChildFindCommand> implements ChildFindCommand
+final class StandardMergeFindCommand extends StandardCommonFindCommand<MergeFindCommand> implements MergeFindCommand
 {
 	private final StandardCommonFindCommand<?> parent;
 
-	StandardBranchFindCommand(StandardCommonFindCommand<?> parent)
+	StandardMergeFindCommand(StandardCommonFindCommand<?> parent)
 	{
 		super(parent.datastore);
 		this.parent = parent;

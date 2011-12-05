@@ -56,7 +56,7 @@ class RelationTranslator implements PropertyTranslator
 		}
 	}
 
-	protected Object keysToInstances(List<Key> keys)
+	protected Collection<Object> keysToInstances(List<Key> keys)
 	{
 		Map<Key, Object> keysToInstances;
 		try
