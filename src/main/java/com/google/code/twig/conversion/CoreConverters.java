@@ -34,11 +34,11 @@ public class CoreConverters
 		converter.append(new StringToCurrency());
 	}
 
-	static DateFormat format = DateFormat.getDateTimeInstance();
 	public static class DateToString implements SpecificConverter<Date, String>
 	{
 		public String convert(Date source)
 		{
+			DateFormat format = DateFormat.getDateTimeInstance();
 			return format.format(source);
 		}
 	}
@@ -48,6 +48,7 @@ public class CoreConverters
 		{
 			try
 			{
+				DateFormat format = DateFormat.getDateTimeInstance();
 				return format.parse(source);
 			}
 			catch (ParseException e)
@@ -56,7 +57,7 @@ public class CoreConverters
 			}
 		}
 	}
-	
+
 	public static class ClassToString implements SpecificConverter<Class<?>, String>
 	{
 		public String convert(Class<?> source)
@@ -126,7 +127,7 @@ public class CoreConverters
 			}
 		}
 	}
-	
+
 	public static class LocaleToString implements SpecificConverter<Locale, String>
 	{
 		@Override
@@ -172,7 +173,7 @@ public class CoreConverters
 			return Currency.getInstance(source);
 		}
 	}
-	
+
 	public static class EnumSetToLong implements SpecificConverter<EnumSet<? extends Enum<?>>, Long>
 	{
 		@Override
@@ -192,26 +193,26 @@ public class CoreConverters
 			return bits;
 		}
 	}
-	
+
 	public static class LongToEnumSet implements TypeConverter
 	{
 		@SuppressWarnings("unchecked")
 		@Override
 		public <T> T convert(Object source, Type type)
 		{
-			if (source instanceof Long 
-					&& type instanceof ParameterizedType 
+			if (source instanceof Long
+					&& type instanceof ParameterizedType
 					&& EnumSet.class.isAssignableFrom(Generics.erase(type)))
 			{
 				Long value = (Long) source;
 				Type enumSetType = Generics.getExactSuperType(type, EnumSet.class);
 				Type enumType = ((ParameterizedType) enumSetType).getActualTypeArguments()[0];
-				
+
 				@SuppressWarnings("rawtypes")  // not sure how to define enum class safely
 				Class<? extends Enum> enumClass = (Class<? extends Enum>) Generics.erase(enumType);
-				
+
 				EnumSet<?> result = bitsToEnums(value, enumClass);
-				
+
 				return (T) result;
 			}
 			else
@@ -235,5 +236,5 @@ public class CoreConverters
 			return result;
 		}
 	}
-	
+
 }

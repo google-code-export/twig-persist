@@ -17,8 +17,6 @@ import com.google.appengine.api.datastore.QueryResultIterator;
  */
 public interface FindCommand
 {
-	enum MergeOperator { OR, AND };
-	
 	<T> RootFindCommand<T> type(Class<? extends T> type);
 
 	interface RestrictedFindCommand<C extends RestrictedFindCommand<C>>
@@ -31,15 +29,10 @@ public interface FindCommand
 	{
 		C addFilter(String field, FilterOperator operator, Object value);
 		C addRangeFilter(String field, Object from, Object to);
-		BranchFindCommand branch(MergeOperator operator);
-	}
-
-	interface BranchFindCommand
-	{
-		ChildFindCommand addChildCommand();
+		MergeFindCommand merge();
 	}
 	
-	interface ChildFindCommand extends CommonFindCommand<ChildFindCommand>
+	interface MergeFindCommand extends CommonFindCommand<MergeFindCommand>
 	{
 	}
 	
