@@ -9,7 +9,7 @@ import com.google.appengine.api.datastore.Key;
 import com.google.code.twig.standard.EntitySupplier.EntitySink;
 import com.google.common.collect.AbstractIterator;
 
-class SuppliedPrefetchParentIterator extends AbstractIterator<Entity> implements EntitySink
+public class SuppliedPrefetchParentIterator extends AbstractIterator<Entity> implements EntitySink
 {
 	private final Iterator<Entity> children;
 	private final EntitySupplier supplier;
@@ -17,7 +17,7 @@ class SuppliedPrefetchParentIterator extends AbstractIterator<Entity> implements
 	private Iterator<Entity> iterator;
 
 	SuppliedPrefetchParentIterator(
-			Iterator<Entity> children, 
+			Iterator<Entity> children,
 			EntitySupplier supplier)
 	{
 		this.children = children;

@@ -12,7 +12,7 @@ import com.google.code.twig.StoreCommand.MultipleStoreCommand;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Collections2;
 
-class StandardMultipleStoreCommand<T> extends StandardCommonStoreCommand<T, StandardMultipleStoreCommand<T>> implements MultipleStoreCommand<T, StandardMultipleStoreCommand<T>>
+public class StandardMultipleStoreCommand<T> extends StandardCommonStoreCommand<T, StandardMultipleStoreCommand<T>> implements MultipleStoreCommand<T, StandardMultipleStoreCommand<T>>
 {
 	StandardMultipleStoreCommand(StandardStoreCommand command, Collection<? extends T> instances)
 	{
@@ -35,7 +35,7 @@ class StandardMultipleStoreCommand<T> extends StandardCommonStoreCommand<T, Stan
 
 		// actually put the entities in the datastore
 		List<Key> keys = datastore.servicePut(filtered);
-		
+
 		// make a map to return
 		return createKeyMapAndUpdateCache(entities, keys);
 	}

@@ -10,7 +10,7 @@ import com.google.code.twig.StoreCommand.SingleStoreCommand;
 import com.google.code.twig.util.FutureAdaptor;
 import com.google.common.collect.Iterables;
 
-final class StandardSingleStoreCommand<T> extends StandardCommonStoreCommand<T, StandardSingleStoreCommand<T>> implements SingleStoreCommand<T, StandardSingleStoreCommand<T>>
+public class StandardSingleStoreCommand<T> extends StandardCommonStoreCommand<T, StandardSingleStoreCommand<T>> implements SingleStoreCommand<T, StandardSingleStoreCommand<T>>
 {
 	StandardSingleStoreCommand(StandardStoreCommand command, T instance)
 	{
@@ -62,14 +62,14 @@ final class StandardSingleStoreCommand<T> extends StandardCommonStoreCommand<T, 
 			checkUniqueKeys(Collections.singleton(entity));
 		}
 		Key key = datastore.servicePut(entity);
-		
+
 		datastore.associate(instance, key);
 		setInstanceId(instance, key);
 		setInstanceKey(instance, key);
-		
+
 		return key;
 	}
-	
+
 	@Override
 	public StandardSingleStoreCommand<T> id(long id)
 	{

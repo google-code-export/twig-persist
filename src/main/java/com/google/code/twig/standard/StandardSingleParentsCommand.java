@@ -5,7 +5,7 @@ import java.util.concurrent.Future;
 
 import com.google.appengine.api.datastore.Entity;
 
-class StandardSingleParentsCommand<P> extends StandardCommonParentsCommand<P>
+public class StandardSingleParentsCommand<P> extends StandardCommonParentsCommand<P>
 {
 	private final Iterator<Entity> childEntities;
 

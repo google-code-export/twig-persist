@@ -3,7 +3,7 @@ package com.google.code.twig.standard;
 import com.google.appengine.api.datastore.Query;
 import com.google.code.twig.FindCommand.MergeFindCommand;
 
-final class StandardMergeFindCommand extends StandardCommonFindCommand<MergeFindCommand> implements MergeFindCommand
+public class StandardMergeFindCommand extends StandardCommonFindCommand<MergeFindCommand> implements MergeFindCommand
 {
 	private final StandardCommonFindCommand<?> parent;
 
@@ -20,7 +20,7 @@ final class StandardMergeFindCommand extends StandardCommonFindCommand<MergeFind
 		applyFilters(query);
 		return query;
 	}
-	
+
 	@Override
 	public StandardRootFindCommand<?> getRootCommand()
 	{

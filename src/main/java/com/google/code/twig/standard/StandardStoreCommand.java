@@ -23,8 +23,8 @@ public class StandardStoreCommand extends StandardCommand implements StoreComman
 	{
 		return new StandardMultipleStoreCommand<T>(this, instances);
 	}
-	
-	public <T> StandardMultipleStoreCommand<T> instances(T... instances) 
+
+	public <T> StandardMultipleStoreCommand<T> instances(T... instances)
 	{
 		return new StandardMultipleStoreCommand<T>(this, Arrays.asList(instances));
 	}

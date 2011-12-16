@@ -16,11 +16,11 @@ import com.google.common.collect.Iterators;
 
 /**
  * Contains functionality common to all both TypedFindCommand and ParentsCommand
- * 
+ *
  * @author John Patterson <john@vercer.com>
  *
  * @param <T> The type of the instance that will be returned
- * @param <C> The concrete type that is returned from chained methods  
+ * @param <C> The concrete type that is returned from chained methods
  */
 abstract class StandardRestrictedFindCommand<C extends RestrictedFindCommand<C>> extends StandardDecodeCommand implements RestrictedFindCommand<C>
 {
@@ -72,5 +72,5 @@ abstract class StandardRestrictedFindCommand<C extends RestrictedFindCommand<C>>
 		merged = new SortedMergeIterator<Entity>(comparator, iterators);
 		return merged;
 	}
-	
+
 }

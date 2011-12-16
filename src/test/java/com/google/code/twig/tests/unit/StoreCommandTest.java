@@ -22,7 +22,7 @@ public class StoreCommandTest extends LocalDatastoreTestCase
 	{
 		datastore = new AnnotationObjectDatastore();
 	}
-	
+
 	@Entity(allocateIdsBy=10)
 	public static class AllocateParent
 	{
@@ -33,7 +33,7 @@ public class StoreCommandTest extends LocalDatastoreTestCase
 			this.child = child;
 		}
 	}
-	
+
 	public static class AllocateChild
 	{
 		String name;
@@ -42,16 +42,16 @@ public class StoreCommandTest extends LocalDatastoreTestCase
 			this.name = string;
 		}
 	}
-	
+
 	@Test
 	public void allocateIdsToParent()
 	{
 		AllocateChild child = new AllocateChild("TheChild");
 		AllocateParent parent = new AllocateParent(child);
-		
+
 		datastore.store(parent);
 	}
-	
+
 	static class HasGaeKey
 	{
 		@GaeKey String key;
@@ -65,26 +65,49 @@ public class StoreCommandTest extends LocalDatastoreTestCase
 			this.value = value;
 		}
 	}
-	
+
 	@Test public void storeSetsId()
 	{
 		HasGaeKey model = new HasGaeKey(4);
-		
+
 		Key key = datastore.store(model);
-	
+
 		Assert.assertNotNull(model.key);
-	
+
 		datastore.disassociateAll();
-		
+
 		HasGaeKey reloaded = datastore.load(key);
 
 		Assert.assertEquals(reloaded.key, model.key);
-		
+
 		reloaded.value = 3;
-		
+
 		datastore.update(reloaded);
 
 		Assert.assertEquals(reloaded.key, model.key);
 	}
-	
+
+	@Test public void storeWithParent()
+	{
+		HasGaeKey parent = new HasGaeKey(4);
+		HasGaeKey child = new HasGaeKey(2);
+
+
+		Key key = datastore.store().instance(child).parent(parent).now();
+
+		Assert.assertNotNull(model.key);
+
+		datastore.disassociateAll();
+
+		HasGaeKey reloaded = datastore.load(key);
+
+		Assert.assertEquals(reloaded.key, model.key);
+
+		reloaded.value = 3;
+
+		datastore.update(reloaded);
+
+		Assert.assertEquals(reloaded.key, model.key);
+	}
+
 }
