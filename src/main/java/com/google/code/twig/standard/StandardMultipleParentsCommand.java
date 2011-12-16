@@ -8,7 +8,7 @@ import java.util.concurrent.Future;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Query.SortPredicate;
 
-class StandardMultipleParentsCommand<P> extends StandardCommonParentsCommand<P>
+public class StandardMultipleParentsCommand<P> extends StandardCommonParentsCommand<P>
 {
 	private final List<Iterator<Entity>> childEntityIterators;
 	private final List<SortPredicate> sorts;
@@ -27,7 +27,7 @@ class StandardMultipleParentsCommand<P> extends StandardCommonParentsCommand<P>
 		{
 			// fetch in bulk parent entities for all child iterators
 			EntitySupplier supplier = new EntitySupplier(datastore, getFetchSize());
-			
+
 			// cannot merge children so must get parent entities first
 			List<Iterator<Entity>> parentEntityIterators = new ArrayList<Iterator<Entity>>(childEntityIterators.size());
 			for (Iterator<Entity> childEntities : childEntityIterators)
@@ -38,10 +38,10 @@ class StandardMultipleParentsCommand<P> extends StandardCommonParentsCommand<P>
 				parentEntities = applyEntityFilter(parentEntities);
 				parentEntityIterators.add(parentEntities);
 			}
-			
+
 			// merge all the parent iterators into a single iterator
 			Iterator<Entity> mergedParentEntities = mergeEntities(parentEntityIterators, sorts);
-			
+
 			// convert the entities into instances to return
 			return entitiesToInstances(mergedParentEntities, propertyRestriction);
 		}
@@ -50,7 +50,7 @@ class StandardMultipleParentsCommand<P> extends StandardCommonParentsCommand<P>
 			// we can merge the children first which gets rid of duplicates
 			Iterator<Entity> mergedChildEntities = mergeEntities(childEntityIterators, sorts);
 			mergedChildEntities = applyEntityFilter(mergedChildEntities);
-			
+
 			// get parents for all children at the same time - no dups so no cache
 			mergedChildEntities = childCommand.applyEntityFilter(mergedChildEntities);
 			Iterator<Entity> parentEntities = new PrefetchParentIterator(mergedChildEntities, datastore, getFetchSize());
@@ -58,7 +58,7 @@ class StandardMultipleParentsCommand<P> extends StandardCommonParentsCommand<P>
 			return entitiesToInstances(parentEntities, propertyRestriction);
 		}
 	}
-	
+
 	@Override
 	public Future<Iterator<P>> later()
 	{
