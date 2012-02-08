@@ -3,10 +3,7 @@ package com.google.code.twig.tests.unit;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertSame;
 
-import java.util.ArrayList;
 import java.util.Collection;
-
-import junit.framework.Assert;
 
 import org.junit.Before;
 import org.junit.Test;

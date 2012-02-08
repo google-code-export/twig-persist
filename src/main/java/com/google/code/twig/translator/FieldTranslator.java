@@ -21,7 +21,7 @@ import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.conversion.TypeConverter;
 import com.google.code.twig.util.PrefixPropertySet;
-import com.google.code.twig.util.PropertyComparator;
+import com.google.code.twig.util.PropertyPathComparator;
 import com.google.code.twig.util.PropertySets;
 import com.google.code.twig.util.SimpleProperty;
 import com.google.code.twig.util.collections.MergeSet;
@@ -34,7 +34,7 @@ import com.google.code.twig.util.generic.Generics;
 public abstract class FieldTranslator implements PropertyTranslator
 {
 	private static final Logger log = Logger.getLogger(FieldTranslator.class.getName());
-	private static final PropertyComparator COMPARATOR = new PropertyComparator();
+	private static final PropertyPathComparator COMPARATOR = new PropertyPathComparator();
 	private final TypeConverter converters;
 
 	public FieldTranslator(TypeConverter converters)

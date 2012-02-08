@@ -20,7 +20,7 @@ import com.google.code.twig.util.collections.ArraySortedSet;
  */
 public class PropertySets
 {
-	private static final PropertyComparator comparator = new PropertyComparator();
+	private static final PropertyPathComparator comparator = new PropertyPathComparator();
 	
 	@SuppressWarnings("unchecked")
 	public static <T> T firstValue(Set<Property> properties)

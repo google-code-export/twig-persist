@@ -18,14 +18,14 @@ import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.Restriction;
-import com.google.code.twig.util.PropertyComparator;
+import com.google.code.twig.util.PropertyPathComparator;
 import com.google.code.twig.util.PropertySets;
 import com.google.code.twig.util.RestrictionToPredicateAdaptor;
 import com.google.common.collect.Sets;
 
 class StandardDecodeCommand extends StandardCommand
 {
-	private static final PropertyComparator COMPARATOR = new PropertyComparator();
+	private static final PropertyPathComparator COMPARATOR = new PropertyPathComparator();
 	
 	StandardDecodeCommand(TranslatorObjectDatastore datastore)
 	{

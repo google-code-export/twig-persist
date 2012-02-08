@@ -92,22 +92,21 @@ public class StoreCommandTest extends LocalDatastoreTestCase
 		HasGaeKey parent = new HasGaeKey(4);
 		HasGaeKey child = new HasGaeKey(2);
 
-
+		datastore.store().instance(parent).now();
+		
 		Key key = datastore.store().instance(child).parent(parent).now();
-
-		Assert.assertNotNull(model.key);
 
 		datastore.disassociateAll();
 
 		HasGaeKey reloaded = datastore.load(key);
 
-		Assert.assertEquals(reloaded.key, model.key);
+		Assert.assertEquals(reloaded.key, child.key);
 
 		reloaded.value = 3;
 
 		datastore.update(reloaded);
 
-		Assert.assertEquals(reloaded.key, model.key);
+		Assert.assertEquals(reloaded.key, child.key);
 	}
 
 }
