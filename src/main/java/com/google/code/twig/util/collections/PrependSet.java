@@ -1,6 +1,7 @@
 package com.google.code.twig.util.collections;
 
 import java.util.AbstractSet;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -52,6 +53,23 @@ public class PrependSet<E> extends AbstractSet<E>
 				throw new UnsupportedOperationException(); 
 			}
 		};
+	}
+	
+	public boolean add(E e)
+	{
+		return set.add(e);
+	};
+	
+	@Override
+	public boolean addAll(Collection<? extends E> c)
+	{
+		return set.addAll(c);
+	}
+	
+	@Override
+	public boolean remove(Object o)
+	{
+		return set.remove(o);
 	}
 	
 	public E getItem()

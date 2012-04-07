@@ -4,33 +4,17 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.Future;
 
-import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.code.twig.StoreCommand.SingleStoreCommand;
 import com.google.code.twig.util.FutureAdaptor;
 import com.google.common.collect.Iterables;
 
-public class StandardSingleStoreCommand<T> extends StandardCommonStoreCommand<T, StandardSingleStoreCommand<T>> implements SingleStoreCommand<T, StandardSingleStoreCommand<T>>
+public final class StandardSingleStoreCommand<T> extends StandardCommonStoreCommand<T, StandardSingleStoreCommand<T>> implements SingleStoreCommand<T, StandardSingleStoreCommand<T>>
 {
 	StandardSingleStoreCommand(StandardStoreCommand command, T instance)
 	{
 		super(command);
 		instances = Collections.singletonList(instance);
-		if (!command.update && command.datastore.associatedKey(instance) != null)
-		{
-			if (command.datastore.associating)
-			{
-				throw new IllegalArgumentException("Cannot associate an already associated instance.");
-			}
-			else
-			{
-				throw new IllegalArgumentException("Cannot store associated instance. Use update instead.");
-			}
-		}
-		else if (command.update && command.datastore.associatedKey(instance) == null)
-		{
-			throw new IllegalArgumentException("Cannot update non-associated instance. Use store instead.");
-		}
 	}
 
 	public Future<Key> later()
@@ -55,21 +39,18 @@ public class StandardSingleStoreCommand<T> extends StandardCommonStoreCommand<T,
 		{
 			id = Iterables.getOnlyElement(ids);
 		}
-		Entity entity = instanceToEntity(instance, parentKey, id);
+		
+		Key key = instanceToKey(instance, id);
 
-		if (unique)
-		{
-			checkUniqueKeys(Collections.singleton(entity));
-		}
-		Key key = datastore.servicePut(entity);
-
-		datastore.associate(instance, key);
-		setInstanceId(instance, key);
-		setInstanceKey(instance, key);
-
+		setInstanceId(instance, key, datastore);
+		setInstanceKey(instance, key, datastore);
+		
+		// when associating we might not activate the instance
+		datastore.keyCache.cache(key, instance, datastore.activated, 1);
+		
 		return key;
 	}
-
+	
 	@Override
 	public StandardSingleStoreCommand<T> id(long id)
 	{

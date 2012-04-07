@@ -20,8 +20,6 @@ import com.google.code.twig.util.collections.ArraySortedSet;
  */
 public class PropertySets
 {
-	private static final PropertyPathComparator comparator = new PropertyPathComparator();
-	
 	@SuppressWarnings("unchecked")
 	public static <T> T firstValue(Set<Property> properties)
 	{
@@ -45,36 +43,43 @@ public class PropertySets
 		Collection<PrefixPropertySet> result = new ArrayList<PrefixPropertySet>();
 		Part part = null;
 		int start = 0;
-		for (int i = 0; i < array.length; i++)
+		int end;
+		for (end = 0; end < array.length; end++)
 		{
-			Path path = array[i].getPath();
+			Path path = array[end].getPath();
 			if (path.hasPrefix(prefix))
 			{
+				// ignore the base prefix properties
+				if (path.equals(prefix))
+				{
+					continue;
+				}
+				
 				Part firstPartAfterPrefix = path.firstPartAfterPrefix(prefix);
 				if (part != null && !firstPartAfterPrefix.equals(part))
 				{
 					// if the first part has changed then add a new set
-					PrefixPropertySet ppf = createPrefixSubset(prefix, array, part, start, i);
+					PrefixPropertySet ppf = createPrefixSubset(prefix, array, part, start, end);
 					result.add(ppf);
-					start = i; 
+					start = end; 
 				}
 				else if (part == null)
 				{
-					start = i;
+					start = end;
 				}
 				
 				part = firstPartAfterPrefix;
 			}
-			else
+			else if (part != null)
 			{
-				part = null;
+				break;
 			}
 		}
 		
 		// add the last set 
-		if (array.length > 0 && part != null)
+		if (part != null)
 		{
-			PrefixPropertySet ppf = createPrefixSubset(prefix, array, part, start, array.length);
+			PrefixPropertySet ppf = createPrefixSubset(prefix, array, part, start, end);
 			result.add(ppf);
 		}
 		return result;
@@ -82,7 +87,7 @@ public class PropertySets
 
 	private static PrefixPropertySet createPrefixSubset(Path prefix, Property[] array, Part part, int start, int i)
 	{
-		Set<Property> subset = new ArraySortedSet<Property>(array, start, i - start, comparator);
+		Set<Property> subset = new ArraySortedSet<Property>(array, start, i - start, null);
 		PrefixPropertySet ppf = new PrefixPropertySet(Path.builder(prefix).append(part).build(), subset);
 		return ppf;
 	}

@@ -19,14 +19,20 @@ public class EnumTranslator implements PropertyTranslator
 		Class<?> clazz = Generics.erase(type);
 		if (clazz.isEnum())
 		{
+			if (properties.isEmpty()) return NULL_VALUE;
+			
 			Property property = properties.iterator().next();
 			String name = (String) property.getValue();
+			
+			if (name == null) return NULL_VALUE;
+			
 			@SuppressWarnings("rawtypes")
 			Class<? extends Enum> ce = (Class<? extends Enum>) clazz;
 			return Enum.valueOf(ce, name);
 		}
 		else
 		{
+			// did not handle these properties
 			return null;
 		}
 	}

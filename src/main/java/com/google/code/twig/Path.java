@@ -1,17 +1,12 @@
 package com.google.code.twig;
 
-import java.util.AbstractList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 
 import com.google.code.twig.util.Strings;
-import com.google.common.collect.AbstractIterator;
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 
-/**
- * @author John Patterson (jdpatterson@gmail.com)
- *
- */
 /**
  * @author John Patterson (jdpatterson@gmail.com)
  *
@@ -25,11 +20,26 @@ public class Path implements Comparable<Path>
 	private final static char[] SEPERATORS = { FIELD, META, KEY };
 
 	public static final Path EMPTY_PATH = new Path("");
+	private static final Function<String, Part> stringToPart = new Function<String, Part>()
+	{
+		@Override
+		public Part apply(String input)
+		{
+			return new Part(input);
+		}
+	};
+	
+	private List<Part> parts;
 
 	public static class Builder
 	{
 		private final StringBuilder builder = new StringBuilder();
 
+		private Builder()
+		{
+		}
+		
+		// TODO make these private with static methods to create
 		public Builder(String property)
 		{
 			builder.append(property);
@@ -92,6 +102,11 @@ public class Path implements Comparable<Path>
 			builder.append(part.text);
 			return this;
 		}
+	}
+	
+	public static Builder builder()
+	{
+		return new Builder();
 	}
 
 	public static class Part
@@ -193,93 +208,18 @@ public class Path implements Comparable<Path>
 
 	public List<Part> getParts()
 	{
-		return new AbstractList<Part>()
+		if (parts == null)
 		{
-			@Override
-			public Part get(int index)
-			{
-				int begin;
-				if (index == 0)
-				{
-					begin = 0;
-				}
-				else
-				{
-					begin = Strings.nthIndexOf(value, index, SEPERATORS);
-				}
-				if (begin >= 0)
-				{
-					int end = Strings.firstIndexOf(value, begin + 1, SEPERATORS);
-					if (end > 0)
-					{
-						return new Part(value.substring(begin, end));
-					}
-					else
-					{
-						return new Part(value.substring(begin));
-					}
-				}
-				else
-				{
-					return null;
-				}
-			}
-
-			@Override
-			public int size()
-			{
-				if (value.length() == 0)
-				{
-					return 0;
-				}
-				int index = 0;
-				int count = 0;
-				do
-				{
-					index = Strings.firstIndexOf(value, index + 1, SEPERATORS);
-					count++;
-				}
-				while (index > 0);
-
-				return count;
-			}
-
-			@Override
-			public Iterator<Part> iterator()
-			{
-				return new AbstractIterator<Part>()
-				{
-					private int index;
-
-					@Override
-					protected Part computeNext()
-					{
-						if (index < 0)
-						{
-							return endOfData();
-						}
-
-						int nextIndex = Strings.firstIndexOf(value, index + 1, SEPERATORS);
-						String substring;
-						if (nextIndex > 0)
-						{
-							substring = value.substring(index, nextIndex);
-						}
-						else
-						{
-							substring = value.substring(index);
-						}
-						index = nextIndex;
-						return new Part(substring);
-					}
-				};
-			}
-		};
+			String[] split = Strings.split(value, true, SEPERATORS);
+			parts =	Lists.transform(Arrays.asList(split), stringToPart);
+		}
+		return parts;
 	}
-
+	
 	public Path tail(int start)
 	{
 		int index = Strings.nthIndexOf(value, start, SEPERATORS);
+		if (index < 0) return EMPTY_PATH;
 		return new Path(value.substring(index));
 	}
 	

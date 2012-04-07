@@ -24,7 +24,7 @@ final class ParentRelationTranslator extends RelationTranslator
 
 	public Object decode(Set<Property> properties, Path prefix, Type type)
 	{
-		// properties are not used as the parent is found by the key
+		// properties are not used as the ancestors is found by the key
 		assert properties.isEmpty();
 
 		// put the key in a property
@@ -50,15 +50,15 @@ final class ParentRelationTranslator extends RelationTranslator
 				}
 			};
 	
-			// an existing parent key ref shows parent is still being stored
+			// an existing ancestors key ref shows ancestors is still being stored
 			if (datastore.encodeKeySpec != null && datastore.encodeKeySpec.getParentKeyReference() == null)
 			{
-				// store the parent key inside the current key
+				// store the ancestors key inside the current key
 				datastore.encodeKeySpec.setParentKeyReference(keyReference);
 			}
 		}
 
-		// no fields are stored for parent
+		// no fields are stored for ancestors
 		return Collections.emptySet();
 	}
 }

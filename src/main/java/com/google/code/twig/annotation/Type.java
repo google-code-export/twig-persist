@@ -7,6 +7,7 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
+// TODO rename to StoreAs in 3.0
 public @interface Type
 {
 	Class<?> value();

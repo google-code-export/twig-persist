@@ -5,7 +5,7 @@ import java.util.Map;
 
 import com.google.appengine.api.datastore.Key;
 
-public class StandardUntypedMultipleLoadCommand extends StandardDecodeCommand
+public class StandardUntypedMultipleLoadCommand extends StandardDecodeCommand<StandardUntypedMultipleLoadCommand>
 {
 	private final Collection<Key> keys;
 
@@ -15,7 +15,7 @@ public class StandardUntypedMultipleLoadCommand extends StandardDecodeCommand
 		this.keys = keys;
 	}
 
-	public Map<Key, Object> returnResultsNow()
+	public Map<Key, Object> now()
 	{
 		return keysToInstances(keys, null);
 	}

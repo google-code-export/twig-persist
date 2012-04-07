@@ -7,15 +7,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * @author John Patterson <john@vercer.com>
- * 
- * @deprecated Use {@link Embedded} instead which conforms to javax.persistence 
- *
+ * @author John Patterson <jdpatterson@gmail.com>
  */
 @Target({ElementType.FIELD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
-@Deprecated
 public @interface Embed
 {
 	boolean value() default true;

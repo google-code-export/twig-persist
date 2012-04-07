@@ -1,42 +1,35 @@
 package com.google.code.twig.configuration;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import com.google.code.twig.conversion.PrimitiveConverter;
-import com.google.code.twig.util.generic.Generics;
 
 /**
- * @author John Patterson <john@vercer.com>
- *
+ * @author John Patterson <jdpatterson@gmail.com>
  */
 public abstract class DefaultConfiguration implements Configuration
 {
-	private final int defaultVersion;
-
 	private static Map<String, Class<?>> nameToType;
 	private static Map<Class<?>,String> typeToName;
 	
-	public DefaultConfiguration(int defaultVersion)
+	// cache field types on the fly as the may involve calculation / replacement
+//	private static Map<Type, Type> typeToReplacement = Maps.newConcurrentMap();
+	
+	// TODO remove this
+	public static void secretMethodForSneakilyChangingTypeName(Class<?> type, String name)
 	{
-		this.defaultVersion = defaultVersion;
+		nameToType.put(name, type);
+		typeToName.put(type, name);
 	}
 
 	public static void registerTypeName(Class<?> type, String name)
 	{
 		if (nameToType == null)
 		{
-			nameToType = new ConcurrentHashMap<String, Class<?>>();
-			typeToName = new ConcurrentHashMap<Class<?>, String>();
+			// should be configured at start-up so no need for concurrency
+			nameToType = new HashMap<String, Class<?>>();
+			typeToName = new HashMap<Class<?>, String>();
 		}
 		
 		// put the values and check that there was no existing mappings
@@ -59,6 +52,12 @@ public abstract class DefaultConfiguration implements Configuration
 		{
 			throw new IllegalArgumentException("Type " + type + " was already mapped to kind name " + existingName);
 		}
+	}
+	
+	@Override
+	public int retryNonTransactionPut()
+	{
+		return 5;
 	}
 	
 	/**
@@ -86,19 +85,17 @@ public abstract class DefaultConfiguration implements Configuration
 		}
 	}
 
-	private final static Pattern pattern = Pattern.compile("v\\d_");
 	public final Class<?> kindToType(String name)
 	{
-        Matcher matcher = pattern.matcher(name);
-		if (matcher.lookingAt())
+		int versionIndex = name.indexOf(':');
+		
+		if (versionIndex > 0)
 		{
-			name = name.substring(matcher.end());
+			name = name.substring(0, versionIndex);
 		}
 		
 		//use space as a place holder as it cannot exist in property names
-		name = name.replaceAll("__", " ");
-		name = name.replace('_', '.');
-		name = name.replace(' ', '_');
+		name = name.replaceAll("_", ".");
 		return nameToType(name);
 	}
 
@@ -121,14 +118,12 @@ public abstract class DefaultConfiguration implements Configuration
 		String kind = typeToName(type);
 		
 		// replace . with _ and _ with __
-		kind = kind.replace('.', ' ');
-		kind = kind.replaceAll("_", "__");
-		kind = kind.replace(' ', '_');
+		kind = kind.replace('.', '_');
 		
 		int version = version(type);
 		if (version > 0)
 		{
-			kind = "v" + version + "_" + kind;
+			kind = kind + ":" + version;
 		}
 		return kind;
 	}
@@ -157,7 +152,7 @@ public abstract class DefaultConfiguration implements Configuration
 	 */
 	protected int version(Type type)
 	{
-		return defaultVersion;
+		return 0;
 	}
 
 	/**
@@ -168,84 +163,78 @@ public abstract class DefaultConfiguration implements Configuration
 	 */
 	public Type typeOf(Field field)
 	{
-		return replaceCollectionWithList(field.getGenericType());
+		return field.getGenericType();
+//		return replace(field.getGenericType());
 	}
-
-	protected Type replaceCollectionWithList(final Type type)
-	{
-		// turn every collection or array into an array list
-		Type componentType = null;
-		Class<?> erased = Generics.erase(type);
-		if (type instanceof TypeVariable<?>)
-		{
-			return erased;
-		}
-		else if (type instanceof GenericArrayType)
-		{
-			// we have a generic array like Provider<Twig>[]
-			GenericArrayType arrayType = (GenericArrayType) type;
-			componentType = arrayType.getGenericComponentType();
-		}
-		else if (erased.isArray())
-		{
-			// we have a normal array like Twig[]
-			componentType = erased.getComponentType();
-		}
-		else if (Collection.class.isAssignableFrom(erased) && !ArrayList.class.isAssignableFrom(erased))
-		{
-			// we have some kind of collection like Set<Twig>
-			Type exact = Generics.getExactSuperType(type, Collection.class);
-			componentType = ((ParameterizedType) exact).getActualTypeArguments()[0];
-		}
-		else
-		{
-			// we have a non-collection type
-			return type;
-		}
-
-		// we have a collection so convert its component type also
-		Type replaced = replaceCollectionWithList(componentType);
-		
-		// use wrapper type for primitives
-		if (Generics.erase(replaced).isPrimitive())
-		{
-			replaced = PrimitiveConverter.getWrapperClassForPrimitive((Class<?>) replaced);
-		}
-
-		// replace the collection type with a list type
-		return new ReplacedListType(type, replaced);
-	}
-	
-	private static final class ReplacedListType implements ParameterizedType
-	{
-		private final Type type;
-		private final Type replaced;
-
-		private ReplacedListType(Type type, Type replaced)
-		{
-			this.type = type;
-			this.replaced = replaced;
-		}
-
-		public Type getRawType()
-		{
-			return ArrayList.class;
-		}
-
-		public Type getOwnerType()
-		{
-			return null;
-		}
-
-		public Type[] getActualTypeArguments()
-		{
-			return new Type[] { replaced };
-		}
-
-		@Override
-		public String toString()
-		{
-			return "(Replaced " + type + " with List<" + replaced + ">)";
-		}
-	}
+//	
+//	private Type replace(Type type)
+//	{
+//		// check the cache fist as this could be expensive
+//		Type replaced = typeToReplacement.get(type);
+//		if (replaced != null) return replaced;
+//			
+//		Type converted;
+//		if (type instanceof ParameterizedType)
+//		{
+//			ParameterizedType parameterised = (ParameterizedType) type;
+//			Type[] arguments = parameterised.getActualTypeArguments();
+//			boolean changed = false;
+//			for (int i = 0; i < arguments.length; i++)
+//			{
+//				Type original = arguments[i];
+//				
+//				// recursively replace type parameters
+//				arguments[i] = replace(original);
+//				
+//				if (original != arguments[i]) changed = true;
+//			}
+//			
+//			Class<?> erased = Generics.erase(type);
+//			Class<?> swaped = swap(erased);
+//			if (swaped != erased) changed = true;
+//			
+//			if (changed)
+//			{
+//				converted = new ParameterizedTypeImpl(swaped, arguments, parameterised.getOwnerType());
+//			}
+//			else
+//			{
+//				converted = type;
+//			}
+//		}
+//		else
+//		{
+//			Type componentType = Generics.getArrayComponentType(type);
+//			if (componentType != null)
+//			{
+//				converted = new ParameterizedTypeImpl(Iterable.class, new Type[] {componentType}, null);
+//			}
+//			else if (type instanceof Class<?>)
+//			{
+//				converted = swap((Class<?>) type);
+//			}
+//			else
+//			{
+//				// just use the original type
+//				converted = type;
+//			}
+//		}
+//		
+//		typeToReplacement.put(type, converted);
+//		
+//		return converted;
+//	}
+//
+//	protected Class<?> swap(Class<?> type)
+//	{
+////		 store all iterables as lists
+//		if (Iterable.class.isAssignableFrom(type))
+//		{
+//			return List.class;
+//		}
+//		else
+//		{
+//			return type;
+//		}
+//	}
 }

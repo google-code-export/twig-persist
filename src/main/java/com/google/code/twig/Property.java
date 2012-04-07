@@ -4,7 +4,7 @@
 package com.google.code.twig;
 
 
-public interface Property
+public interface Property extends Comparable<Property>
 {
 	Path getPath();
 	Object getValue();

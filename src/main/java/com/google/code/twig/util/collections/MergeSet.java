@@ -62,6 +62,7 @@ public class MergeSet<T> extends AbstractSet<T>
 	@Override
 	public boolean add(T o)
 	{
+		size++;
 		return sets.add(Collections.singleton(o));
 	};
 

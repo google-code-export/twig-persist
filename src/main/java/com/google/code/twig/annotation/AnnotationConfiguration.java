@@ -2,24 +2,18 @@ package com.google.code.twig.annotation;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.regex.Pattern;
 
-import com.google.code.twig.configuration.Configuration;
 import com.google.code.twig.configuration.DefaultConfiguration;
 import com.google.code.twig.util.generic.Generics;
 
-public class AnnotationConfiguration extends DefaultConfiguration implements Configuration
+public class AnnotationConfiguration extends DefaultConfiguration
 {
 	private final boolean indexed;
-
-	public AnnotationConfiguration(boolean indexPropertiesDefault, int defaultVersion)
-	{
-		super(defaultVersion);
-		this.indexed = indexPropertiesDefault;
-	}
-
+	
 	public AnnotationConfiguration(boolean indexPropertiesDefault)
 	{
-		this(indexPropertiesDefault, 0);
+		this.indexed = indexPropertiesDefault;
 	}
 
 	public void register(Class<?> type)
@@ -66,7 +60,6 @@ public class AnnotationConfiguration extends DefaultConfiguration implements Con
 		return field.isAnnotationPresent(Parent.class);
 	}
 
-	@SuppressWarnings("deprecation")
 	public boolean embed(Field field)
 	{
 		Embedded annotation = field.getAnnotation(Embedded.class);
@@ -97,6 +90,22 @@ public class AnnotationConfiguration extends DefaultConfiguration implements Con
 			}
 		}
 	}
+	
+	@Override
+	public String[] denormalise(Field field)
+	{
+		Denormalise annotation = field.getAnnotation(Denormalise.class);
+		if (annotation == null) 
+		{
+			return null;
+		}
+		else
+		{
+			return annotation.value();
+		}
+	}
+
+	private static final Pattern innerClassNamePattern = Pattern.compile(".*this\\$[0-9]+");
 
 	public boolean store(Field field)
 	{
@@ -116,18 +125,32 @@ public class AnnotationConfiguration extends DefaultConfiguration implements Con
 			if (Modifier.isFinal(modifiers))
 			{
 				String name = field.getName();
-				if (name.matches(".*this\\$[0-9]+"))
+				if (innerClassNamePattern.matcher(name).matches())
 				{
 					throw new IllegalStateException("Inner class " + field.getDeclaringClass()
 							+ " must be declared static");
 				}
 				else
 				{
-					throw new IllegalStateException("Final field " + field + " cannot be stored");
+//					throw new IllegalStateException("Final field " + field + " cannot be stored");
 				}
 			}
 
 			return true;
+		}
+	}
+
+	@Override
+	public int serializationThreshold(Field field)
+	{
+		Store annotation = field.getAnnotation(Store.class);
+		if (annotation != null)
+		{
+			return annotation.serializeThreshold();
+		}
+		else
+		{
+			return -1;
 		}
 	}
 
@@ -202,20 +225,17 @@ public class AnnotationConfiguration extends DefaultConfiguration implements Con
 
 	public boolean entity(Field field)
 	{
-		return field.isAnnotationPresent(Parent.class) || field.isAnnotationPresent(Child.class)
-				|| field.isAnnotationPresent(Independent.class);
+		return field.isAnnotationPresent(Parent.class) || 
+				field.isAnnotationPresent(Child.class) || 
+				field.isAnnotationPresent(Denormalise.class) || 
+				field.isAnnotationPresent(Independent.class);
 	}
 
-	public int activationDepth(Field field, int depth)
+	public int activationDepth(Field field, Integer depth)
 	{
-		Activate annotation = field.getDeclaringClass().getAnnotation(Activate.class);
-		if (field.getAnnotation(Activate.class) != null)
+		if (field.isAnnotationPresent(Activate.class))
 		{
-			annotation = field.getAnnotation(Activate.class);
-		}
-		if (annotation != null)
-		{
-			return annotation.value();
+			return field.getAnnotation(Activate.class).value();
 		}
 		return depth;
 	}
@@ -224,9 +244,9 @@ public class AnnotationConfiguration extends DefaultConfiguration implements Con
 	protected int version(java.lang.reflect.Type type)
 	{
 		Class<?> clazz = Generics.erase(type);
-		if (clazz.isAnnotationPresent(Version.class))
+		if (clazz.isAnnotationPresent(Entity.class))
 		{
-			return clazz.getAnnotation(Version.class).value();
+			return clazz.getAnnotation(Entity.class).version();
 		}
 		else
 		{
@@ -249,7 +269,7 @@ public class AnnotationConfiguration extends DefaultConfiguration implements Con
 	}
 
 	@Override
-	public final String name(Field field)
+	public String name(Field field)
 	{
 		Store annotation = field.getAnnotation(Store.class);
 		if (annotation != null && !annotation.name().isEmpty())
@@ -260,5 +280,10 @@ public class AnnotationConfiguration extends DefaultConfiguration implements Con
 		{
 			return super.name(field);
 		}
+	}
+
+	public boolean isIndexed()
+	{
+		return indexed;
 	}
 }

@@ -8,6 +8,7 @@ import java.util.Set;
 
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
+import com.google.code.twig.Settings;
 
 public class EntitySupplier
 {
@@ -21,11 +22,13 @@ public class EntitySupplier
 	private List<EntitySink> sinks = new ArrayList<EntitySink>();
 	private Map<Key, Entity> keysToEntities;
 	private final int chunk;
+	private final Settings settings;
 	
-	public EntitySupplier(TranslatorObjectDatastore datastore, int chunk)
+	public EntitySupplier(TranslatorObjectDatastore datastore, int chunk, Settings settings)
 	{
 		this.datastore = datastore;
 		this.chunk = chunk;
+		this.settings = settings;
 	}
 	
 	public void register(EntitySink sink)
@@ -58,7 +61,7 @@ public class EntitySupplier
 			}
 		}
 		
-		keysToEntities = datastore.serviceGet(orders);
+		keysToEntities = datastore.serviceGet(orders, settings);
 		
 		for (EntitySink sink : sinks)
 		{

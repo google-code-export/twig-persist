@@ -6,7 +6,7 @@ import java.util.concurrent.Future;
 import com.google.appengine.api.datastore.Key;
 import com.google.code.twig.LoadCommand.SingleTypedLoadCommand;
 
-public class StandardSingleTypedLoadCommand<T> extends StandardCommonLoadCommand<StandardSingleTypedLoadCommand<T>> implements SingleTypedLoadCommand<T, StandardSingleTypedLoadCommand<T>>
+public class StandardSingleTypedLoadCommand<T> extends StandardCommonLoadCommand<StandardSingleTypedLoadCommand<T>> implements SingleTypedLoadCommand<T>
 {
 	private final Object id;
 

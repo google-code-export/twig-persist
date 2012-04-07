@@ -10,7 +10,7 @@ public class StandardFindCommand extends StandardCommand implements FindCommand
 	}
 
 	@Override
-	public <T> RootFindCommand<T> type(Class<? extends T> type)
+	public <T> StandardRootFindCommand<T> type(Class<? extends T> type)
 	{
 		return new StandardRootFindCommand<T>(type, datastore);
 	}

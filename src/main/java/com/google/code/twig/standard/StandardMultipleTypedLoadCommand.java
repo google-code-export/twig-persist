@@ -9,41 +9,42 @@ import java.util.concurrent.Future;
 import com.google.appengine.api.datastore.Key;
 import com.google.code.twig.LoadCommand.MultipleTypedLoadCommand;
 import com.google.common.base.Function;
+import com.google.common.base.Predicates;
 import com.google.common.collect.Maps;
 
-public class StandardMultipleTypedLoadCommand<T, I> 
-	extends StandardCommonLoadCommand<StandardMultipleTypedLoadCommand<T, I>>
-	implements MultipleTypedLoadCommand<T, I, StandardMultipleTypedLoadCommand<T, I>>
+public class StandardMultipleTypedLoadCommand<T> 
+	extends StandardCommonLoadCommand<StandardMultipleTypedLoadCommand<T>>
+	implements MultipleTypedLoadCommand<T>
 {
-	private final Collection<? extends I> ids;
+	private final Collection<?> ids;
 
-	StandardMultipleTypedLoadCommand(StandardTypedLoadCommand<T> command, Collection<? extends I> ids)
+	StandardMultipleTypedLoadCommand(StandardTypedLoadCommand<T> command, Collection<?> ids)
 	{
 		super(command);
 		this.ids = ids;
 	}
 
 	@Override
-	public Future<Map<I, T>> later()
+	public Future<Map<Object, T>> later()
 	{
 		throw new UnsupportedOperationException("Not yet implemented");
 	}
 
 	@Override
-	public Map<I, T> now()
+	public Map<Object, T> now()
 	{
 		// the stored type of the id can be defined for the id field
 		Field keyField = datastore.idField(command.type);
 		String kind = datastore.getConfiguration().typeToKind(command.type);
-		Map<I, Key> idsToKeys = new LinkedHashMap<I, Key>(ids.size());
-		for (I id : ids)
+		Map<Object, Key> idsToKeys = new LinkedHashMap<Object, Key>(ids.size());
+		for (Object id : ids)
 		{
 			idsToKeys.put(id, idToKey(id, keyField, kind, datastore, parentKey));
 		}
 		final Map<Key, T> keysToInstances = keysToInstances(idsToKeys.values(), propertyRestriction);
 		
 		// result will have same ordering as ids
-		return Maps.transformValues(idsToKeys, new Function<Key, T>()
+		Map<Object, T> result = Maps.transformValues(idsToKeys, new Function<Key, T>()
 		{
 			@Override
 			public T apply(Key key)
@@ -51,8 +52,8 @@ public class StandardMultipleTypedLoadCommand<T, I>
 				return keysToInstances.get(key);
 			}
 		});
+		
+		// filter out null results
+		return Maps.filterValues(result, Predicates.notNull());
 	}
-	
-	
-
 }

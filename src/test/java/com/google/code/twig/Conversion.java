@@ -22,25 +22,27 @@ public class Conversion extends LocalDatastoreTestCase
 	@Test
 	public void storeAndLoadWithDifferentFieldType()
 	{
-		StandardObjectDatastore storeWith = new StandardObjectDatastore(new AnnotationConfiguration(true)
+		Registry registry = new Registry();
+		
+		StandardObjectDatastore storeWith = new StandardObjectDatastore(Settings.defaults().build(), new AnnotationConfiguration(true)
 		{
 			@Override
 			protected String typeToName(Class<?> type)
 			{
 				return "name";
 			}
-		});
+		}, registry);
 		
 		Key key = storeWith.store(new ClassWithInteger());
 		
-		StandardObjectDatastore loadWith = new StandardObjectDatastore(new AnnotationConfiguration(true)
+		StandardObjectDatastore loadWith = new StandardObjectDatastore(Settings.defaults().build(), new AnnotationConfiguration(true)
 		{
 			@Override
 			protected Class<?> nameToType(String name)
 			{
 				return ClassWithString.class;
 			}
-		});
+		}, registry);
 		
 		ClassWithString loaded = loadWith.load(key);
 		

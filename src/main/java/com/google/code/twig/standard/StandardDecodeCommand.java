@@ -7,36 +7,78 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.ReadPolicy.Consistency;
+import com.google.code.twig.LoadCommand.CacheMode;
 import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.Restriction;
-import com.google.code.twig.util.PropertyPathComparator;
+import com.google.code.twig.Settings;
 import com.google.code.twig.util.PropertySets;
 import com.google.code.twig.util.RestrictionToPredicateAdaptor;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
-class StandardDecodeCommand extends StandardCommand
+@SuppressWarnings("unchecked")
+class StandardDecodeCommand<C extends StandardDecodeCommand<C>> extends StandardCommand
 {
-	private static final PropertyPathComparator COMPARATOR = new PropertyPathComparator();
+//	private static final Logger log = Logger.getLogger(StandardDecodeCommand.class.getName());
+	protected Integer activationDepth;
+	protected Restriction<Entity> entityRestriction;
+	protected Restriction<Property> propertyRestriction;
+	protected CacheMode cacheMode;
+	private Settings.Builder settings;
 	
 	StandardDecodeCommand(TranslatorObjectDatastore datastore)
 	{
 		super(datastore);
 	}
 	
-	@SuppressWarnings("unchecked")
+	public C restrictEntities(Restriction<Entity> restriction)
+	{
+		this.entityRestriction = restriction;
+		return (C) this;
+	}
+
+	public C restrictProperties(Restriction<Property> restriction)
+	{
+		this.propertyRestriction = restriction;
+		return (C) this;
+	}
+	
+	public C cache(CacheMode cacheMode)
+	{
+		this.cacheMode = cacheMode;
+		return (C) this;
+	}
+	
 	public final <T> T entityToInstance(Entity entity, Restriction<Property> predicate)
 	{
+		long start = System.currentTimeMillis();
+		
 		// we have the entity data but must return the associated instance
 		T instance = (T) datastore.keyCache.getInstance(entity.getKey());
+		
+		// if the instance is unactivated and we fetched the data then use it 
+		
+		Iterator<?> existingRefreshInstances =  datastore.refreshInstances;
+		if (instance != null && datastore.activationDepth >= 0 && !datastore.isActivated(instance))
+		{
+			// do not create new instance - reuse this one
+			datastore.refreshInstances = ImmutableList.of(instance).iterator();
+		
+			// just to trigger the activation code
+			instance = null;
+		}
+		
 		if (instance == null)
 		{
 			// push new decode context state
@@ -49,14 +91,14 @@ class StandardDecodeCommand extends StandardCommand
 	
 				Set<Property> properties = PropertySets.create(entity.getProperties(), datastore.indexed);
 				
-				// filter out unwanted properties at the lowest level
+				// filter out unwanted properties at this low level
 				if (predicate != null)
 				{
 					properties = Sets.filter(properties, new RestrictionToPredicateAdaptor<Property>(predicate));
 				}
 	
 				// order the properties for efficient separation by field
-				Set<Property> sorted = new TreeSet<Property>(COMPARATOR);
+				Set<Property> sorted = new TreeSet<Property>();
 				sorted.addAll(properties);
 				properties = sorted;
 	
@@ -73,11 +115,15 @@ class StandardDecodeCommand extends StandardCommand
 				{
 					instance = null;
 				}
+				
+				// set if this instance is activated or not
+				datastore.keyCache.setActivation(instance, datastore.activationDepth >= 0);
 			}
 			finally
 			{
 				// pop the decode context
 				datastore.decodeKey = existingDecodeKey;
+				datastore.refreshInstances = existingRefreshInstances;
 			}
 		}
 
@@ -95,7 +141,6 @@ class StandardDecodeCommand extends StandardCommand
 				return entities.hasNext();
 			}
 
-			@SuppressWarnings("unchecked")
 			@Override
 			public T next()
 			{
@@ -111,76 +156,121 @@ class StandardDecodeCommand extends StandardCommand
 	}
 
 	// get from key cache or datastore
-	@SuppressWarnings("unchecked")
 	public <T> T keyToInstance(Key key, Restriction<Property> filter)
 	{
-		T instance = (T) datastore.keyCache.getInstance(key);
-		if (instance == null)
+		int existingActivationDepth = datastore.activationDepth;
+		if (activationDepth != null)
 		{
-			Entity entity = keyToEntity(key);
-			if (entity == null)
-			{
-				instance = null;
-			}
-			else
-			{
-				instance = (T) entityToInstance(entity, filter);
-			}
-		}
-
-		return instance;
-	}
-	
-	@SuppressWarnings("unchecked")
-	public final <T> Map<Key, T> keysToInstances(Collection<Key> keys, Restriction<Property> filter)
-	{
-		Map<Key, T> result = new HashMap<Key, T>(keys.size());
-		List<Key> missing = null;
-		for (Key key : keys)
-		{
-			T instance = (T) datastore.keyCache.getInstance(key);
-			if (instance != null)
-			{
-				result.put(key, instance);
-			}
-			else
-			{
-				if (missing == null)
-				{
-					missing = new ArrayList<Key>(keys.size());
-				}
-				missing.add(key);
-			}
+			datastore.activationDepth = activationDepth;
 		}
 		
-		if (missing != null && !missing.isEmpty())
+		try
 		{
-			Map<Key, Entity> entities = keysToEntities(missing);
-			if (!entities.isEmpty())
+			T instance = (T) datastore.keyCache.getInstance(key);
+			if (instance == null)
 			{
-				Set<Entry<Key, Entity>> entries = entities.entrySet();
-				for (Entry<Key, Entity> entry : entries)
+				Entity entity = keyToEntity(key);
+				if (entity == null)
 				{
-					T instance = (T) entityToInstance(entry.getValue(), filter);
-					result.put(entry.getKey(), instance);
+					instance = null;
+				}
+				else
+				{
+					instance = (T) entityToInstance(entity, filter);
 				}
 			}
+	
+			return instance;
 		}
+		finally
+		{
+			datastore.activationDepth = existingActivationDepth;
+		}
+	}
+	
+	public final <T> Map<Key, T> keysToInstances(Collection<Key> keys, Restriction<Property> filter)
+	{
+		int existingActivationDepth = datastore.activationDepth;
+		if (activationDepth != null)
+		{
+			datastore.activationDepth = activationDepth;
+		}
+		try
+		{
+			Map<Key, T> result = new HashMap<Key, T>(keys.size());
+			List<Key> missing = null;
+			for (Key key : keys)
+			{
+				T instance = (T) datastore.keyCache.getInstance(key);
 
-		return result;
+				// if we are doing a refresh/associate then do load the entity
+				if (instance != null && datastore.refreshInstances == null)
+				{
+					result.put(key, instance);
+				}
+				else
+				{
+					if (missing == null)
+					{
+						missing = new ArrayList<Key>(keys.size());
+					}
+					missing.add(key);
+				}
+			}
+			
+			if (missing != null && !missing.isEmpty())
+			{
+				Map<Key, Entity> entities = keysToEntities(missing);
+				
+				// must decode in same order as keys - needed for refreshing
+				for (Key key : missing)
+				{
+					Entity entity = entities.get(key);
+
+					if (entity == null) continue;
+					
+					// must disassociate here so instance is not loaded
+					// other instances that reference it will still work
+					if (datastore.refreshInstances != null)
+					{
+						datastore.keyCache.evictKey(key);
+					}
+					
+					T instance = (T) entityToInstance(entity, filter);
+
+					result.put(key, instance);
+				}
+			}
+	
+			return result;
+		}
+		finally
+		{
+			datastore.activationDepth = existingActivationDepth;
+		}
 	}
 
 	final Entity keyToEntity(Key key)
 	{
 		if (datastore.activationDepth >= 0)
 		{
+			CacheMode existingCacheMode = datastore.getCacheMode();
+			if (cacheMode != null)
+			{
+				datastore.setCachMode(cacheMode);
+			}
+			
 			try
 			{
-				return datastore.serviceGet(key);
+				return datastore.serviceGet(key, getSettings());
 			}
 			catch (EntityNotFoundException e)
 			{
 				return null;
+			}
+			finally
+			{
+				datastore.setCachMode(existingCacheMode);
 			}
 		}
 		else
@@ -192,10 +282,24 @@ class StandardDecodeCommand extends StandardCommand
 	
 	final Map<Key, Entity> keysToEntities(Collection<Key> keys)
 	{
+		CacheMode existingCacheMode = datastore.getCacheMode();
+		if (cacheMode != null)
+		{
+			datastore.setCachMode(cacheMode);
+		}
+		
 		// only load entity if we will activate instance
 		if (datastore.activationDepth >= 0)
 		{
-			return datastore.serviceGet(keys);
+			try
+			{
+				return datastore.serviceGet(keys, getSettings());
+				
+			}
+			finally
+			{
+				datastore.setCachMode(existingCacheMode);
+			}
 		}
 		else
 		{
@@ -206,6 +310,58 @@ class StandardDecodeCommand extends StandardCommand
 				result.put(key, new Entity(key));
 			}
 			return result;
+		}
+	}
+
+	public C activate(int depth)
+	{
+		this.activationDepth = depth;
+		return (C) this;
+	}
+
+	public C activateAll()
+	{
+		this.activationDepth = Integer.MAX_VALUE;
+		return (C) this;
+	}
+	
+	public C unactivated()
+	{
+		// do not activate the current instance - 0 means no referenced activated
+		activate(-1);
+		return (C) this;
+	}
+
+	public C consistency(Consistency consistency)
+	{
+		getSettingsBuilder().consistency(consistency);
+		return (C) this;
+	}
+
+	public C deadline(long deadline, TimeUnit unit)
+	{
+		getSettingsBuilder().deadline(deadline, unit);
+		return (C) this;
+	}
+	
+	public Settings.Builder getSettingsBuilder()
+	{
+		if (settings == null)
+		{
+			settings = Settings.copy(datastore.getDefaultSettings());
+		}
+		return this.settings;
+	}
+	
+	public Settings getSettings()
+	{
+		if (settings == null)
+		{
+			return null;
+		}
+		else
+		{
+			return settings.build();
 		}
 	}
 }

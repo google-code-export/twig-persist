@@ -2,8 +2,8 @@ package com.google.code.twig.standard;
 
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
+import com.google.code.twig.standard.InstanceKeyCache.KeyReference;
 import com.google.code.twig.util.reference.ObjectReference;
-import com.google.code.twig.util.reference.ReadOnlyObjectReference;
 import com.google.code.twig.util.reference.SimpleObjectReference;
 
 public class KeySpecification
@@ -92,10 +92,13 @@ public class KeySpecification
 		}
 	}
 
-	public ObjectReference<Key> toObjectReference()
+	public KeyReference toKeyReference()
 	{
-		return new ReadOnlyObjectReference<Key>()
+		return new KeyReference(null)
 		{
+			private static final long serialVersionUID = 1L;
+
+			@Override
 			public Key get()
 			{
 				return toKey();

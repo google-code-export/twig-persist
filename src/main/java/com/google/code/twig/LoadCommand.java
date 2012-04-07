@@ -3,32 +3,55 @@ package com.google.code.twig;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.ReadPolicy.Consistency;
 
 public interface LoadCommand
 {
 	<T> TypedLoadCommand<T> type(Class<? extends T> type);
+//	SingleUntypedLoadCommand<?> key(Key key);
+//	MultipleUntypedLoadCommand<?> keys(Collection<Key> key);
 	
 	interface TypedLoadCommand<T>
 	{
-		SingleTypedLoadCommand<T, ?> id(Object id);
-		<I> MultipleTypedLoadCommand<T, I, ?> ids(Collection<? extends I> ids);
-		<I> MultipleTypedLoadCommand<T, I, ?> ids(I... ids);
+		SingleTypedLoadCommand<T> id(Object id);
+		MultipleTypedLoadCommand<T> ids(Collection<?> ids);
 	}
 
-	interface CommonLoadCommand<C extends CommonLoadCommand<C>>
+	public enum CacheMode { OFF, ON, AUTO, BYPASS };
+	
+	interface CommonDecodeCommand<C extends CommonDecodeCommand<C>>
 	{
 		C restrictEntities(Restriction<Entity> restriction);
 		C restrictProperties(Restriction<Property> restriction);
-		C parent(Object parent);
+		C activate(int depth);
+		C activateAll();
+		C consistency(Consistency consistency);
+		C deadline(long value, TimeUnit unit);
+		C cache(CacheMode mode);
 	}
 	
-	interface SingleTypedLoadCommand<T, C extends SingleTypedLoadCommand<T, C>> extends CommonLoadCommand<C>, CommandTerminator<T>
+	interface CommonLoadCommand<C extends CommonLoadCommand<C>> extends CommonDecodeCommand<C>
+	{
+		C parent(Object parent);
+	}
+
+	interface SingleTypedLoadCommand<T> extends CommonLoadCommand<SingleTypedLoadCommand<T>>, CommandTerminator<T>
+	{
+	}
+
+	interface SingleUntypedLoadCommand extends CommonLoadCommand<SingleUntypedLoadCommand>, CommandTerminator<Object>
 	{
 	}
 	
-	interface MultipleTypedLoadCommand<T, I, C extends MultipleTypedLoadCommand<T, I, C>> extends CommonLoadCommand<C>, CommandTerminator<Map<I, T>>
+	interface MultipleUntypedLoadCommand extends CommonLoadCommand<MultipleUntypedLoadCommand>, CommandTerminator<Map<Key, Object>>
+	{
+	}
+	
+	interface MultipleTypedLoadCommand<T> extends CommonLoadCommand<MultipleTypedLoadCommand<T>>, CommandTerminator<Map<Object, T>>
 	{
 		/**
 		 * Loads instances in the same order as the ids set with {@link TypedLoadCommand#ids(Collection)}. 
@@ -40,7 +63,7 @@ public interface LoadCommand
 		 * @return Instances in same order as ids
 		 */
 		@Override
-		Map<I, T> now();
+		Map<Object, T> now();
 		
 		/**
 		 * <p>Operates exactly the same as {@link #now()} but runs asynchronously</p>
@@ -51,6 +74,6 @@ public interface LoadCommand
 		 * 
 		 * @return Future used to get instances in same order as ids
 		 */
-		Future<Map<I, T>> later();
+		Future<Map<Object, T>> later();
 	}
 }

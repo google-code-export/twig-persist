@@ -75,5 +75,4 @@ public class StoreTest extends LocalDatastoreTestCase
 		ExampleModel reloadedModel = ods2.load(ods1.associatedKey(model));
 		assertEquals("xxx", reloadedModel.getTransientField());
 	}
-	
 }

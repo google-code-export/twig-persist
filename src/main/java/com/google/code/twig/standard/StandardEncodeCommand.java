@@ -9,7 +9,7 @@ import com.google.code.twig.Property;
 import com.google.code.twig.util.Entities;
 import com.google.code.twig.util.reference.ObjectReference;
 
-class StandardEncodeCommand extends StandardCommand
+public class StandardEncodeCommand extends StandardCommand
 {
 	StandardEncodeCommand(TranslatorObjectDatastore datastore)
 	{
@@ -38,7 +38,15 @@ class StandardEncodeCommand extends StandardCommand
 		{
 			// dereference object references
 			Object value = property.getValue();
-			value = dereferencePropertyValue(value);
+			
+			try
+			{
+				value = dereferencePropertyValue(value);
+			}
+			catch (Throwable t)
+			{
+				throw new RuntimeException("Problem de-referencing property " + property, t);
+			}
 
 			if (property.isIndexed())
 			{
@@ -55,11 +63,12 @@ class StandardEncodeCommand extends StandardCommand
 	{
 		if (value instanceof ObjectReference<?>)
 		{
+			// single and multiple references use a single value
 			value = ((ObjectReference<?>)value).get();
 		}
 		else if (value instanceof List<?>)
 		{
-			// we know the value is a mutable list from ListTranslator
+			// embedded collections can return a list of keys
 			@SuppressWarnings("unchecked")
 			List<Object> values = (List<Object>) value;
 			for (int i = 0; i < values.size(); i++)

@@ -12,7 +12,7 @@ class ChildRelationTranslator extends RelationTranslator
 	{
 		super(strategyObjectDatastore);
 	}
-	
+
 	@Override
 	protected Key getParentKey()
 	{

@@ -4,12 +4,12 @@ import java.util.Iterator;
 import java.util.List;
 
 import com.google.appengine.api.datastore.Cursor;
-import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.appengine.api.datastore.QueryResultIterator;
+import com.google.code.twig.LoadCommand.CommonDecodeCommand;
 
 /**
  * @author John Patterson <john@vercer.com>
@@ -17,22 +17,24 @@ import com.google.appengine.api.datastore.QueryResultIterator;
  */
 public interface FindCommand
 {
+	// TODO also support AND with a counting set
+	enum MergeOperator { OR };
+	
 	<T> RootFindCommand<T> type(Class<? extends T> type);
 
-	interface RestrictedFindCommand<C extends RestrictedFindCommand<C>>
-	{
-		C restrictEntities(Restriction<Entity> restriction);
-		C restrictProperties(Restriction<Property> restriction);
-	}
-
-	interface CommonFindCommand<C extends CommonFindCommand<C>> extends RestrictedFindCommand<C>
+	interface CommonFindCommand<C extends CommonFindCommand<C>> extends CommonDecodeCommand<C>
 	{
 		C addFilter(String field, FilterOperator operator, Object value);
-		C addRangeFilter(String field, Object from, Object to);
-		MergeFindCommand merge();
+		C addFilterRange(String field, Object from, Object to);
+		MergeFindCommand merge(MergeOperator operator);
+	}
+
+	interface MergeFindCommand
+	{
+		ChildFindCommand addChildCommand();
 	}
 	
-	interface MergeFindCommand extends CommonFindCommand<MergeFindCommand>
+	interface ChildFindCommand extends CommonFindCommand<ChildFindCommand>
 	{
 	}
 	
@@ -82,9 +84,12 @@ public interface FindCommand
 		
 		RootFindCommand<T> fetchMaximum(int limit);
 		RootFindCommand<T> unactivated();
+		
 		RootFindCommand<T> fetchNextBy(int size);
 		RootFindCommand<T> fetchFirst(int size);
 
+		RootFindCommand<T> remember();
+		
 		// terminating methods
 		CommandTerminator<Integer> returnCount();
 		CommandTerminator<List<T>> returnAll();
@@ -94,7 +99,7 @@ public interface FindCommand
 		<P> CommandTerminator<ParentsCommand<P>> returnParentsCommand();
 	}
 	
-	interface ParentsCommand<P> extends RestrictedFindCommand<ParentsCommand<P>>, CommandTerminator<Iterator<P>>
+	interface ParentsCommand<P> extends CommonDecodeCommand<ParentsCommand<P>>, CommandTerminator<Iterator<P>>
 	{
 	}
 }

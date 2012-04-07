@@ -64,17 +64,23 @@ public final class Strings
 		List<String> result = new ArrayList<String>();
 		for (int start = 0; start < source.length() && start >= 0; )
 		{
-			int next = firstIndexOf(source, start, chars);
+			int next = firstIndexOf(source, start + 1, chars);
+			
+			if (!include && start > 0)
+			{
+				start++;
+			}
+			
 			if (next > 0)
 			{
-				result.add(source.substring(start, include ? next + 1 : next));
+				result.add(source.substring(start, next));
 			}
 			else
 			{
 				result.add(source.substring(start));
 				break;
 			}
-			start = next + 1;
+			start = next;
 		}
 		return result.toArray(new String[result.size()]);
 	}

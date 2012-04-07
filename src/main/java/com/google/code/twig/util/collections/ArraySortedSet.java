@@ -16,6 +16,11 @@ public class ArraySortedSet<T> extends AbstractSet<T> implements SortedSet<T>
 	
 	private final int offset;
 	private final int length;
+	
+	public ArraySortedSet(T[] elements)
+	{
+		this(elements, 0, elements.length, null);
+	}
 
 	public ArraySortedSet(T[] elements, Comparator<? super T> comparator)
 	{

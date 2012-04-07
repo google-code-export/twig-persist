@@ -55,7 +55,7 @@ public class Generics
 		else
 		{
 			// TODO at least support CaptureType here
-			throw new RuntimeException("not supported: " + type.getClass());
+			throw new RuntimeException("not supported: " + type);
 		}
 	}
 
