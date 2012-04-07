@@ -5,11 +5,9 @@ import java.util.Map;
 import java.util.concurrent.Future;
 
 import com.google.appengine.api.datastore.DatastoreService;
-import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.appengine.api.datastore.Transaction;
-import com.google.appengine.api.datastore.TransactionOptions;
 import com.google.code.twig.StoreCommand.MultipleStoreCommand;
 import com.google.code.twig.StoreCommand.SingleStoreCommand;
 
@@ -65,11 +63,12 @@ public interface ObjectDatastore extends Activator
 	void update(Object instance);
 	void updateAll(Collection<?> instances);
 	void storeOrUpdate(Object instance);
+	void storeOrUpdateAll(Collection<?> instances);
 
 	// convenience load methods
 	<T> T load(Key key);
 	<T> T load(Class<? extends T> type, Object id);
-	<I, T> Map<I, T> loadAll(Class<? extends T> type, Collection<? extends I> ids);
+	<T> Map<?, T> loadAll(Class<? extends T> type, Collection<?> ids);
 
 	// convenience find methods
 	<T> QueryResultIterator<T> find(Class<? extends T> type);
@@ -102,18 +101,31 @@ public interface ObjectDatastore extends Activator
 	// cache control operations
 
 	/**
-	 * Adds this instance and any other referenced instances to the internal
-	 * key cache so they are known by this datastore as persistent instances.
-	 * The instance must define an id field with a valid value. If no id field
-	 * is defined you must use {@link #associate(Object, Key)} instead.
+	 * Creates a {@link Key} using this instances @Id and @Parent fields and puts
+	 * the key in the internal key cache. If no id field is declared you must use
+	 * {@link #associate(Object, Key)} instead. The instance will be in the
+	 * activated. Referenced instances will <b>not</b> be activated which is different
+	 * from the way this method worked in version 1.0.
 	 *
-	 * @param instance The root of the object graph to add to the key cache
+	 * @param instance The persistent instance to be associated with this ObjectDatastore
 	 */
-	void associate(Object instance);
 
-	void associate(Object instance, Object parent);
+	// associate all referenced instances because it is dangerous to have an
+	// associated instance reference an unassociated instance
 
-	void associateAll(Collection<?> instances);
+	// these must return the current associated instance because the procedure
+	// must examine all referenced instances to associate so it is not possible
+	// to have a method that returns the key of a dummy instance and then choose
+	// to associate or not depending on if it is already associated.
+
+	<T> T associate(T instance);
+	<T> Collection<T> associateAll(Collection<T> instances);
+	
+	<T> T associate(T instance, boolean activated);
+	<T> T associate(T instance, boolean activated, Object parent);
+
+	// TODO this could be confused with other methods - best to make a method chain
+	<T> T associate(T instance, boolean activate, Object parent, Object id);
 
 	/**
 	 * Adds this instance but not other referenced instances to the internal
@@ -124,7 +136,14 @@ public interface ObjectDatastore extends Activator
 	 * @param instance The root of the object graph to add to the key cache
 	 * @param key The Key which is associated with this instance
 	 */
-	void associate(Object instance, Key key);
+	<T> T associate(T instance, Key key);
+	<T> T associate(T instance, Key key, long version);
+
+
+	<T> T associate(Class<T> type, long id);
+
+	<T> T associate(Class<T> type, String id);
+
 
 	/**
 	 * Removes only this instance from the key cache and not any referenced
@@ -154,23 +173,16 @@ public interface ObjectDatastore extends Activator
 
 	boolean isAssociated(Object instance);
 
-	/**
-	 * Sets the configuration to use for all datastore operations. This is useful to
-	 * adjust the read policy to choose EVENTUAL or STRONG consistency.
-	 *
-	 * @param config The configuration to use for all datastore operations
-	 */
-	void setConfiguration(DatastoreServiceConfig config);
-
 	// transactions
 	Transaction beginTransaction();
-	Transaction beginTransaction(TransactionOptions options);
 	Transaction getTransaction();
+	void transact(Runnable runnable);
 
-	void batch();
-	void flush();
+	void startBatchMode();
+	void stopBatchMode();
+	void flushBatchedOperations();
 
-	DatastoreService getService();
+	DatastoreService getDefaultService();
 
-
+	long version(Object instance);
 }

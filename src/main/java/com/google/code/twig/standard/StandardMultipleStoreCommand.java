@@ -2,6 +2,7 @@ package com.google.code.twig.standard;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
@@ -18,6 +19,8 @@ public class StandardMultipleStoreCommand<T> extends StandardCommonStoreCommand<
 	{
 		super(command);
 		this.instances = instances;
+
+		// we check that instances are associated deeper in the command
 	}
 
 	public Future<Map<T, Key>> later()
@@ -27,17 +30,24 @@ public class StandardMultipleStoreCommand<T> extends StandardCommonStoreCommand<
 
 	public Map<T, Key> now()
 	{
+		if (instances.isEmpty()) return Collections.emptyMap();
+		
 		// convert into entities ready to store
 		Map<T, Entity> entities = instancesToEntities();
 
 		// we can get null entities when they are already stored
 		Collection<Entity> filtered = Collections2.filter(entities.values(), Predicates.notNull());
 
+		if (datastore.associating)
+		{
+			throw new IllegalStateException("Only single store is supported for associate");
+		}
+			
 		// actually put the entities in the datastore
-		List<Key> keys = datastore.servicePut(filtered);
-
+		List<Key> keys = datastore.servicePut(filtered, null);
+		
 		// make a map to return
-		return createKeyMapAndUpdateCache(entities, keys);
+		return createKeyMapAndUpdateKeyCache(entities, keys);
 	}
 
 	@Override

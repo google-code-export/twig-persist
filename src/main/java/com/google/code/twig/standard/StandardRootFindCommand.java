@@ -4,36 +4,32 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import com.google.appengine.api.datastore.Cursor;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.FetchOptions;
+import com.google.appengine.api.datastore.Index;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Query.SortDirection;
-import com.google.appengine.api.datastore.Query.SortPredicate;
 import com.google.appengine.api.datastore.QueryResultIterator;
-import com.google.appengine.api.utils.FutureWrapper;
 import com.google.code.twig.CommandTerminator;
 import com.google.code.twig.FindCommand.ParentsCommand;
 import com.google.code.twig.FindCommand.RootFindCommand;
 import com.google.code.twig.util.FutureAdaptor;
+import com.google.code.twig.util.ImmediateFuture;
 import com.google.common.collect.ForwardingIterator;
 import com.google.common.collect.Lists;
 
-public class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFindCommand<T>>
+public class StandardRootFindCommand<T> extends StandardCommonFindCommand<StandardRootFindCommand<T>>
 		implements RootFindCommand<T>
 {
 	private final Class<?> type;
 	private FetchOptions options;
 	private Object ancestor;
 	List<Sort> sorts;
-	private boolean keysOnly;
 
 	class Sort
 	{
@@ -66,27 +62,27 @@ public class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFi
 	}
 
 	@Override
-	public RootFindCommand<T> ancestor(Object ancestor)
+	public StandardRootFindCommand<T> ancestor(Object ancestor)
 	{
 		this.ancestor = ancestor;
 		return this;
 	}
-
+	
 	@Override
-	public RootFindCommand<T> unactivated()
-	{
-		keysOnly = true;
-		return this;
-	}
-
-	@Override
-	public RootFindCommand<T> addSort(String field)
+	public StandardRootFindCommand<T> addSort(String field)
 	{
 		return addSort(field, SortDirection.ASCENDING);
 	}
 
 	@Override
-	public RootFindCommand<T> addSort(String field, SortDirection direction)
+	public StandardRootFindCommand<T> remember()
+	{
+		this.remember = true;
+		return this;
+	}
+	
+	@Override
+	public StandardRootFindCommand<T> addSort(String field, SortDirection direction)
 	{
 		if (this.sorts == null)
 		{
@@ -97,7 +93,7 @@ public class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFi
 	}
 
 	@Override
-	public RootFindCommand<T> continueFrom(Cursor cursor)
+	public StandardRootFindCommand<T> continueFrom(Cursor cursor)
 	{
 		if (this.options == null)
 		{
@@ -108,7 +104,7 @@ public class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFi
 	}
 
 	@Override
-	public RootFindCommand<T> finishAt(Cursor cursor)
+	public StandardRootFindCommand<T> finishAt(Cursor cursor)
 	{
 		if (this.options == null)
 		{
@@ -119,7 +115,7 @@ public class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFi
 	}
 
 	@Override
-	public RootFindCommand<T> fetchNextBy(int size)
+	public StandardRootFindCommand<T> fetchNextBy(int size)
 	{
 		if (this.options == null)
 		{
@@ -133,7 +129,7 @@ public class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFi
 	}
 
 	@Override
-	public RootFindCommand<T> fetchFirst(int size)
+	public StandardRootFindCommand<T> fetchFirst(int size)
 	{
 		if (this.options == null)
 		{
@@ -147,7 +143,7 @@ public class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFi
 	}
 
 	@Override
-	public RootFindCommand<T> startFrom(int offset)
+	public StandardRootFindCommand<T> startFrom(int offset)
 	{
 		if (this.options == null)
 		{
@@ -161,7 +157,7 @@ public class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFi
 	}
 
 	@Override
-	public RootFindCommand<T> fetchMaximum(int limit)
+	public StandardRootFindCommand<T> fetchMaximum(int limit)
 	{
 		if (this.options == null)
 		{
@@ -177,56 +173,16 @@ public class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFi
 	@Override
 	public Future<QueryResultIterator<T>> later()
 	{
-			Collection<Query> queries = getValidatedQueries();
-			if (queries.size() > 1)
-			{
-				throw new IllegalStateException("Multiple queries defined");
-			}
-
-			final Query query = queries.iterator().next();
-			final Future<QueryResultIterator<Entity>> futureEntities = futureSingleQueryEntities(query);
-
-			return new Future<QueryResultIterator<T>>()
-			{
-				private QueryResultIterator<T> doGet(QueryResultIterator<Entity> entities)
-				{
-						Iterator<Entity> iterator = applyEntityFilter(entities);
-						Iterator<T> instances = entitiesToInstances(iterator, propertyRestriction);
-						return new BasicQueryResultIterator<T>(instances, entities);
-				}
-
-				public QueryResultIterator<T> get() throws InterruptedException,
-						ExecutionException
-				{
-						return doGet(futureEntities.get());
-				}
-
-				public QueryResultIterator<T> get(long timeout, TimeUnit unit)
-						throws InterruptedException, ExecutionException,
-						TimeoutException
-				{
-						return doGet(futureEntities.get(timeout, unit));
-				}
-
-				public boolean isCancelled()
-				{
-					return futureEntities.isCancelled();
-				}
-
-				public boolean isDone()
-				{
-					return futureEntities.isDone();
-				}
-				public boolean cancel(boolean mayInterruptIfRunning)
-				{
-					return futureEntities.cancel(mayInterruptIfRunning);
-				}
-			};
+		return new ImmediateFuture<QueryResultIterator<T>>(now());
 	}
 
 	@Override
 	public CommandTerminator<Integer> returnCount()
 	{
+		if (cacheMode != null)
+		{
+			throw new IllegalStateException("Cannot cache count");
+		}
 		return new CommandTerminator<Integer>()
 		{
 			@Override
@@ -239,7 +195,7 @@ public class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFi
 				}
 
 				Query query = queries.iterator().next();
-				PreparedQuery prepared = datastore.servicePrepare(query);
+				PreparedQuery prepared = datastore.servicePrepare(query, getSettings());
 				if (options == null)
 				{
 					options = FetchOptions.Builder.withDefaults();
@@ -265,7 +221,7 @@ public class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFi
 			@Override
 			public T now()
 			{
-				return uniqueOrNull(StandardRootFindCommand.this.now());
+				return uniqueOrNull(StandardRootFindCommand.this.execute());
 			}
 
 			private T uniqueOrNull(Iterator<T> iterator)
@@ -305,22 +261,24 @@ public class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFi
 	@Override
 	public CommandTerminator<List<T>> returnAll()
 	{
-		// get all in a single datastore call
-		if (options != null && options.getLimit() != null)
-		{
-			fetchFirst(options.getLimit());
-		}
-		else
-		{
+//		// get all in a single datastore call
+//		if (options != null && options.getLimit() != null)
+//		{
+//			fetchFirst(options.getLimit());
+//			fetchNextBy(options.getLimit());
+//		}
+//		else
+//		{
 			fetchFirst(Integer.MAX_VALUE);
-		}
+			fetchNextBy(Integer.MAX_VALUE);
+//		}
 		
 		return new CommandTerminator<List<T>>()
 		{
 			@Override
 			public List<T> now()
 			{
-				return Lists.newArrayList(StandardRootFindCommand.this.now());
+				return Lists.newArrayList(StandardRootFindCommand.this.execute());
 			}
 
 			@Override
@@ -377,82 +335,44 @@ public class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFi
 			@Override
 			public Future<ParentsCommand<P>> later()
 			{
-				@SuppressWarnings("unchecked")
-				Future<Iterator<Entity>> futureEntityIterator = (Future<Iterator<Entity>>) futureEntityIterator();
-				return new FutureAdaptor<Iterator<Entity>, ParentsCommand<P>>(futureEntityIterator)
-				{
-					@Override
-					protected ParentsCommand<P> adapt(Iterator<Entity> source)
-					{
-						return new StandardSingleParentsCommand<P>(StandardRootFindCommand.this, source);
-					}
-				};
+				return new ImmediateFuture<ParentsCommand<P>>(now());
 			}
 		};
 	}
 	public <P> ParentsCommand<P> parentsCommandNow()
 	{
 		Collection<Query> queries = queries();
+		Iterator<Entity> childEntities;
 		if (queries.size() == 1)
 		{
-			Iterator<Entity> childEntities = nowSingleQueryEntities(queries.iterator().next());
-			childEntities = applyEntityFilter(childEntities);
-			return new StandardSingleParentsCommand<P>(this, childEntities);
+			childEntities = nowSingleQueryEntities(queries.iterator().next());
 		}
 		else
 		{
-			try
-			{
-				List<Iterator<Entity>> childIterators = new ArrayList<Iterator<Entity>>(queries.size());
-				List<Future<QueryResultIterator<Entity>>> futures = multiQueriesToFutureEntityIterators(queries);
-				for (Future<QueryResultIterator<Entity>> future : futures)
-				{
-					childIterators.add(future.get());
-				}
-
-				Query query = queries.iterator().next();
-				List<SortPredicate> sorts = query.getSortPredicates();
-				if (query.isKeysOnly() == false)
-				{
-					// we should have the property values from the sort to merge
-					Iterator<Entity> childEntities = mergeEntities(childIterators, sorts);
-					childEntities = applyEntityFilter(childEntities);
-					return new StandardSingleParentsCommand<P>(this, childEntities);
-				}
-				else
-				{
-					return new StandardMultipleParentsCommand<P>(this, childIterators, sorts);
-				}
-			}
-			catch (Exception e)
-			{
-				throw new IllegalStateException(e);
-			}
+			childEntities = nowMultipleQueryEntities(queries);
 		}
+		childEntities = applyEntityFilter(childEntities);
+		return new StandardSingleParentsCommand<P>(this, childEntities);
 	}
 
 	@SuppressWarnings("unchecked")
 	public <P> Future<ParentsCommand<P>> parentsCommandLater()
 	{
-		Future<Iterator<Entity>> futureEntityIterator = (Future<Iterator<Entity>>) futureEntityIterator();
-		return new FutureWrapper<Iterator<Entity>, ParentsCommand<P>>(futureEntityIterator)
-		{
-			@Override
-			protected Throwable convertException(Throwable arg0)
-			{
-				return arg0;
-			}
-
-			@Override
-			protected ParentsCommand<P> wrap(Iterator<Entity> childEntities) throws Exception
-			{
-				return new StandardSingleParentsCommand<P>(StandardRootFindCommand.this, childEntities);
-			}
-		};
+		return new ImmediateFuture<ParentsCommand<P>>(this.<P>parentsCommandNow());
 	}
 	
 	@Override
 	public QueryResultIterator<T> now()
+	{
+		if (cacheMode != null)
+		{
+			throw new IllegalStateException("Cannot cache results with iterator");
+		}
+		
+		return execute();
+	}
+	
+	protected QueryResultIterator<T> execute()
 	{
 		if (children == null)
 		{
@@ -474,45 +394,15 @@ public class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFi
 		{
 			try
 			{
-				// actually fetch the multiple queries in parallel
-				final Iterator<T> result = this.<T> futureMultiQueryInstanceIterator().get();
-				return new QueryResultIterator<T>()
-				{
-					@Override
-					public Cursor getCursor()
-					{
-						throw new IllegalStateException("Cannot use cursor with merged queries");
-					}
-
-					@Override
-					public boolean hasNext()
-					{
-						return result.hasNext();
-					}
-
-					@Override
-					public T next()
-					{
-						return result.next();
-					}
-
-					@Override
-					public void remove()
-					{
-						result.remove();
-					}
-				};
+				Collection<Query> queries = getValidatedQueries();
+				Iterator<Entity> entities = nowMultipleQueryEntities(queries);
+				Iterator<T> result = entitiesToInstances(entities, propertyRestriction);
+				return new NoCursorQueryResultIterator<T>(result);
 			}
 			catch (Exception e)
 			{
-				if (e instanceof RuntimeException)
-				{
-					throw (RuntimeException) e;
-				}
-				else
-				{
-					throw (RuntimeException) e.getCause();
-				}
+				// only unchecked exceptions thrown from datastore service
+				throw (RuntimeException) e.getCause();
 			}
 		}
 	}
@@ -522,8 +412,7 @@ public class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFi
 	{
 		if (this.ancestor == null && this.datastore.getTransaction() != null)
 		{
-			throw new IllegalStateException(
-					"Find command must have an ancestor in a transaction");
+			throw new IllegalStateException("Find command must have an ancestor in a transaction");
 		}
 
 		Query query = new Query(datastore.getConfiguration().typeToKind(type));
@@ -540,14 +429,17 @@ public class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFi
 			Key key = datastore.associatedKey(ancestor);
 			if (key == null)
 			{
-				throw new IllegalArgumentException("Ancestor must be loaded in same session");
+				throw new IllegalArgumentException("Ancestor was not associated");
 			}
 			query.setAncestor(key);
 		}
-		if (keysOnly)
+		
+		// do not even get data for this instance if unactivated
+		if (isUnactivated())
 		{
 			query.setKeysOnly();
 		}
+		
 		return query;
 	}
 
@@ -556,11 +448,6 @@ public class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFi
 		return options;
 	}
 
-	public boolean isKeysOnly()
-	{
-		return keysOnly;
-	}
-	
 	/**
 	 * Takes a normal instance Iterator<V> and makes a QueryResultIterator<V> using a
 	 * low-level QueryResultIterator<Entity> to get the cursor.  
@@ -585,6 +472,12 @@ public class StandardRootFindCommand<T> extends StandardCommonFindCommand<RootFi
 		public Cursor getCursor()
 		{
 			return entities.getCursor();
+		}
+
+		@Override
+		public List<Index> getIndexList()
+		{
+			throw new UnsupportedOperationException();
 		}
 	}
 }

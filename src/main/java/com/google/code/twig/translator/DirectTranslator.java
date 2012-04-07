@@ -3,13 +3,12 @@ package com.google.code.twig.translator;
 import java.lang.reflect.Type;
 import java.util.Set;
 
+import com.google.appengine.api.datastore.Text;
 import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
-import com.google.code.twig.conversion.PrimitiveConverter;
-import com.google.code.twig.conversion.TypeConverter;
 import com.google.code.twig.util.PropertySets;
-import com.google.code.twig.util.generic.Generics;
+import com.vercer.convert.TypeConverter;
 
 public class DirectTranslator implements PropertyTranslator
 {
@@ -32,31 +31,14 @@ public class DirectTranslator implements PropertyTranslator
 			else
 			{
 				value = PropertySets.firstValue(properties);
-				if (value == null && properties.size() == 1)
-				{
-					Class<?> clazz = Generics.erase(type);
-					if (clazz.isPrimitive())
-					{
-						Class<?> wrapper = PrimitiveConverter.getWrapperClassForPrimitive(clazz);
-						return PrimitiveConverter.defaultPrimitiveValue(wrapper);
-					}
-					else
-					{
-						return NULL_VALUE;
-					}
-				}
 			}
 			
-			if (type instanceof Class<?> && 
-					(value.getClass() == type || 
-					PrimitiveConverter.getWrapperClassForPrimitive((Class<?>) type) == value.getClass()))
+			if (type == String.class && value != null && value.getClass() == Text.class)
 			{
-				return value;
+				value = ((Text) value).getValue();
 			}
-			else
-			{
-				return converter.convert(value, type);
-			}
+			
+			return converter.convert(value, type);
 		}
 		else
 		{
@@ -73,6 +55,10 @@ public class DirectTranslator implements PropertyTranslator
 	{
 		if (object == null || isDirectType(object.getClass()))
 		{
+			if (object.getClass() == String.class && ((String) object).length() > 500)
+			{
+				object = new Text((String) object);
+			}
 			return PropertySets.singletonPropertySet(path, object, indexed);
 		}
 		else

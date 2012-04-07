@@ -1,12 +1,23 @@
 package com.google.code.twig.util;
 
+import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+
+import com.google.common.collect.ConcurrentHashMultiset;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Multiset;
 
 public class Reflection
 {
@@ -58,29 +69,6 @@ public class Reflection
 		return builder.toString();
 	}
 	
-	public static List<Field> getAccessibleFields(Class<?> type)
-	{
-		List<Field> fields = new ArrayList<Field>();
-		while (!Object.class.equals(type))
-		{
-			Field[] declaredFields = type.getDeclaredFields();
-			for (Field field : declaredFields)
-			{
-				if (Modifier.isStatic(field.getModifiers()) == false)
-				{
-					// do not include system fields like $assertionsDisabled
-					if (!field.getName().startsWith("$"))
-					{
-						fields.add(field);
-						field.setAccessible(true);
-					}
-				}
-			}
-			type = type.getSuperclass();
-		}
-		return fields;
-	}
-
 	public static <T> T constructCopyWith(T original, Object... arguments) 
 		throws	SecurityException,
 						NoSuchMethodException, 
@@ -115,4 +103,71 @@ public class Reflection
 
 		return constructor.newInstance(arguments);
 	}
+
+	public static final Multiset<Class<?>> fieldAccessSet = ConcurrentHashMultiset.create();
+	public static final Multiset<Class<?>> fieldAccessGet = ConcurrentHashMultiset.create();
+
+	public static List<Field> getAccessibleFields(Class<?> type)
+	{
+		List<Field> fields = new ArrayList<Field>();
+		while (!Object.class.equals(type))
+		{
+			Field[] declaredFields = type.getDeclaredFields();
+			for (Field field : declaredFields)
+			{
+				if (Modifier.isStatic(field.getModifiers()) == false)
+				{
+					// do not include system fields like $assertionsDisabled
+					if (!field.getName().startsWith("$"))
+					{
+						fields.add(field);
+						field.setAccessible(true);
+					}
+				}
+			}
+			type = type.getSuperclass();
+		}
+		return fields;
+	}
+
+	public static void set(Field field, Object instance, Object value)
+	{
+		if (instance instanceof FieldAccess)
+		{
+			((FieldAccess) instance).setFieldValue(field.getName(), value);
+		}
+		else
+		{
+			try
+			{
+				fieldAccessSet.add(instance.getClass());
+				field.set(instance, value);
+			}
+			catch (Exception e)
+			{
+				throw new RuntimeException(e);
+			}
+		}
+	}
+
+	public static Object get(Field field, Object instance)
+	{
+		if (instance instanceof FieldAccess)
+		{
+			return ((FieldAccess) instance).getFieldValue(field.getName());
+		}
+		else
+		{
+			try
+			{
+				fieldAccessGet.add(instance.getClass());
+				return field.get(instance);
+			}
+			catch (Exception e)
+			{
+				throw new RuntimeException(e);
+			}
+		}
+	}
+
 }

@@ -5,6 +5,11 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * @author John Patterson <jdpatterson@gmail.com>
+ * 
+ * @deprecated Use {@link Id} instead
+ */
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
 @Deprecated

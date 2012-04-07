@@ -61,5 +61,10 @@ public final class Entities
 			}
 		}
 	}
-
+	
+	public static Entity delta(Entity from, Entity to)
+	{
+		// TODO
+		return null;
+	}
 }

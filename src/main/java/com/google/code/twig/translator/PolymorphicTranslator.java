@@ -30,7 +30,7 @@ public class PolymorphicTranslator extends DecoratingTranslator
 		Path kindNamePath = new Path.Builder(prefix).meta(CLASS_PROPERTY).build();
 		String kindName = PropertySets.valueForPath(kindNamePath.toString(), properties);
 
-		// there may be no polymorphic field - just use the raw type
+		// there may be no polymorphic field
 		if (kindName != null)
 		{
 			// filter out the class name
@@ -44,20 +44,20 @@ public class PolymorphicTranslator extends DecoratingTranslator
 	{
 		Set<Property> properties = chained.encode(object, prefix, indexed);
 		
-		// add the type meta-data if we need to query by sub-type
-		if (configuration.polymorphic(object.getClass()))
-		{
+//		// add the type meta-data if we need to query by sub-type
+//		if (configuration.polymorphic(object.getClass()))
+//		{
 			String kind = configuration.typeToKind(object.getClass());
 			Path kindPath = new Path.Builder(prefix).meta(CLASS_PROPERTY).build();
 			Property property = new SimpleProperty(kindPath, kind, true);
 			
 			return new PrependSet<Property>(property, properties);
-		}
-		else
-		{
-			// native types are stored with the same exact type
-			return properties;
-		}
+//		}
+//		else
+//		{
+//			// native types are stored with the same exact type
+//			return properties;
+//		}
 	}
 
 }

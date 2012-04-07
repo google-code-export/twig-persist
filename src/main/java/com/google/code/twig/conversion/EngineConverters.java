@@ -5,8 +5,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.lang.reflect.Type;
+import java.util.Arrays;
+import java.util.Iterator;
 
 import com.google.appengine.api.datastore.Blob;
 import com.google.appengine.api.datastore.Text;
@@ -14,41 +15,29 @@ import com.google.code.twig.conversion.CoreConverters.DateToString;
 import com.google.code.twig.conversion.CoreConverters.StringToDate;
 import com.google.code.twig.util.io.NoDescriptorObjectInputStream;
 import com.google.code.twig.util.io.NoDescriptorObjectOutputStream;
+import com.vercer.convert.Converter;
 
-public class EngineConverters
+public class EngineConverters implements Iterable<Converter<?, ?>>
 {
-	public static void registerAll(CombinedConverter converter)
-	{
-		converter.append(new StringToText());
-		converter.append(new TextToString());
-		
-		converter.append(new StringToDate());
-		converter.append(new DateToString());
-
-		converter.append(new ByteArrayToBlob());
-		converter.append(new BlobToByteArray());
-
-		converter.append(new SerializableToBlob());
-		converter.append(new BlobToAnything());
-	}
-	
-	public static class StringToText implements SpecificConverter<String, Text>
+	public static class StringToText implements Converter<String, Text>
 	{
 		public Text convert(String source)
 		{
+			if (source == null) return null;
 			return new Text(source);
 		}
 	}
-	
-	public static class TextToString implements SpecificConverter<Text, String>
+
+	public static class TextToString implements Converter<Text, String>
 	{
 		public String convert(Text source)
 		{
+			if (source == null) return null;
 			return source.getValue();
 		}
 	}
 
-	public static class ByteArrayToBlob implements SpecificConverter<byte[], Blob>
+	public static class ByteArrayToBlob implements Converter<byte[], Blob>
 	{
 		public Blob convert(byte[] source)
 		{
@@ -56,7 +45,7 @@ public class EngineConverters
 		}
 	}
 
-	public static class BlobToByteArray implements SpecificConverter<Blob, byte[]>
+	public static class BlobToByteArray implements Converter<Blob, byte[]>
 	{
 		public byte[] convert(Blob source)
 		{
@@ -64,9 +53,9 @@ public class EngineConverters
 		}
 	}
 
-	public static class SerializableToBlob implements SpecificConverter<Serializable, Blob>
+	public static class ObjectToBlob implements Converter<Object, Blob>
 	{
-		public Blob convert(Serializable source)
+		public Blob convert(Object source)
 		{
 			try
 			{
@@ -87,8 +76,8 @@ public class EngineConverters
 		}
 
 	}
-	
-	public static class NoDescriptorSerializableToBlob extends SerializableToBlob
+
+	public static class NoDescriptorSerializableToBlob extends ObjectToBlob
 	{
 		@Override
 		protected ObjectOutputStream createObjectOutputStream(ByteArrayOutputStream baos) throws IOException
@@ -96,8 +85,8 @@ public class EngineConverters
 			return new NoDescriptorObjectOutputStream(baos);
 		}
 	}
-	
-	public static class BlobToAnything implements TypeConverter
+
+	public static class BlobToObject implements Converter<Blob, Object>
 	{
 		public Object convert(Blob blob)
 		{
@@ -128,13 +117,27 @@ public class EngineConverters
 			return null;
 		}
 	}
-	
-	public static class NoDescriptorBlobToAnything extends BlobToAnything
+
+	public static class NoDescriptorBlobToAnything extends BlobToObject
 	{
 		@Override
 		protected ObjectInputStream createObjectInputStream(ByteArrayInputStream bais) throws IOException
 		{
 			return new NoDescriptorObjectInputStream(bais);
 		}
+	}
+
+	@Override
+	public Iterator<Converter<?, ?>> iterator()
+	{
+		return Arrays.asList(
+		new StringToText(),
+		new TextToString(),
+		new StringToDate(),
+		new DateToString(),
+		new ByteArrayToBlob(),
+		new BlobToByteArray(),
+		new ObjectToBlob(),
+		new BlobToObject()).iterator();
 	}
 }

@@ -2,7 +2,7 @@ package com.google.code.twig.standard;
 
 import com.google.appengine.api.datastore.Key;
 
-public class StandardUntypedSingleLoadCommand extends StandardDecodeCommand
+public class StandardUntypedSingleLoadCommand extends StandardDecodeCommand<StandardUntypedSingleLoadCommand>
 {
 	private final Key key;
 

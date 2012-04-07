@@ -10,6 +10,7 @@ import java.util.Set;
 import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
+import com.google.code.twig.util.PropertySets;
 
 public class ChainedTranslator implements PropertyTranslator
 {
@@ -44,15 +45,27 @@ public class ChainedTranslator implements PropertyTranslator
 
 	public Set<Property> encode(Object object, Path prefix, boolean indexed)
 	{
-		for (PropertyTranslator translator : translators)
+		if (object == null)
 		{
-			Set<Property> result = translator.encode(object, prefix, indexed);
-			if (result != null)
-			{
-				return result;
-			}
+			return PropertySets.singletonPropertySet(prefix, null, indexed);
 		}
-		return null;
+
+		try
+		{
+			for (PropertyTranslator translator : translators)
+			{
+				Set<Property> result = translator.encode(object, prefix, indexed);
+				if (result != null)
+				{
+					return result;
+				}
+			}
+			return null;
+		}
+		catch (Throwable t)
+		{
+			throw new RuntimeException("Problem encoding " + object + " at " + prefix , t);
+		}
 	}
 
 	public Object decode(Set<Property> properties, Path prefix, Type type)

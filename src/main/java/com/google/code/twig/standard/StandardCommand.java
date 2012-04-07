@@ -9,7 +9,7 @@ class StandardCommand
 		// check we have the same thread
 		if (datastore.thread != Thread.currentThread())
 		{
-			throw new IllegalStateException("Dectected use by more than one thread");
+			throw new IllegalStateException("Detected use of ObjectDatastore by more than one thread.");
 		}
 		
 		this.datastore = datastore;

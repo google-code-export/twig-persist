@@ -7,7 +7,7 @@ import com.google.code.twig.FindCommand.ParentsCommand;
 import com.google.appengine.api.datastore.FetchOptions;
 
 abstract class StandardCommonParentsCommand<P> extends
-		StandardRestrictedFindCommand<ParentsCommand<P>> implements ParentsCommand<P>
+		StandardRestrictedFindCommand<StandardCommonParentsCommand<P>> implements ParentsCommand<P>
 {
 	protected final StandardCommonFindCommand<?> childCommand;
 

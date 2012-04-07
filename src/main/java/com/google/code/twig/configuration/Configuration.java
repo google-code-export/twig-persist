@@ -25,7 +25,7 @@ public interface Configuration
 	 * @param depth The current activation depth
 	 * @return The new activation depth for decoding this instance
 	 */
-	int activationDepth(Field field, int depth);
+	int activationDepth(Field field, Integer depth);
 	
 
 	/**
@@ -71,11 +71,14 @@ public interface Configuration
 	 * @return
 	 */
 	boolean child(Field field);
+	
 	/**
 	 * @param field The reflected Field to be examined
 	 * @return true to store as a component of the referencing Entity
 	 */
 	boolean embed(Field field);
+	
+	String[] denormalise(Field field);
 
 	/**
 	 * Should this field value be stored as a separate Entity
@@ -102,6 +105,8 @@ public interface Configuration
 	boolean store(Field field);
 
 
+	int serializationThreshold(Field field);
+	
 	/**
 	 * Can this field hold sub-types of the declared field type
 	 * @param field
@@ -135,5 +140,7 @@ public interface Configuration
 	 * @return The property name used for this field
 	 */
 	String name(Field field);
+	
+	int retryNonTransactionPut();
 	
 }

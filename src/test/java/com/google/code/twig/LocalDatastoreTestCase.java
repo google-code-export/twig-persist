@@ -12,12 +12,12 @@ public abstract class LocalDatastoreTestCase {
         new LocalServiceTestHelper(new LocalDatastoreServiceTestConfig());
 
     @Before
-    public void setUp() {
+    public void setupDatastore() {
         helper.setUp();
     }
 
     @After
-    public void tearDown() {
+    public void tearDownDatastore() {
         helper.tearDown();
     }
 }

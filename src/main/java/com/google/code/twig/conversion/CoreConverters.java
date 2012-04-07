@@ -1,54 +1,36 @@
 package com.google.code.twig.conversion;
 
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.text.DateFormat;
 import java.text.ParseException;
+import java.util.Arrays;
 import java.util.Currency;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.Locale;
 
-import com.google.code.twig.util.generic.Generics;
+import com.vercer.convert.Converter;
 
-public class CoreConverters
+public class CoreConverters implements Iterable<Converter<?, ?>>
 {
-	public static void registerAll(CombinedConverter converter)
-	{
-		converter.append(new DateToString());
-		converter.append(new StringToDate());
-		converter.append(new ClassToString());
-		converter.append(new StringToClass());
-		converter.append(new UrltoString());
-		converter.append(new StringToUrl());
-		converter.append(new URItoString());
-		converter.append(new StringToURI());
-		converter.append(new LocaleToString());
-		converter.append(new StringToLocale());
-		converter.append(new CurrencyToString());
-		converter.append(new StringToCurrency());
-	}
-
-	public static class DateToString implements SpecificConverter<Date, String>
+	static DateFormat format = DateFormat.getDateTimeInstance();
+	public static class DateToString implements Converter<Date, String>
 	{
 		public String convert(Date source)
 		{
-			DateFormat format = DateFormat.getDateTimeInstance();
 			return format.format(source);
 		}
 	}
-	public static class StringToDate implements SpecificConverter<String, Date>
+	public static class StringToDate implements Converter<String, Date>
 	{
 		public Date convert(String source)
 		{
 			try
 			{
-				DateFormat format = DateFormat.getDateTimeInstance();
 				return format.parse(source);
 			}
 			catch (ParseException e)
@@ -57,15 +39,15 @@ public class CoreConverters
 			}
 		}
 	}
-
-	public static class ClassToString implements SpecificConverter<Class<?>, String>
+	
+	public static class ClassToString implements Converter<Class<?>, String>
 	{
 		public String convert(Class<?> source)
 		{
 			return source.getName();
 		}
 	}
-	public static class StringToClass implements SpecificConverter<String, Class<?>>
+	public static class StringToClass implements Converter<String, Class<?>>
 	{
 		public Class<?> convert(String source)
 		{
@@ -80,7 +62,7 @@ public class CoreConverters
 		}
 	}
 
-	public static class UrltoString implements SpecificConverter<URL, String>
+	public static class UrltoString implements Converter<URL, String>
 	{
 		@Override
 		public String convert(URL source)
@@ -88,7 +70,7 @@ public class CoreConverters
 			return source.toExternalForm();
 		}
 	}
-	public static class StringToUrl implements SpecificConverter<String, URL>
+	public static class StringToUrl implements Converter<String, URL>
 	{
 		@Override
 		public URL convert(String source)
@@ -104,7 +86,7 @@ public class CoreConverters
 		}
 	}
 
-	public static class URItoString implements SpecificConverter<URI, String>
+	public static class URItoString implements Converter<URI, String>
 	{
 		@Override
 		public String convert(URI source)
@@ -112,7 +94,7 @@ public class CoreConverters
 			return source.toString();
 		}
 	}
-	public static class StringToURI implements SpecificConverter<String, URI>
+	public static class StringToURI implements Converter<String, URI>
 	{
 		@Override
 		public URI convert(String source)
@@ -127,20 +109,26 @@ public class CoreConverters
 			}
 		}
 	}
-
-	public static class LocaleToString implements SpecificConverter<Locale, String>
+	
+	public static class LocaleToString implements Converter<Locale, String>
 	{
 		@Override
 		public String convert(Locale source)
 		{
+			if (source == null)
+			{
+				return null;
+			}
 			return source.toString();
 		}
 	}
-	public static class StringToLocale implements SpecificConverter<String, Locale>
+	public static class StringToLocale implements Converter<String, Locale>
 	{
 		@Override
 		public Locale convert(String source)
 		{
+			if (source == null) return null;
+			
 			String[] parts = source.split("_", -1);
 			if (parts.length == 3)
 			{
@@ -157,7 +145,7 @@ public class CoreConverters
 		}
 	}
 
-	public static class CurrencyToString implements SpecificConverter<Currency, String>
+	public static class CurrencyToString implements Converter<Currency, String>
 	{
 		@Override
 		public String convert(Currency source)
@@ -165,7 +153,7 @@ public class CoreConverters
 			return source.toString();
 		}
 	}
-	public static class StringToCurrency implements SpecificConverter<String, Currency>
+	public static class StringToCurrency implements Converter<String, Currency>
 	{
 		@Override
 		public Currency convert(String source)
@@ -173,8 +161,8 @@ public class CoreConverters
 			return Currency.getInstance(source);
 		}
 	}
-
-	public static class EnumSetToLong implements SpecificConverter<EnumSet<? extends Enum<?>>, Long>
+	
+	public static class EnumSetToLong implements Converter<EnumSet<? extends Enum<?>>, Long>
 	{
 		@Override
 		public Long convert(EnumSet<? extends Enum<?>> source)
@@ -194,47 +182,21 @@ public class CoreConverters
 		}
 	}
 
-	public static class LongToEnumSet implements TypeConverter
+	@Override
+	public Iterator<Converter<?, ?>> iterator()
 	{
-		@SuppressWarnings("unchecked")
-		@Override
-		public <T> T convert(Object source, Type type)
-		{
-			if (source instanceof Long
-					&& type instanceof ParameterizedType
-					&& EnumSet.class.isAssignableFrom(Generics.erase(type)))
-			{
-				Long value = (Long) source;
-				Type enumSetType = Generics.getExactSuperType(type, EnumSet.class);
-				Type enumType = ((ParameterizedType) enumSetType).getActualTypeArguments()[0];
-
-				@SuppressWarnings("rawtypes")  // not sure how to define enum class safely
-				Class<? extends Enum> enumClass = (Class<? extends Enum>) Generics.erase(enumType);
-
-				EnumSet<?> result = bitsToEnums(value, enumClass);
-
-				return (T) result;
-			}
-			else
-			{
-				return null;
-			}
-		}
-
-		protected <E extends Enum<E>> EnumSet<?> bitsToEnums(Long value, Class<E> enumClass)
-		{
-			EnumSet<E> all = EnumSet.allOf(enumClass);
-			EnumSet<E> result = EnumSet.noneOf(enumClass);
-			for (E current : all)
-			{
-				// see if the bit is set in the ordinal position
-				if ((value & 1 << current.ordinal()) > 0)
-				{
-					result.add(current);
-				}
-			}
-			return result;
-		}
+		return Arrays.asList(
+		new DateToString(),
+		new StringToDate(),
+		new ClassToString(),
+		new StringToClass(),
+		new UrltoString(),
+		new StringToUrl(),
+		new URItoString(),
+		new StringToURI(),
+		new LocaleToString(),
+		new StringToLocale(),
+		new CurrencyToString(),
+		new StringToCurrency()).iterator();
 	}
-
 }

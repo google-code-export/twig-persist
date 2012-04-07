@@ -7,12 +7,17 @@ public class DelegatingConfiguration implements Configuration
 {
 	private final Configuration delegate;
 
+	public int retryNonTransactionPut()
+	{
+		return this.delegate.retryNonTransactionPut();
+	}
+
 	public DelegatingConfiguration(Configuration delegate)
 	{
 		this.delegate = delegate;
 	}
 
-	public int activationDepth(Field field, int depth)
+	public int activationDepth(Field field, Integer depth)
 	{
 		return delegate.activationDepth(field, depth);
 	}
@@ -35,6 +40,12 @@ public class DelegatingConfiguration implements Configuration
 	public boolean embed(Field field)
 	{
 		return delegate.embed(field);
+	}
+	
+	@Override
+	public String[] denormalise(Field field)
+	{
+		return delegate.denormalise(field);
 	}
 
 	public String typeToKind(Class<?> type)
@@ -71,12 +82,17 @@ public class DelegatingConfiguration implements Configuration
 	{
 		return delegate.store(field);
 	}
-
+	
 	public boolean polymorphic(Field field)
 	{
 		return delegate.polymorphic(field);
 	}
 	
+	public int serializationThreshold(Field field)
+	{
+		return delegate.serializationThreshold(field);
+	}
+
 	@Override
 	public boolean polymorphic(Class<?> type)
 	{
@@ -92,5 +108,10 @@ public class DelegatingConfiguration implements Configuration
 	public long allocateIdsFor(Type type)
 	{
 		return delegate.allocateIdsFor(type);
+	}
+	
+	public Configuration getDelegate()
+	{
+		return this.delegate;
 	}
 }

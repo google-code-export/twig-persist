@@ -16,7 +16,7 @@ public class AnnotationConfigurationTest {
 	
 	@Before
 	public void setUp() {
-		config = new AnnotationConfiguration(true, 1);
+		config = new AnnotationConfiguration(true);
 	}
 	
 	@Test

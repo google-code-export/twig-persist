@@ -7,7 +7,11 @@ import com.google.code.twig.StoreCommand;
 
 public class StandardStoreCommand extends StandardCommand implements StoreCommand
 {
-	protected boolean update;
+
+	/**
+	 * True for update, False for store, null for update or store
+	 */
+	protected Boolean update;
 
 	protected StandardStoreCommand(TranslatorObjectDatastore datastore)
 	{

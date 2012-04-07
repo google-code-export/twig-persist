@@ -19,6 +19,12 @@ public class SinglePropertySet extends AbstractSet<Property> implements Property
 		this.value = value;
 		this.indexed = indexed;
 	}
+	
+	@Override
+	public int compareTo(Property o)
+	{
+		return path.compareTo(o.getPath());
+	}
 
 	@Override
 	public Iterator<Property> iterator()

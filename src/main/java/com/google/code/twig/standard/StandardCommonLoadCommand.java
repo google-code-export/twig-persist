@@ -3,18 +3,12 @@ package com.google.code.twig.standard;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 
-import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
-import com.google.code.twig.LoadCommand;
-import com.google.code.twig.Property;
-import com.google.code.twig.Restriction;
 
-class StandardCommonLoadCommand<C extends StandardCommonLoadCommand<C>> extends StandardDecodeCommand implements LoadCommand.CommonLoadCommand<C>
+class StandardCommonLoadCommand<C extends StandardCommonLoadCommand<C>> extends StandardDecodeCommand<C>
 {
 	final StandardTypedLoadCommand<?> command;
-	Restriction<Entity> entityRestriction;
-	Restriction<Property> propertyRestriction;
 	Key parentKey;
 
 	StandardCommonLoadCommand(StandardTypedLoadCommand<?> command)
@@ -23,22 +17,6 @@ class StandardCommonLoadCommand<C extends StandardCommonLoadCommand<C>> extends 
 		this.command = command;
 	}
 
-	@SuppressWarnings("unchecked")
-	@Override
-	public C restrictEntities(Restriction<Entity> restriction)
-	{
-		this.entityRestriction = restriction;
-		return (C) this;
-	}
-
-	@SuppressWarnings("unchecked")
-	@Override
-	public C restrictProperties(Restriction<Property> restriction)
-	{
-		this.propertyRestriction = restriction;
-		return (C) this;
-	}
-	
 	@SuppressWarnings("unchecked")
 	public final C parent(Object parent)
 	{
@@ -50,27 +28,25 @@ class StandardCommonLoadCommand<C extends StandardCommonLoadCommand<C>> extends 
 		}
 		return (C) this;
 	}
-
-	static Key idToKey(Object id, Field keyField, String kind, TranslatorObjectDatastore datastore, Key parentKey)
+	
+	static Key idToKey(Object id, Field field, String kind, TranslatorObjectDatastore datastore, Key parentKey)
 	{
-		Type keyType;
-		if (keyField != null)
+		if (field != null)
 		{
-			keyType = datastore.getConfiguration().typeOf(keyField);
-			id = datastore.getConverter().convert(id, keyType);
+			Type storeType = datastore.getConfiguration().typeOf(field);
+			if (storeType != field.getGenericType())
+			{
+				id = datastore.getConverter().convert(id, field.getGenericType(), storeType);
+			}
 		}
 		else
 		{
 			// no key field so id must have been set explicitly when stored
 			if (id instanceof Long == false && id instanceof String == false)
 			{
-				throw new IllegalArgumentException("Id must be String or Long but was " + id.getClass());
+				throw new IllegalArgumentException("Explicit id must be String or Long but was " + id.getClass());
 			}
 		}
-		
-		// convert the id to the same type as was stored
-
-		Key key;
 		
 		// the key name is not stored in the fields but only in key
 		if (id instanceof Number)
@@ -79,27 +55,31 @@ class StandardCommonLoadCommand<C extends StandardCommonLoadCommand<C>> extends 
 			long longValue = ((Number) id).longValue();
 			if (parentKey == null)
 			{
-				key = KeyFactory.createKey(kind, longValue);
+				return KeyFactory.createKey(kind, longValue);
 			}
 			else
 			{
-				key = KeyFactory.createKey(parentKey, kind, longValue);
+				return KeyFactory.createKey(parentKey, kind, longValue);
+			}
+		}
+		else if (id instanceof String)
+		{
+			String name = (String) id;
+			if (parentKey == null)
+			{
+				return KeyFactory.createKey(kind, name);
+			}
+			else
+			{
+				return KeyFactory.createKey(parentKey, kind, name);
 			}
 		}
 		else
 		{
-			// make into string
-			String keyName = datastore.getConverter().convert(id, String.class);
-
-			if (parentKey == null)
-			{
-				key = KeyFactory.createKey(kind, keyName);
-			}
-			else
-			{
-				key = KeyFactory.createKey(parentKey, kind, keyName);
-			}
+			throw new IllegalArgumentException("@Id field must be stored as a " +
+					"Number or String but was " + id.getClass() + ". Use @Type " +
+					"to define the stored type and configure a type converter which" +
+					"can handle the conversion in both directions.");
 		}
-		return key;
 	}
 }

@@ -93,4 +93,28 @@ public class SimpleProperty implements Property
 		return true;
 	}
 
+	@Override
+	public int compareTo(Property o)
+	{
+		int pc = path.compareTo(o.getPath());
+		if (pc != 0)
+		{
+			return pc;
+		}
+		else if (value instanceof Comparable<?>)
+		{
+			return compare((Comparable<?>) o.getValue(), o.getValue());
+		}
+		else
+		{
+			throw new IllegalArgumentException("Cannot compare with " + o);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T> int compare(Comparable<?> o1, T o2)
+	{
+		return ((Comparable<T>) o1).compareTo(o2);
+	}
+
 }

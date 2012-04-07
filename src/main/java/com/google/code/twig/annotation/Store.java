@@ -11,4 +11,5 @@ public @interface Store
 {
 	boolean value() default true;
 	String name() default "";
+	int serializeThreshold() default -1;
 }
