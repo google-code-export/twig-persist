@@ -11,7 +11,6 @@ import com.google.code.twig.annotation.AnnotationObjectDatastore;
 import com.google.code.twig.annotation.Embed;
 import com.google.code.twig.annotation.Id;
 
-@SuppressWarnings("deprecation")
 class Driver {
 	@Id public Long id;
 	@Embed(polymorphic=true) public Vehicle vehicle;

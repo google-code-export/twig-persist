@@ -22,7 +22,7 @@ public class Conversion extends LocalDatastoreTestCase
 	@Test
 	public void storeAndLoadWithDifferentFieldType()
 	{
-		Registry registry = new Registry();
+		Registry registry = new Registry(new Annotator());
 		
 		StandardObjectDatastore storeWith = new StandardObjectDatastore(Settings.defaults().build(), new AnnotationConfiguration(true)
 		{

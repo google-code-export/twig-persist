@@ -185,7 +185,7 @@ public class CoreConverters implements Iterable<Converter<?, ?>>
 	@Override
 	public Iterator<Converter<?, ?>> iterator()
 	{
-		return Arrays.asList(
+		return Arrays.<Converter<?, ?>>asList(
 		new DateToString(),
 		new StringToDate(),
 		new ClassToString(),

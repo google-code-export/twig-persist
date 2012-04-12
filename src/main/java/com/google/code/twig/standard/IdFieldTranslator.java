@@ -56,6 +56,9 @@ final class IdFieldTranslator extends DecoratingTranslator
 		{
 			id = datastore.decodeKey.getId();
 		}
+		
+		id = datastore.getTypeConverter().convert(id, type);
+		
 		return id;
 	}
 }

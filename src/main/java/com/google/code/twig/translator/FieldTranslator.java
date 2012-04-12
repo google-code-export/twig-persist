@@ -23,6 +23,7 @@ import com.google.code.twig.util.PropertySets;
 import com.google.code.twig.util.Reflection;
 import com.google.code.twig.util.collections.MergeSet;
 import com.google.code.twig.util.generic.Generics;
+import com.vercer.convert.GenericType;
 import com.vercer.convert.TypeConverter;
 
 /**
@@ -136,14 +137,19 @@ public abstract class FieldTranslator implements PropertyTranslator
 		PropertyTranslator translator = decoder(field, properties);
 
 		// get the type that we need to store
-		Type storedAs = type(field);
+		Type type = type(field);
+		
+		if (GenericType.class.isAssignableFrom(Generics.erase(type)))
+		{
+			type = Generics.getTypeParameter(type, GenericType.class.getTypeParameters()[0]);
+		}
 
 		onBeforeDecode(field, properties);
 
 		Object value;
 		try
 		{
-			value = translator.decode(properties, path, storedAs);
+			value = translator.decode(properties, path, type);
 		}
 		catch (Exception e)
 		{
@@ -171,7 +177,7 @@ public abstract class FieldTranslator implements PropertyTranslator
 		}
 
 		// the value can be stored as a different type
-		value = converters.convert(value, storedAs, field.getGenericType());
+		value = converters.convert(value, type, field.getGenericType());
 
 		// for collections we can reuse an existing instance
 		if (reusedExistingImplementation(value, field, instance) == false)
@@ -270,7 +276,7 @@ public abstract class FieldTranslator implements PropertyTranslator
 	{
 		try
 		{
-			Constructor<?> constructor = getNoArgsConstructor(clazz);
+			Constructor<?> constructor = getDefaultConstructor(clazz);
 			return constructor.newInstance();
 		}
 		catch (NoSuchMethodException e)
@@ -283,7 +289,7 @@ public abstract class FieldTranslator implements PropertyTranslator
 		}
 	}
 
-	protected abstract Constructor<?> getNoArgsConstructor(Class<?> clazz) throws NoSuchMethodException;
+	protected abstract Constructor<?> getDefaultConstructor(Class<?> clazz) throws NoSuchMethodException;
 
 	protected abstract Collection<Field> getSortedAccessibleFields(Class<?> clazz);
 
@@ -304,6 +310,11 @@ public abstract class FieldTranslator implements PropertyTranslator
 				{
 					// get the type that we need to store
 					Type type = type(field);
+
+					if (GenericType.class.isAssignableFrom(Generics.erase(type)))
+					{
+						type = Generics.getTypeParameter(type, GenericType.class.getTypeParameters()[0]);
+					}
 
 					Object value = Reflection.get(field, instance);
 
@@ -352,42 +363,6 @@ public abstract class FieldTranslator implements PropertyTranslator
 			}
 		}
 	}
-//
-//	protected Set<Property> encodeField(Object instance, Path path, Field field)
-//	{
-//		// get the type that we need to store
-//		Type type = type(field);
-//
-//		Object value = Reflection.get(field, instance);
-//
-//		Path childPath = new Path.Builder(path).field(fieldToPartName(field)).build();
-//		if (value == null)
-//		{
-////			if (indexed)
-////			{
-////				return PropertySets.singletonPropertySet(childPath, null, indexed(field));
-////			}
-//		}
-//
-//		// convert the object if a type was configured
-//		if (!type.equals(field.getGenericType()))
-//		{
-//			// field might be a generic parameter if declared in super type
-//			Type from = Generics.getExactFieldType(field, instance.getClass());
-//
-//			value = converters.convert(value, from, type);
-//		}
-//
-//		PropertyTranslator translator = encoder(field, value);
-//		Set<Property> properties = translator.encode(value, childPath, indexed(field));
-//
-//		if (properties == null)
-//		{
-//			throw new IllegalStateException("Could not translate value to properties: " + value);
-//		}
-//
-//		return properties;
-//	}
 
 	protected abstract boolean indexed(Field field);
 

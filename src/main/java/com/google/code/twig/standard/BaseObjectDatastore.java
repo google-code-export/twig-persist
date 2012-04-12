@@ -53,8 +53,6 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 
 	private Map<Key, Entity> batched;
 
-	private CacheMode cacheMode = CacheMode.AUTO;
-
 	private static final String MEMCACHE_PREFIX = "__twig";
 	private static MemcacheService memcache;
 
@@ -240,7 +238,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 		}
 	}
 
-	protected List<Key> flushEntities()
+	protected List<Key> flushEntities(Settings settings)
 	{
 		if (batched == null)
 		{
@@ -250,24 +248,10 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 		logger.info("Flush " + batched.size() + " entities");
 
 		List<Key> keys = bulkPutWithTransaction(Collections2.filter(batched.values(), Predicates.notNull()), defaultSettings);
-		bulkDeleteWithTransaction(Maps.filterValues(batched, Predicates.isNull()).keySet());
+		bulkDeleteWithTransaction(Maps.filterValues(batched, Predicates.isNull()).keySet(), settings.getCacheMode());
 		batched.clear();
 
 		return keys;
-	}
-
-	public void setCachMode(CacheMode cacheMode)
-	{
-		if (cacheMode == null)
-		{
-			throw new NullPointerException();
-		}
-		this.cacheMode = cacheMode;
-	}
-
-	public CacheMode getCacheMode()
-	{
-		return this.cacheMode;
 	}
 
 	protected final Key servicePut(Entity entity, Settings settings)
@@ -331,9 +315,9 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 		return service;
 	}
 
-	private boolean isCacheEnabled(CacheDetails details)
+	private boolean isCacheEnabled(CacheDetails details, CacheMode mode)
 	{
-		return details != null && (cacheMode == CacheMode.ON || cacheMode == CacheMode.AUTO && details.automatic);
+		return details != null && (mode == CacheMode.ON || mode == CacheMode.AUTO && details.automatic);
 	}
 
 	private Key putToDatastoreWithRetry(Entity entity, Settings settings)
@@ -426,7 +410,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 
 		if (transaction == null)
 		{
-			putToMemoryAndMemcache(entities);
+			putToMemoryAndMemcache(entities, settings.getCacheMode());
 			return putToDatastoreWithRetry(entities, settings);
 		}
 		else
@@ -465,7 +449,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 			if (transaction == null)
 			{
 				CacheDetails details = kindToCache.get(key.getKind());
-				if (isCacheEnabled(details))
+				if (isCacheEnabled(details, settings.getCacheMode()))
 				{
 					// look in the memory cache
 					result = getFromMemory(key, details);
@@ -582,7 +566,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 		{
 			if (transaction == null)
 			{
-				Map<Key, Entity> fromMemory = getFromMemory(keys);
+				Map<Key, Entity> fromMemory = getFromMemory(keys, settings.getCacheMode());
 
 				Map<Key, Entity> result = null;
 				if (!fromMemory.isEmpty())
@@ -596,10 +580,10 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 					return fromMemory;
 				}
 
-				Map<Key, Entity> fromMemcache = getFromMemcache(keys);
+				Map<Key, Entity> fromMemcache = getFromMemcache(keys, settings.getCacheMode());
 
 				// add all found in memcache back to the memory cache
-				putToMemory(fromMemcache);
+				putToMemory(fromMemcache, settings.getCacheMode());
 
 				if (!fromMemcache.isEmpty())
 				{
@@ -623,8 +607,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 				statistics.datastoreGets++;
 				Map<Key, Entity> fromDatastore = service(settings).get(keys);
 
-
-				putToMemoryAndMemcache(fromDatastore.values());
+				putToMemoryAndMemcache(fromDatastore.values(), settings.getCacheMode());
 
 				if (!fromDatastore.isEmpty())
 				{
@@ -662,12 +645,12 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 		}
 	}
 
-	private void putToMemory(Map<Key, Entity> fromMemcache)
+	private void putToMemory(Map<Key, Entity> fromMemcache, CacheMode mode)
 	{
 		for (Key key : fromMemcache.keySet())
 		{
 			CacheDetails details = kindToCache.get(key.getKind());
-			if (isCacheEnabled(details) && details.cache != null)
+			if (isCacheEnabled(details, mode) && details.cache != null)
 			{
 				details.cache.put(key, fromMemcache.get(key));
 			}
@@ -675,7 +658,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 	}
 
 	// a combined method that does only one iteration of the entities
-	protected void putToMemoryAndMemcache(Collection<Entity> entities)
+	protected void putToMemoryAndMemcache(Collection<Entity> entities, CacheMode mode)
 	{
 		// need to collect all entities with the same expiry time
 		Map<Integer, Map<String, Entity>> secondsToKeyToEntity = null;
@@ -686,7 +669,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 			if (entity == null) throw new NullPointerException();
 
 			CacheDetails details = kindToCache.get(entity.getKey().getKind());
-			if (isCacheEnabled(details))
+			if (isCacheEnabled(details, mode))
 			{
 				// cache with memcache and memory
 				if (details.cache != null)
@@ -739,13 +722,13 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 		}
 	}
 
-	private Map<Key, Entity> getFromMemory(Collection<Key> keys)
+	private Map<Key, Entity> getFromMemory(Collection<Key> keys, CacheMode mode)
 	{
 		Map<Key, Entity> result = null;
 		for (Key key : keys)
 		{
 			CacheDetails details = kindToCache.get(key.getKind());
-			if (isCacheEnabled(details))
+			if (isCacheEnabled(details, mode))
 			{
 				// this is always called even when there is no memory cache
 //				details.reads.incrementAndGet();
@@ -779,7 +762,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 		}
 	}
 
-	private Map<Key, Entity> getFromMemcache(Collection<Key> keys)
+	private Map<Key, Entity> getFromMemcache(Collection<Key> keys, CacheMode mode)
 	{
 		// convert keys to string keys used in memcache to avoid serialising
 		Collection<String> stringKeys = null;
@@ -787,7 +770,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 		{
 			// only look for cached entity kinds
 			CacheDetails details = kindToCache.get(key.getKind());
-			if (isCacheEnabled(details) && details.global)
+			if (isCacheEnabled(details, mode) && details.global)
 			{
 				if (stringKeys == null)
 				{
@@ -824,11 +807,11 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 		return result;
 	}
 
-	protected final void serviceDelete(Collection<Key> keys)
+	protected final void serviceDelete(Collection<Key> keys, CacheMode mode)
 	{
 		if (batched == null)
 		{
-			bulkDeleteWithTransaction(keys);
+			bulkDeleteWithTransaction(keys, mode);
 		}
 		else
 		{
@@ -839,7 +822,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 		}
 	}
 
-	public void bulkDeleteWithTransaction(Collection<Key> keys)
+	public void bulkDeleteWithTransaction(Collection<Key> keys, CacheMode mode)
 	{
 		if (transaction == null)
 		{
@@ -847,7 +830,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 			for (Key key : keys)
 			{
 				CacheDetails details = kindToCache.get(key.getKind());
-				if (isCacheEnabled(details))
+				if (isCacheEnabled(details, mode))
 				{
 					if (details.cache != null)
 					{

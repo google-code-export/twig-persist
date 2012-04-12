@@ -3,13 +3,16 @@ package com.google.code.twig;
 import java.util.concurrent.TimeUnit;
 
 import com.google.appengine.api.datastore.ReadPolicy.Consistency;
+import com.google.code.twig.LoadCommand.CacheMode;
 
 public final class Settings implements Cloneable
 {
 	private Long deadline;
 	private Consistency consistency;
+	private CacheMode cacheMode;
 	private int retries = 3;
 	private boolean indexed;
+	private int activation = Integer.MAX_VALUE;
 	
 	public static class Builder
 	{
@@ -37,10 +40,22 @@ public final class Settings implements Cloneable
 			settings.deadline = unit.toMillis(value);
 			return this;
 		}
+		
+		public Builder activate(int depth)
+		{
+			settings.activation = depth;
+			return this;
+		}
 
 		public Builder consistency(Consistency consistency)
 		{
 			settings.consistency = consistency;
+			return this;
+		}
+		
+		public Builder cacheMode(CacheMode cacheMode)
+		{
+			settings.cacheMode = cacheMode;
 			return this;
 		}
 
@@ -94,5 +109,15 @@ public final class Settings implements Cloneable
 	public boolean isIndexed()
 	{
 		return this.indexed;
+	}
+	
+	public int getActivation()
+	{
+		return activation;
+	}
+	
+	public CacheMode getCacheMode()
+	{
+		return cacheMode;
 	}
 }

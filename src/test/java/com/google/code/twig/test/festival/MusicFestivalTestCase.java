@@ -28,13 +28,11 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.appengine.api.datastore.Transaction;
-import com.google.code.twig.FindCommand;
 import com.google.code.twig.LocalDatastoreTestCase;
 import com.google.code.twig.ObjectDatastore;
 import com.google.code.twig.annotation.AnnotationObjectDatastore;
 import com.google.code.twig.annotation.Embedded;
 import com.google.code.twig.annotation.Id;
-import com.google.code.twig.test.festival.Album.Track;
 import com.google.code.twig.test.festival.Band.HairStyle;
 import com.google.code.twig.util.PredicateToRestrictionAdaptor;
 import com.google.common.base.Predicate;
@@ -94,19 +92,19 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		ledzep.albums = new ArrayList<Album>();
 		ledzep.albums.add(houses);
 
-		houses.tracks = new Album.Track[3];
-		houses.tracks[0] = new Album.Track();
+		houses.tracks = new Track[3];
+		houses.tracks[0] = new Track();
 		houses.tracks[0].title = "The Song Remains the Same";
 		houses.tracks[0].length = 5.32f;
-		houses.tracks[1] = new Album.Track();
+		houses.tracks[1] = new Track();
 		houses.tracks[1].title = "The Rain Song";
 		houses.tracks[1].length = 7.39f;
-		houses.tracks[2] = new Album.Track();
+		houses.tracks[2] = new Track();
 		houses.tracks[2].title = "Over the Hills and Far Away";
 		houses.tracks[2].length = 4.50f;
 		
 		// set an entity inside an embedded class
-		Album.Track.SingleDetails details = new Album.Track.SingleDetails();
+		SingleDetails details = new SingleDetails();
 		details.released = 3;
 		details.bside = "Do ya make er";
 		houses.tracks[2].details = details;
@@ -157,11 +155,11 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		swradio.sold = 500000;
 //		swradio.band = soulwax;
 
-		swradio.tracks = new Album.Track[2];
-		swradio.tracks[0] = new Album.Track();
+		swradio.tracks = new Track[2];
+		swradio.tracks[0] = new Track();
 		swradio.tracks[0].title = "Where's Your Head At";
 		swradio.tracks[0].length = 2.49f;
-		swradio.tracks[1] = new Album.Track();
+		swradio.tracks[1] = new Track();
 		swradio.tracks[1].title = "A really long track name that is certainly over 500 chars" +
 				"long expecially because it is repeated again and again and again" +
 				"long expecially because it is repeated again and again and again" +
@@ -192,8 +190,7 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		Key key = datastore.store(musicFestival);
 
 		AnnotationObjectDatastore typesafe2 = new AnnotationObjectDatastore();
-		typesafe2.setActivationDepth(5);
-		Object reloaded = typesafe2.load(key);
+		Object reloaded = typesafe2.load().key(key).activate(5).now();
 
 		// they should be different instances from distinct sessions
 		assertNotSame(musicFestival, reloaded);
@@ -414,23 +411,20 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 	{
 		MusicFestival musicFestival = createFestival();
 
-		datastore.setActivationDepth(1);
-
 		Key stored = datastore.store(musicFestival);
 		datastore.disassociateAll();
 
-		// musicians have depth 2
-		MusicFestival reloaded = datastore.load(stored);
+		// musician name has depth 2
+		MusicFestival reloaded = datastore.load().key(stored).activate(1).now();
 		assertNull(reloaded.bands.get(0).members.get(0).name);
 
 		datastore.activate(reloaded.bands.get(0).members.get(0));
 
 		assertNotNull(reloaded.bands.get(0).members.get(0).name);
 
-		datastore.setActivationDepth(2);
 		datastore.disassociateAll();
 
-		reloaded = datastore.load(stored);
+		reloaded = datastore.load().key(stored).activate(2).now();
 		assertNotNull(reloaded.bands.get(0).hair);
 	}
 

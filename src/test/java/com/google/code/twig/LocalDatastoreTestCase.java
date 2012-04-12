@@ -6,18 +6,20 @@ import org.junit.Before;
 import com.google.appengine.tools.development.testing.LocalDatastoreServiceTestConfig;
 import com.google.appengine.tools.development.testing.LocalServiceTestHelper;
 
-public abstract class LocalDatastoreTestCase {
-
+public abstract class LocalDatastoreTestCase 
+{
     private final LocalServiceTestHelper helper =
         new LocalServiceTestHelper(new LocalDatastoreServiceTestConfig());
 
     @Before
-    public void setupDatastore() {
+    public void setupDatastore() 
+    {
         helper.setUp();
     }
 
     @After
-    public void tearDownDatastore() {
+    public void tearDownDatastore() 
+    {
         helper.tearDown();
     }
 }

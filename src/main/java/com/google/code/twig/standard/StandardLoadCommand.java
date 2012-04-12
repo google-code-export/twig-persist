@@ -20,11 +20,11 @@ public class StandardLoadCommand extends StandardCommand implements LoadCommand
 
 	public StandardUntypedSingleLoadCommand key(Key key)
 	{
-		return new StandardUntypedSingleLoadCommand(datastore, key);
+		return new StandardUntypedSingleLoadCommand(datastore, key, datastore.defaultActivationDepth);
 	}
 	
 	public StandardUntypedMultipleLoadCommand keys(Collection<Key> keys)
 	{
-		return new StandardUntypedMultipleLoadCommand(datastore, keys);
+		return new StandardUntypedMultipleLoadCommand(datastore, keys, datastore.defaultActivationDepth);
 	}
 }

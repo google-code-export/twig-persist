@@ -7,7 +7,7 @@ import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.util.PropertySets;
-import com.vercer.convert.BaseTypeConverter;
+import com.vercer.convert.CombinedTypeConverter;
 import com.vercer.convert.Converter;
 import com.vercer.convert.ConverterRegistry;
 
@@ -23,8 +23,8 @@ public class ConverterTranslator implements PropertyTranslator
 	{
 		this.forward = forward;
 		this.backward = backward;
-		source = BaseTypeConverter.sourceType(forward);
-		target = BaseTypeConverter.targetType(forward);
+		source = CombinedTypeConverter.sourceType(forward);
+		target = CombinedTypeConverter.targetType(forward);
 	}
 
 	public ConverterTranslator(Type source, Type target, ConverterRegistry converters)
@@ -38,15 +38,17 @@ public class ConverterTranslator implements PropertyTranslator
 	@Override
 	public Object decode(Set<Property> properties, Path path, Type type)
 	{
-		type = BaseTypeConverter.ignoreWildCards(type);
+		type = CombinedTypeConverter.ignoreWildCardParameters(type);
 		if (type.equals(source))
 		{
 			if (properties.isEmpty()) return NULL_VALUE;
 
 			Object value = PropertySets.firstValue(properties);
+			if (value == null) return null;
+			
 			if (value.getClass().equals(target))
 			{
-				return BaseTypeConverter.typesafe(backward, value);
+				return CombinedTypeConverter.typesafe(backward, value);
 			}
 		}
 		return null;
@@ -57,7 +59,7 @@ public class ConverterTranslator implements PropertyTranslator
 	{
 		if (instance.getClass().equals(source))
 		{
-			Object value = BaseTypeConverter.typesafe(forward, instance);
+			Object value = CombinedTypeConverter.typesafe(forward, instance);
 			return PropertySets.singletonPropertySet(path, value, indexed);
 		}
 		return null;

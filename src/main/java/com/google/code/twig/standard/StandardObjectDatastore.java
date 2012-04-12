@@ -18,14 +18,16 @@ import com.google.code.twig.translator.ConverterTranslator;
 import com.google.code.twig.translator.EnumTranslator;
 import com.google.code.twig.translator.NativeDirectTranslator;
 import com.vercer.convert.ArrayToList;
+import com.vercer.convert.ChainedTypeConverter;
 import com.vercer.convert.CollectionConverters;
+import com.vercer.convert.CollectionToArray;
 import com.vercer.convert.CombinedTypeConverter;
 import com.vercer.convert.Converter;
 import com.vercer.convert.ConverterRegistry;
 import com.vercer.convert.DateConverters;
+import com.vercer.convert.IterableToFirstElement;
 import com.vercer.convert.NumberConverters;
 import com.vercer.convert.ObjectToString;
-import com.vercer.convert.SingletonListConverters;
 import com.vercer.convert.StringToPrimitive;
 import com.vercer.convert.TypeConverter;
 
@@ -33,23 +35,12 @@ public class StandardObjectDatastore extends TranslatorObjectDatastore
 {
 	static final Logger log = Logger.getLogger(StandardObjectDatastore.class.getName());
 
-	private static Registry registry;
-
-	protected static Registry getStaticRegistry()
-	{
-		if (registry == null)
-		{
-			registry = new Registry();
-		}
-		return registry;
-	}
-
 	public StandardObjectDatastore(Settings settings, Configuration strategy, Registry registry)
 	{
 		super(settings, strategy, registry);
 	}
 
-	protected CombinedTypeConverter createStaticConverter()
+	protected ConverterRegistry createStaticConverterRegistry()
 	{
 		CombinedTypeConverter converter = new CombinedTypeConverter();
 
@@ -62,9 +53,6 @@ public class StandardObjectDatastore extends TranslatorObjectDatastore
 
 		converter.register(new ArrayToList());
 		converter.register(new ObjectToString());
-
-		converters(converter, new SingletonListConverters());
-//		converter.register(new MapConverters.MapKeyAndValueConverter(converter));
 
 		MapConverters.registerAll(converter);
 
@@ -79,29 +67,52 @@ public class StandardObjectDatastore extends TranslatorObjectDatastore
 		}
 	}
 
-	private static CombinedTypeConverter converter;
+	// volatile to allow double checked locking
+	private volatile static ConverterRegistry converters;
+	
+	private TypeConverter converter;
 
 	@Override
-	public TypeConverter getConverter()
+	public TypeConverter getTypeConverter()
 	{
 		if (converter == null)
 		{
-			converter = createStaticConverter();
+			// TODO problem if more than one subclass - set converters in constructor
+			if (converters == null)
+			{
+				synchronized (this)
+				{
+					if (converters == null)
+					{
+						converters = createStaticConverterRegistry();
+					}
+				}
+			}
+			
+			ChainedTypeConverter chain = new ChainedTypeConverter();
+			chain.add(converters);
+			chain.add(new CollectionToArray(chain));
+			chain.add(new IterableToFirstElement());
+			
+			converter = chain;
 		}
 		return converter;
 	}
-
+	
 	@Override
 	protected ChainedTranslator createValueTranslatorChain()
 	{
 		ChainedTranslator result = new ChainedTranslator();
-		result.append(new NativeDirectTranslator(converter));
-		result.append(new ConverterTranslator(Class.class, String.class, converter));
-		result.append(new ConverterTranslator(URL.class, String.class, converter));
-		result.append(new ConverterTranslator(URI.class, String.class, converter));
-		result.append(new ConverterTranslator(Locale.class, String.class, converter));
-		result.append(new ConverterTranslator(Currency.class, String.class, converter));
+		
+		// types that will be translated to datastore types automatically
+		result.append(new NativeDirectTranslator(converters));
+		result.append(new ConverterTranslator(Class.class, String.class, converters));
+		result.append(new ConverterTranslator(URL.class, String.class, converters));
+		result.append(new ConverterTranslator(URI.class, String.class, converters));
+		result.append(new ConverterTranslator(Locale.class, String.class, converters));
+		result.append(new ConverterTranslator(Currency.class, String.class, converters));
 		result.append(new EnumTranslator());
+		
 		return result;
 	}
 

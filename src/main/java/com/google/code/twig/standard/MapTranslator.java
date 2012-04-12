@@ -73,7 +73,7 @@ public class MapTranslator extends DecoratingTranslator
 			if (existingValue != null)
 			{
 				// enhance the existing value rather than create a new one
-				datastore.refreshInstances = Iterators.singletonIterator(existingValue);
+				datastore.refresh = existingValue;
 			}
 
 			// decode the value properties using the generic type info
@@ -97,11 +97,11 @@ public class MapTranslator extends DecoratingTranslator
 
 	protected Map<Object, Object> createMapInstance(int size)
 	{
-		if (datastore.refreshInstances != null)
+		if (datastore.refresh != null)
 		{
 			@SuppressWarnings("unchecked")
-			Map<Object, Object> result = (Map<Object, Object>) datastore.refreshInstances.next();
-			datastore.refreshInstances = null;
+			Map<Object, Object> result = (Map<Object, Object>) datastore.refresh;
+			datastore.refresh = null;
 			return result;
 		}
 		else

@@ -5,10 +5,10 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import com.google.appengine.repackaged.com.google.common.collect.Lists;
 import com.google.code.twig.annotation.AnnotationObjectDatastore;
 import com.google.code.twig.annotation.Id;
 import com.google.code.twig.annotation.Store;
+import com.google.common.collect.Lists;
 
 public class StoreTest extends LocalDatastoreTestCase
 {

@@ -7,8 +7,8 @@
 	<version>2.0-beta5</version>
 
 	<properties>
-		<appengine.version>1.6.0</appengine.version>
-		<guice.version>2.0</guice.version>
+		<appengine.version>1.6.4</appengine.version>
+		<guice.version>3.0</guice.version>
 	</properties>
 
 	<dependencies>
@@ -70,7 +70,9 @@
 
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>build-helper-maven-plugin</artifactId>
+				<artifactId>build-helper-maven-plugin
+				</artifactId>
+				<version>1.1</version>
 				<executions>
 					<execution>
 						<id>add-source</id>
@@ -80,13 +82,13 @@
 						</goals>
 						<configuration>
 							<sources>
-								<source>src/shared</source>
+								<source>src/share/com.vercer.convert</source>
+								<source>src/share/com.vercer.util</source>
 							</sources>
 						</configuration>
 					</execution>
 				</executions>
 			</plugin>
-
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
@@ -124,9 +126,7 @@
 										<artifactId>
 											build-helper-maven-plugin
 										</artifactId>
-										<versionRange>
-											[1.7,)
-										</versionRange>
+										<versionRange>[1.1,)</versionRange>
 										<goals>
 											<goal>add-source</goal>
 										</goals>

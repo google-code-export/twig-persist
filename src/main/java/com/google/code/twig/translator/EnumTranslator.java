@@ -12,7 +12,6 @@ import com.google.code.twig.util.generic.Generics;
 
 public class EnumTranslator implements PropertyTranslator
 {
-
 	@SuppressWarnings("unchecked")
 	public Object decode(Set<Property> properties, Path path, Type type)
 	{

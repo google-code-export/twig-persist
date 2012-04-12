@@ -21,7 +21,7 @@ public class StoreCommandTest extends LocalDatastoreTestCase
 		datastore = new AnnotationObjectDatastore();
 	}
 	
-	@Entity(allocateIdsBy=10)
+	@Entity(kind="pc", allocateIdsBy=10)
 	public static class ParentClass
 	{
 		@Id long id;

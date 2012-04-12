@@ -20,6 +20,7 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.QueryResultIterator;
+import com.google.code.twig.LoadCommand.CacheMode;
 import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
@@ -38,7 +39,6 @@ import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.primitives.Primitives;
 import com.vercer.convert.TypeConverter;
 
 /**
@@ -47,20 +47,35 @@ import com.vercer.convert.TypeConverter;
  *
  * @author John Patterson (jdpatterson@gmail.com)
  */
+/**
+ * @author John Patterson
+ *
+ */
+/**
+ * @author John Patterson
+ *
+ */
+/**
+ * @author John Patterson
+ *
+ */
+/**
+ * @author John Patterson
+ *
+ */
 public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 {
 	// keeps track of which instances are associated with which keys
-	protected final InstanceKeyCache keyCache;
+	protected final InstanceKeyCache keyCache = new InstanceKeyCache();
 
 	// ensure only used be a single thread
 	protected Thread thread;
 
-	// are properties indexed by default
+	/** are properties indexed by default */
 	protected boolean indexed;
 
-
 	// translators are selected for particular fields by the configuration
-	private final ConfigurationFieldTranslator configurationFieldTranslator;
+	private final ObjectFieldTranslator objectFieldTranslator;
 	private final ChainedTranslator embedTranslator;
 	private final PropertyTranslator polymorphicComponentTranslator;
 	private final PropertyTranslator parentTranslator;
@@ -74,7 +89,6 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	private static final Map<Class<?>, Field> idFields = new ConcurrentHashMap<Class<?>, Field>();
 	private static final Map<Class<?>, Field> keyFields = new ConcurrentHashMap<Class<?>, Field>();
 
-
 	/**************State fields********************/
 
 	// key details are updated as the current instance is encoded
@@ -84,39 +98,35 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	protected Key decodeKey;
 
 	// current activation depth
-	int activationDepth = Integer.MAX_VALUE;
+	final int defaultActivationDepth = Integer.MAX_VALUE;
 
 	// indicates we are only associating instances so do not store them
 	boolean associating = false;
 
 	// when we associating should instances be activated
-	boolean activated = true;
+	boolean activate = true;
 
+	protected Object refresh;
+	
 	boolean denormalising;
-
-	// set when an instance is to be refreshed rather than instantiated
-	// also used when denormalising to enhance an existing field value
-	protected Iterator<?> refreshInstances;
+	
+	StandardCommand command;
 
 	Map<String, Iterator<Key>> allocatedIdRanges;
 
 	private final Configuration configuration;
 
-	protected final Registry registry;
-
 	public TranslatorObjectDatastore(Settings settings, Configuration configuration, Registry registry)
 	{
-		// TODO pass settings in
 		super(settings);
 		this.configuration = configuration;
-		this.registry = registry;
 
-		TypeConverter converter = getConverter();
+		TypeConverter converter = getTypeConverter();
 
 		this.thread = Thread.currentThread();
 
 		// top level translator which examines object field values
-		configurationFieldTranslator = new ConfigurationFieldTranslator(converter);
+		objectFieldTranslator = new ObjectFieldTranslator(converter);
 
 		// simple values encoded as a single property
 		valueTranslatorChain = createValueTranslatorChain();
@@ -132,9 +142,9 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 
 		// embed a field value in the current entity
 		embedTranslator = new ChainedTranslator();
-		embedTranslator.append(new CollectionTranslator(this, embedTranslator, converter));
+		embedTranslator.append(new CollectionTranslator(this, embedTranslator));
 		embedTranslator.append(new MapTranslator(this, embedTranslator, converter));
-		embedTranslator.append(configurationFieldTranslator);
+		embedTranslator.append(objectFieldTranslator);
 
 		// if the property has a key then the model was changed
 		// from a reference to embedded so decode the reference
@@ -146,18 +156,16 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 
 		// allow it to handle maps and lists of polymorphic instances
 		polymorphicComponentTranslator = new ChainedTranslator(
-				new CollectionTranslator(this, polymorphicTranslator, converter),
+				new CollectionTranslator(this, polymorphicTranslator),
 				new MapTranslator(this, polymorphicTranslator, converter),
 				polymorphicTranslator);
 
 		// by default, translate simple values and then try the fallback if that fails
 		defaultTranslator = new ChainedTranslator();
-		defaultTranslator.append(new CollectionTranslator(this, defaultTranslator, converter));
+		defaultTranslator.append(new CollectionTranslator(this, defaultTranslator));
 		defaultTranslator.append(new MapTranslator(this, defaultTranslator, converter));
 		defaultTranslator.append(valueTranslatorChain);
 		defaultTranslator.append(getFallbackTranslator());
-
-		keyCache = createKeyCache();
 	}
 
 	@Override
@@ -304,43 +312,61 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		deleteKeys(Collections2.transform(instances, cachedInstanceToKeyFunction));
 	}
 
-	protected InstanceKeyCache createKeyCache()
-	{
-		return new InstanceKeyCache();
-	}
-
+	/**
+	 * The first extension point called to get the decode translator
+	 * @return {@link #translator(Class)}
+	 */
 	protected PropertyTranslator decoder(Entity entity)
 	{
 		return translator(configuration.kindToType(entity.getKind()));
 	}
 
+	/**
+	 * The first extension point called to get the encode translator
+	 * @return {@link #translator(Class)}
+	 */
 	protected PropertyTranslator encoder(Object instance)
 	{
 		return translator(instance.getClass());
 	}
 
 	/**
-	 * Defines the conversion between a persistent instance and an Entity
+	 * Common extension point for encode and decode translators
+	 * @return {@link #objectFieldTranslator}
 	 */
 	protected PropertyTranslator translator(Class<?> instanceClass)
 	{
-		return configurationFieldTranslator;
+		return objectFieldTranslator;
 	}
-
+	
+	/**
+	 * Called from {@link ObjectFieldTranslator} to allow extension
+	 * @param field The current field being decoded by {@link ObjectFieldTranslator}
+	 * @param properties The subset of properties for this field
+	 * @return {@link #translator(Field)}
+	 */
 	protected PropertyTranslator decoder(Field field, Set<Property> properties)
 	{
 		return translator(field);
 	}
 
+	/**
+	 * Called from {@link ObjectFieldTranslator} to allow extension
+	 * @param field The current field being encoded by {@link ObjectFieldTranslator}
+	 * @param instance The object value to serialize as {@link Property}'s
+	 * @return {@link #translator(Field)}
+	 */
 	protected PropertyTranslator encoder(Field field, Object instance)
 	{
 		return translator(field);
 	}
 
 	/**
-	 * Defines the reference type to other objects such as embedded, ancestors, child or independent
+	 * @param field The current field value being encoded or decoded
+	 * @return The translator for this field
 	 */
-	protected PropertyTranslator translator(Field field) {
+	protected PropertyTranslator translator(Field field)
+	{
 		PropertyTranslator result;
 		if (configuration.entity(field))
 		{
@@ -362,7 +388,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 			if (paths != null)
 			{
 				DenormaliseTranslator denormalizer = new DenormaliseTranslator(this, result, Sets.newHashSet(paths));
-				result = new ChainedTranslator(new MapTranslator(this, denormalizer, getConverter()), denormalizer);
+				result = new ChainedTranslator(new MapTranslator(this, denormalizer, getTypeConverter()), denormalizer);
 			}
 		}
 		else if (configuration.id(field))
@@ -512,7 +538,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 
 			// flag that we should not really store the instance
 			this.associating = true;
-			this.activated = activate;
+			this.activate = activate;
 
 			// use a store command to analyse this and all referenced instances
 			StandardSingleStoreCommand<Object> command = store().instance(null);
@@ -540,7 +566,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		finally
 		{
 			this.associating = false;
-			this.activated = true;
+			this.activate = true;
 		}
 	}
 
@@ -578,7 +604,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	@Override
 	public void flushBatchedOperations()
 	{
-		List<Key> keys = flushEntities();
+		List<Key> keys = flushEntities(getDefaultSettings());
 
 		// keys hash codes may have changed after put
 		keyCache.rehashKeys();
@@ -597,19 +623,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		}
 	}
 
-	@Override
-	public final int getActivationDepth()
-	{
-		return activationDepth;
-	}
-
-	@Override
-	public final void setActivationDepth(int depth)
-	{
-		this.activationDepth = depth;
-	}
-
-	public abstract TypeConverter getConverter();
+	public abstract TypeConverter getTypeConverter();
 
 	protected final PropertyTranslator getIndependantTranslator()
 	{
@@ -638,7 +652,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 
 	protected final PropertyTranslator getFieldTranslator()
 	{
-		return configurationFieldTranslator;
+		return objectFieldTranslator;
 	}
 
 	protected final PropertyTranslator getEmbeddedTranslator()
@@ -673,21 +687,10 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	@Override
 	public void activate(Object instance)
 	{
-		activate(instance, 0);
-	}
-
-	private void activate(Object instance, int depth)
-	{
-		if (depth > 0 || keyCache.isActivatable(instance))
+		if (keyCache.isActivatable(instance))
 		{
-			doRefreshActivate(ImmutableList.of(instance), depth);
+			doRefreshActivate(ImmutableList.of(instance));
 		}
-	}
-
-	@Override
-	public void activateAll(Collection<?> instances)
-	{
-		activateAll(instances, 0);
 	}
 
 	@Override
@@ -699,7 +702,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	@Override
 	public final void refresh(Object instance)
 	{
-		doRefreshActivate(ImmutableList.of(instance), 0);
+		doRefreshActivate(ImmutableList.of(instance));
 
 		// do the check after refresh so we know the instance is associated
 		if (!isActivated(instance))
@@ -708,52 +711,40 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		}
 	}
 
-	private void doRefreshActivate(Collection<?> instances, int depth)
+	private void doRefreshActivate(Collection<?> instances)
 	{
 		if (instances.isEmpty()) return;
 
-		int existingActivationDepth = activationDepth;
-		try
+		List<Key> keys = new ArrayList<Key>(instances.size());
+		for (Object instance : instances)
 		{
-			activationDepth = depth;
-			List<Key> keys = new ArrayList<Key>(instances.size());
-			for (Object instance : instances)
+			Key key = associatedKey(instance);
+			if (key == null)
 			{
-				Key key = associatedKey(instance);
-				if (key == null)
-				{
-					throw new IllegalStateException("Instance not associated: " + instance);
-				}
-
-				keys.add(key);
+				throw new IllegalStateException("Instance not associated: " + instance);
 			}
 
-			assert refreshInstances == null;
-			refreshInstances = instances.iterator();
-
-			// load from datastore into the refresh instances
-			Map<Key, Object> loaded = load().keys(keys).now();
-
-			if (loaded.size() != keys.size())
-			{
-				// TODO throw more specific runtime exception with missing keys
-				throw new IllegalStateException("Some instances were not found for keys " + keys + " found " + loaded);
-			}
+			keys.add(key);
 		}
-		finally
+
+		// load from datastore into the refresh instances
+		Map<Key, Object> loaded = load().keys(keys).instances(instances.iterator()).now();
+
+		if (loaded.size() != keys.size())
 		{
-			refreshInstances = null;
-			activationDepth = existingActivationDepth;
+			// TODO throw more specific runtime exception with missing keys
+			throw new IllegalStateException("Some instances were not found for keys " + keys + " found " + loaded);
 		}
 	}
 
 	@Override
 	public void refreshAll(Collection<?> instances)
 	{
-		doRefreshActivate(instances, 0);
+		doRefreshActivate(instances);
 	}
 
-	private void activateAll(Collection<?> instances, int depth)
+	@Override
+	public void activateAll(Collection<?> instances)
 	{
 		if (instances.isEmpty()) return;
 
@@ -774,7 +765,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 
 		if (unactivated != null)
 		{
-			doRefreshActivate(unactivated, depth);
+			doRefreshActivate(unactivated);
 		}
 	}
 
@@ -816,7 +807,8 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 
 	protected void deleteKeys(Collection<Key> keys)
 	{
-		serviceDelete(keys);
+		// TODO is auto the right setting here?
+		serviceDelete(keys, CacheMode.AUTO);
 		for (Key key : keys)
 		{
 			if (keyCache.containsKey(key))
@@ -832,9 +824,9 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 
 	// top level translator that uses the Settings to decide which translator
 	// to use for each Field value.
-	public final class ConfigurationFieldTranslator extends FieldTranslator
+	public final class ObjectFieldTranslator extends FieldTranslator
 	{
-		private ConfigurationFieldTranslator(TypeConverter converters)
+		private ObjectFieldTranslator(TypeConverter converters)
 		{
 			super(converters);
 		}
@@ -867,7 +859,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		}
 
 		@Override
-		protected Constructor<?> getNoArgsConstructor(Class<?> clazz) throws NoSuchMethodException
+		protected Constructor<?> getDefaultConstructor(Class<?> clazz) throws NoSuchMethodException
 		{
 			Constructor<?> constructor = constructors.get(clazz);
 			if (constructor == null)
@@ -932,100 +924,48 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		@Override
 		protected final Object createInstance(Class<?> clazz)
 		{
-			// if we are refreshing an instance do not create a new one
-			Object instance = null;
-
-			//this could be empty if field translator is not outermost
-			if (refreshInstances != null && refreshInstances.hasNext())
+			Object result;
+			if (refresh == null)
 			{
-				instance = refreshInstances.next();
-
-				// these will be reset after this instance is decoded
-				// must stop referenced instances consuming the instances
-				refreshInstances = null;
-
-				assert clazz.isInstance(instance);
+				// give subclasses a chance to create the instance
+				result = TranslatorObjectDatastore.this.createInstance(clazz);
 			}
 			else
 			{
-				// give subclasses a chance to create the instance
-				instance = TranslatorObjectDatastore.this.createInstance(clazz);
+				assert clazz.isInstance(refresh);
+				result = refresh;
 			}
-
+			
 			// only cache persistent instance - not embedded components
 			if (keyCache.getInstance(decodeKey) == null)
 			{
 				// we have not activated the instance yet
-				keyCache.cache(decodeKey, instance, null, 0);
+				keyCache.cache(decodeKey, result, null, 0);
 			}
 
-			return instance;
-		}
-
-		@Override
-		public Object decode(Set<Property> properties, Path path, Type type)
-		{
-			// the refresh instances will be set to null each time one is used
-			Iterator<?> existingRefreshInstances = refreshInstances;
-			try
-			{
-				return super.decode(properties, path, type);
-			}
-			finally
-			{
-				// reset the refresh instances so the next decode call will use one
-				refreshInstances = existingRefreshInstances;
-			}
+			return result;
 		}
 
 		@Override
 		protected void decodeField(Object instance, Field field, Path path, Set<Property> properties)
 		{
 			// temporarily change the activation depth if this field has one set
-			int existingActivationDepth = activationDepth;
-			activationDepth = configuration.activationDepth(field, activationDepth);
+			StandardDecodeCommand<?> decode = (StandardDecodeCommand<?>) command;
+			int depth = configuration.activationDepth(field, decode.getCurrentActivationDepth());
+			decode.setCurrentActivationDepth(depth);
 
-			Iterator<?> existingRefreshInstances = refreshInstances;
-
-			// when denormalising we enhance the existing values
+			// when denormalising we enhance the existing value
 			if (denormalising)
 			{
-				// the refresh instance will be reset after decode of instance
-				Object existingFieldValue = Reflection.get(field, instance);
-
-				// make a few optimisations for types that are never embedded
-				if (existingFieldValue != null &&
-						!Primitives.isWrapperType(existingFieldValue.getClass()) &&
-						existingFieldValue instanceof String == false)
-				{
-					refreshInstances = Iterators.singletonIterator(existingFieldValue);
-				}
+				refresh = Reflection.get(field, instance);
 			}
 
 			super.decodeField(instance, field, path, properties);
 
-			refreshInstances = existingRefreshInstances;
-
-			activationDepth = existingActivationDepth;
+			refresh = null;
 		}
-
-//		@Override
-//		public Set<Property> encode(Object instance, Path path, boolean indexed)
-//		{
-//			// TODO reinstate this check when have flag for denormalising in EncodeState
-//			if (!path.getParts().isEmpty())
-//			{
-//				// check that this embedded value is not a persistent instance
-//				if (instance != null && keyCache.getKey(instance) != null)
-//				{
-//					throw new IllegalStateException("Cannot embed persistent instance " + instance + " at " + path );
-//				}
-//			}
-//
-//			return super.encode(instance, path, indexed);
-//		}
 	}
-
+	
 	// TODO roll this meta-data into a single class that is looked up once only
 	Field idField(Class<?> type)
 	{
@@ -1109,7 +1049,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	 */
 	protected Object createInstance(Class<?> clazz)
 	{
-		return configurationFieldTranslator.defautCreateInstance(clazz);
+		return objectFieldTranslator.defautCreateInstance(clazz);
 	}
 
 	public Configuration getConfiguration()

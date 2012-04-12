@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
 @Inherited
 public @interface Entity
 {
-	String kind() default "";
+	String kind();
 	long allocateIdsBy() default 0;
 	boolean polymorphic() default false;
 	int version() default 0;

@@ -18,12 +18,12 @@ public class StandardTypedLoadCommand<T> implements TypedLoadCommand<T>
 	@Override
 	public StandardSingleTypedLoadCommand<T> id(Object id)
 	{
-		return new StandardSingleTypedLoadCommand<T>(this, id);
+		return new StandardSingleTypedLoadCommand<T>(this, id, datastore.defaultActivationDepth);
 	}
 
 	@Override
 	public StandardMultipleTypedLoadCommand<T> ids(Collection<?> ids)
 	{
-		return new StandardMultipleTypedLoadCommand<T>(this, ids);
+		return new StandardMultipleTypedLoadCommand<T>(this, ids, datastore.defaultActivationDepth);
 	}
 }

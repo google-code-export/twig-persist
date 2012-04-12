@@ -18,9 +18,9 @@ public class StandardMultipleTypedLoadCommand<T>
 {
 	private final Collection<?> ids;
 
-	StandardMultipleTypedLoadCommand(StandardTypedLoadCommand<T> command, Collection<?> ids)
+	StandardMultipleTypedLoadCommand(StandardTypedLoadCommand<T> command, Collection<?> ids, int initialActivationDepth)
 	{
-		super(command);
+		super(command, initialActivationDepth);
 		this.ids = ids;
 	}
 

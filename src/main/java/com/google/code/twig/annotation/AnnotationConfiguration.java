@@ -6,6 +6,7 @@ import java.util.regex.Pattern;
 
 import com.google.code.twig.configuration.DefaultConfiguration;
 import com.google.code.twig.util.generic.Generics;
+import com.vercer.generics.ParameterizedTypeImpl;
 
 public class AnnotationConfiguration extends DefaultConfiguration
 {
@@ -187,7 +188,14 @@ public class AnnotationConfiguration extends DefaultConfiguration
 		}
 		else
 		{
-			return annotation.value();
+			if (annotation.parameters() == null)
+			{
+				return annotation.value();
+			}
+			else
+			{
+				return new ParameterizedTypeImpl(annotation.value(), annotation.parameters(), null);
+			}
 		}
 	}
 

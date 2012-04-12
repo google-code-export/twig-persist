@@ -7,9 +7,9 @@ final class StandardBranchFindCommand extends StandardCommonFindCommand<Standard
 {
 	private final StandardCommonFindCommand<?> parent;
 
-	StandardBranchFindCommand(StandardCommonFindCommand<?> parent)
+	StandardBranchFindCommand(StandardCommonFindCommand<?> parent, int initialActivationDepth)
 	{
-		super(parent.datastore);
+		super(parent.datastore, initialActivationDepth);
 		this.parent = parent;
 	}
 

@@ -80,7 +80,6 @@ public class ActivationTest extends LocalDatastoreTestCase
 	public void overrideActivationDepth()
 	{
 		ObjectDatastore datastore = new AnnotationObjectDatastore();
-		datastore.setActivationDepth(1);
 		
 		X x = new X();
 		x.y = new Y();
@@ -90,7 +89,7 @@ public class ActivationTest extends LocalDatastoreTestCase
 		
 		datastore.disassociateAll();
 		
-		X reloaded = datastore.load(key);
+		X reloaded = datastore.load().key(key).activate(1).now();
 		
 		Assert.assertNotNull(reloaded.y.field);
 	}

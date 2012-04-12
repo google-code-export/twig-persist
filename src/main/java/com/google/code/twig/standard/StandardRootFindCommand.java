@@ -18,6 +18,7 @@ import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.code.twig.CommandTerminator;
 import com.google.code.twig.FindCommand.ParentsCommand;
 import com.google.code.twig.FindCommand.RootFindCommand;
+import com.google.code.twig.LoadCommand.CacheMode;
 import com.google.code.twig.util.FutureAdaptor;
 import com.google.code.twig.util.ImmediateFuture;
 import com.google.common.collect.ForwardingIterator;
@@ -44,9 +45,9 @@ public class StandardRootFindCommand<T> extends StandardCommonFindCommand<Standa
 		String field;
 	}
 
-	protected StandardRootFindCommand(Class<?> type, TranslatorObjectDatastore datastore)
+	protected StandardRootFindCommand(Class<?> type, TranslatorObjectDatastore datastore, int initialActivationDepth)
 	{
-		super(datastore);
+		super(datastore, initialActivationDepth);
 		this.type = type;
 	}
 
@@ -179,10 +180,6 @@ public class StandardRootFindCommand<T> extends StandardCommonFindCommand<Standa
 	@Override
 	public CommandTerminator<Integer> returnCount()
 	{
-		if (cacheMode != null)
-		{
-			throw new IllegalStateException("Cannot cache count");
-		}
 		return new CommandTerminator<Integer>()
 		{
 			@Override
@@ -352,10 +349,9 @@ public class StandardRootFindCommand<T> extends StandardCommonFindCommand<Standa
 			childEntities = nowMultipleQueryEntities(queries);
 		}
 		childEntities = applyEntityFilter(childEntities);
-		return new StandardSingleParentsCommand<P>(this, childEntities);
+		return new StandardSingleParentsCommand<P>(this, childEntities, datastore.defaultActivationDepth);
 	}
 
-	@SuppressWarnings("unchecked")
 	public <P> Future<ParentsCommand<P>> parentsCommandLater()
 	{
 		return new ImmediateFuture<ParentsCommand<P>>(this.<P>parentsCommandNow());
@@ -364,7 +360,7 @@ public class StandardRootFindCommand<T> extends StandardCommonFindCommand<Standa
 	@Override
 	public QueryResultIterator<T> now()
 	{
-		if (cacheMode != null)
+		if (getSettings().getCacheMode() == CacheMode.ON)
 		{
 			throw new IllegalStateException("Cannot cache results with iterator");
 		}

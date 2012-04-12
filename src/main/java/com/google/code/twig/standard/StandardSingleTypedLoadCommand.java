@@ -10,9 +10,9 @@ public class StandardSingleTypedLoadCommand<T> extends StandardCommonLoadCommand
 {
 	private final Object id;
 
-	StandardSingleTypedLoadCommand(StandardTypedLoadCommand<T> command, Object id)
+	StandardSingleTypedLoadCommand(StandardTypedLoadCommand<T> command, Object id, int initialActivationDepth)
 	{
-		super(command);
+		super(command, initialActivationDepth);
 		this.id = id;
 	}
 
