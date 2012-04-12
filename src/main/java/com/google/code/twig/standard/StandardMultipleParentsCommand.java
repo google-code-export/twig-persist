@@ -13,9 +13,9 @@ public class StandardMultipleParentsCommand<P> extends StandardCommonParentsComm
 	private final List<Iterator<Entity>> childEntityIterators;
 	private final List<SortPredicate> sorts;
 
-	StandardMultipleParentsCommand(StandardCommonFindCommand<?> command, List<Iterator<Entity>> childEntityIterators, List<SortPredicate> sorts)
+	StandardMultipleParentsCommand(StandardCommonFindCommand<?> command, List<Iterator<Entity>> childEntityIterators, List<SortPredicate> sorts, int initialActivationDepth)
 	{
-		super(command);
+		super(command, initialActivationDepth);
 		this.childEntityIterators = childEntityIterators;
 		this.sorts = sorts;
 	}

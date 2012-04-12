@@ -9,9 +9,9 @@ public class StandardSingleParentsCommand<P> extends StandardCommonParentsComman
 {
 	private final Iterator<Entity> childEntities;
 
-	StandardSingleParentsCommand(StandardCommonFindCommand<?> command, Iterator<Entity> childEntities)
+	StandardSingleParentsCommand(StandardCommonFindCommand<?> command, Iterator<Entity> childEntities, int initialActivationDepth)
 	{
-		super(command);
+		super(command, initialActivationDepth);
 		this.childEntities = childEntities;
 	}
 

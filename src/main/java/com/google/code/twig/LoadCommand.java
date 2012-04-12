@@ -12,6 +12,7 @@ import com.google.appengine.api.datastore.ReadPolicy.Consistency;
 public interface LoadCommand
 {
 	<T> TypedLoadCommand<T> type(Class<? extends T> type);
+	SingleUntypedLoadCommand key(Key key);
 //	SingleUntypedLoadCommand<?> key(Key key);
 //	MultipleUntypedLoadCommand<?> keys(Collection<Key> key);
 	
@@ -43,8 +44,9 @@ public interface LoadCommand
 	{
 	}
 
-	interface SingleUntypedLoadCommand extends CommonLoadCommand<SingleUntypedLoadCommand>, CommandTerminator<Object>
+	interface SingleUntypedLoadCommand extends CommonDecodeCommand<SingleUntypedLoadCommand>
 	{
+		<T> T now();
 	}
 	
 	interface MultipleUntypedLoadCommand extends CommonLoadCommand<MultipleUntypedLoadCommand>, CommandTerminator<Map<Key, Object>>

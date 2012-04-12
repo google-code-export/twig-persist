@@ -21,19 +21,15 @@ import com.google.code.twig.util.SimpleProperty;
 import com.google.code.twig.util.SinglePropertySet;
 import com.google.code.twig.util.generic.Generics;
 import com.google.common.collect.Lists;
-import com.vercer.convert.TypeConverter;
-import com.vercer.generics.ParameterizedTypeImpl;
 
 public class CollectionTranslator extends DecoratingTranslator
 {
-	private final TypeConverter converter;
 	private final TranslatorObjectDatastore datastore;
 
-	public CollectionTranslator(TranslatorObjectDatastore datastore, PropertyTranslator chained, TypeConverter converter)
+	public CollectionTranslator(TranslatorObjectDatastore datastore, PropertyTranslator chained)
 	{
 		super(chained);
 		this.datastore = datastore;
-		this.converter = converter;
 	}
 
 	public Object decode(final Set<Property> properties, final Path path, Type type)
@@ -86,8 +82,7 @@ public class CollectionTranslator extends DecoratingTranslator
 			objects.add(decoded);
 		}
 
-		ParameterizedTypeImpl source = new ParameterizedTypeImpl(ArrayList.class, new Type[] { componentType} , null);
-		return converter.convert(objects, source, type);
+		return objects;
 	}
 
 	public static List<Set<Property>> extractPropertySets(final Set<Property> properties)
@@ -140,11 +135,11 @@ public class CollectionTranslator extends DecoratingTranslator
 
 	protected List<Object> createCollection(Type type)
 	{
-		if (datastore.refreshInstances != null)
+		if (datastore.refresh != null)
 		{
 			@SuppressWarnings("unchecked")
-			List<Object> result = (List<Object>) datastore.refreshInstances.next();
-			datastore.refreshInstances = null;
+			List<Object> result = (List<Object>) datastore.refresh;
+			datastore.refresh = null;
 			return result;
 		}
 		else

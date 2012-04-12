@@ -6,36 +6,78 @@ import com.google.code.twig.standard.StandardObjectDatastore;
 
 public class ObjectDatastoreFactory
 {
-	private static Registry registry = new Registry();
-	private static Configuration configuration = new AnnotationConfiguration(true);
+	private static ObjectDatastoreFactory instance = new ObjectDatastoreFactory();
 	
+	private Registry registry;
+	private Annotator annotator = new Annotator();
+	private Settings settings = Settings.defaults().build();
+	private Configuration configuration = new AnnotationConfiguration(true);
+	
+	/**
+	 * @return A new ObjectDatastore
+	 */
 	public static ObjectDatastore createObjectDatastore()
 	{
-		return new StandardObjectDatastore(Settings.defaults().build(), getConfiguration(), getRegistry());
+		return instance.create(instance.getSettings(), instance.getConfiguration(), instance.getRegistry());
 	}
 	
+	protected ObjectDatastore create(Settings settings, Configuration configuration, Registry registry)
+	{
+		return new StandardObjectDatastore(settings, configuration, registry);
+	}
+	
+	// TODO should be impossible to register during normal use
 	public static void register(Class<?> model)
 	{
-		registry.register(model);
+		instance.registry.register(model);
 	}
-
-	public static void setConfiguration(Configuration configuration)
+	
+	public static void setInstance(ObjectDatastoreFactory instance)
 	{
-		ObjectDatastoreFactory.configuration = configuration;
+		ObjectDatastoreFactory.instance = instance;
+	}
+	
+	public static ObjectDatastoreFactory getInstance()
+	{
+		return instance;
 	}
 
-	public static Configuration getConfiguration()
+	public void setConfiguration(Configuration configuration)
+	{
+		this.configuration = configuration;
+	}
+
+	public Configuration getConfiguration()
 	{
 		return configuration;
 	}
 
-	public static void setRegistry(Registry registry)
+	public void setRegistry(Registry registry)
 	{
-		ObjectDatastoreFactory.registry = registry;
+		this.registry = registry;
+	}
+	
+	public void setAnnotator(Annotator annotator)
+	{
+		this.annotator = annotator;
 	}
 
-	public static Registry getRegistry()
+	public synchronized Registry getRegistry()
 	{
+		if (registry == null)
+		{
+			registry = new Registry(annotator);
+		}
 		return registry;
+	}
+	
+	public Settings getSettings()
+	{
+		return settings;
+	}
+	
+	public void setSettings(Settings settings)
+	{
+		this.settings = settings;
 	}
 }

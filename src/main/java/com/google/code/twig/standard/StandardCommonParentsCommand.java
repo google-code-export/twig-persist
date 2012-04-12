@@ -11,9 +11,9 @@ abstract class StandardCommonParentsCommand<P> extends
 {
 	protected final StandardCommonFindCommand<?> childCommand;
 
-	StandardCommonParentsCommand(StandardCommonFindCommand<?> command)
+	StandardCommonParentsCommand(StandardCommonFindCommand<?> command, int initialActivationDepth)
 	{
-		super(command.datastore);
+		super(command.datastore, initialActivationDepth);
 		this.childCommand = command;
 	}
 

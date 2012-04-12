@@ -10,13 +10,13 @@ import org.junit.Test;
 
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.Query.FilterOperator;
-import com.google.appengine.repackaged.com.google.common.collect.Lists;
 import com.google.code.twig.LocalDatastoreTestCase;
 import com.google.code.twig.ObjectDatastore;
 import com.google.code.twig.annotation.AnnotationObjectDatastore;
 import com.google.code.twig.test.space.Pilot;
 import com.google.code.twig.test.space.RocketShip;
 import com.google.code.twig.test.space.RocketShip.Planet;
+import com.google.common.collect.Lists;
 
 public class FindCommandTest extends LocalDatastoreTestCase
 {
@@ -37,7 +37,7 @@ public class FindCommandTest extends LocalDatastoreTestCase
 
 		RocketShip result = datastore.find()
 			.type(RocketShip.class)
-			.addFilter("planet", FilterOperator.EQUAL, Planet.MARS)
+			.addFilter("destination", FilterOperator.EQUAL, Planet.MARS)
 			.returnUnique()
 			.now();
 		

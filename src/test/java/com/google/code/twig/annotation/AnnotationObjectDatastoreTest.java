@@ -11,7 +11,6 @@ import com.google.code.twig.LocalDatastoreTestCase;
 
 public class AnnotationObjectDatastoreTest extends LocalDatastoreTestCase
 {
-
 	protected AnnotationObjectDatastore datastore;
 
 	@Before

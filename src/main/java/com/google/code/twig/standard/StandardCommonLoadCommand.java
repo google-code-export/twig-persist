@@ -11,9 +11,9 @@ class StandardCommonLoadCommand<C extends StandardCommonLoadCommand<C>> extends 
 	final StandardTypedLoadCommand<?> command;
 	Key parentKey;
 
-	StandardCommonLoadCommand(StandardTypedLoadCommand<?> command)
+	StandardCommonLoadCommand(StandardTypedLoadCommand<?> command, int initialActivationDepth)
 	{
-		super(command.datastore);
+		super(command.datastore, initialActivationDepth);
 		this.command = command;
 	}
 
@@ -36,7 +36,7 @@ class StandardCommonLoadCommand<C extends StandardCommonLoadCommand<C>> extends 
 			Type storeType = datastore.getConfiguration().typeOf(field);
 			if (storeType != field.getGenericType())
 			{
-				id = datastore.getConverter().convert(id, field.getGenericType(), storeType);
+				id = datastore.getTypeConverter().convert(id, field.getGenericType(), storeType);
 			}
 		}
 		else

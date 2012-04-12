@@ -98,11 +98,9 @@ public class DenormaliseTranslator implements PropertyTranslator
 			// which contains DecodeObjectState
 
 			Key existingDecodeKey = datastore.decodeKey;
-			Iterator<?> existingRefreshInstances = datastore.refreshInstances;
 			boolean existingDenormalising = datastore.denormalising;
 
 			// do not create a new instance when decoding fields
-			datastore.refreshInstances = Iterators.singletonIterator(instance);
 			datastore.decodeKey = datastore.associatedKey(instance);
 			datastore.denormalising = true;
 
@@ -113,7 +111,6 @@ public class DenormaliseTranslator implements PropertyTranslator
 
 			// replace the previous state
 			datastore.decodeKey = existingDecodeKey;
-			datastore.refreshInstances = existingRefreshInstances;
 			datastore.denormalising = existingDenormalising;
 		}
 	}

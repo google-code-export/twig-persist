@@ -1,15 +1,12 @@
 package com.google.code.twig.standard;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityComparatorAccessor;
-import com.google.appengine.api.datastore.EntityProtoComparators.EntityProtoComparator;
 import com.google.appengine.api.datastore.Query.SortPredicate;
-import com.google.apphosting.api.DatastorePb.Query.Order;
 import com.google.code.twig.util.RestrictionToPredicateAdaptor;
 import com.google.code.twig.util.SortedMergeIterator;
 import com.google.common.collect.Iterators;
@@ -24,9 +21,9 @@ import com.google.common.collect.Iterators;
  */
 abstract class StandardRestrictedFindCommand<C extends StandardRestrictedFindCommand<C>> extends StandardDecodeCommand<C>
 {
-	StandardRestrictedFindCommand(TranslatorObjectDatastore datastore)
+	StandardRestrictedFindCommand(TranslatorObjectDatastore datastore, int depth)
 	{
-		super(datastore);
+		super(datastore, depth);
 	}
 
 	Iterator<Entity> applyEntityFilter(Iterator<Entity> entities)

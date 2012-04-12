@@ -11,9 +11,9 @@ import com.google.appengine.api.datastore.Key;
 import com.google.code.twig.TypeWithCollections.TypeWithEnum;
 import com.google.code.twig.TypeWithCollections.TypeWithEnum.MyEnum;
 import com.google.code.twig.annotation.AnnotationObjectDatastore;
-import com.google.code.twig.conversion.EngineConverters.BlobToObject;
+import com.google.code.twig.conversion.EngineConverters.BlobToAnything;
 import com.google.code.twig.conversion.EngineConverters.ObjectToBlob;
-import com.vercer.convert.CombinedTypeConverter;
+import com.vercer.convert.ConverterRegistry;
 
 
 public class SerializeCollectionsTest extends LocalDatastoreTestCase
@@ -24,10 +24,10 @@ public class SerializeCollectionsTest extends LocalDatastoreTestCase
 		ObjectDatastore datastore = new AnnotationObjectDatastore()
 		{
 			@Override
-			public CombinedTypeConverter createStaticConverter()
+			public ConverterRegistry createStaticConverterRegistry()
 			{
-				CombinedTypeConverter combined = super.createStaticConverter();
-				combined.register(new BlobToObject());
+				ConverterRegistry combined = super.createStaticConverterRegistry();
+				combined.register(new BlobToAnything());
 				combined.register(new ObjectToBlob());
 				return combined;
 			}

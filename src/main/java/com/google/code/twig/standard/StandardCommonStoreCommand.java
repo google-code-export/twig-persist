@@ -75,7 +75,7 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 		{
 			keys.add(entity.getKey());
 		}
-		Map<Key, Entity> map = datastore.serviceGet(keys, null);
+		Map<Key, Entity> map = datastore.serviceGet(keys, datastore.getDefaultSettings());
 		if (!map.isEmpty())
 		{
 			throw new IllegalStateException("Keys already exist: " + map);
@@ -95,7 +95,7 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 				if (Number.class.isAssignableFrom(type) || Primitives.allPrimitiveTypes().contains(type))
 				{
 					// convert the long or String to the declared key type
-					Object converted = datastore.getConverter().convert(key.getId(), type);
+					Object converted = datastore.getTypeConverter().convert(key.getId(), type);
 					field.set(instance, converted);
 				}
 				else
@@ -256,7 +256,8 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 		}
 		else
 		{
-			key = datastore.servicePut(entity, null);
+			// TODO allow command to override settings
+			key = datastore.servicePut(entity, datastore.getDefaultSettings());
 		}
 
 		return key;

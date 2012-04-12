@@ -5,11 +5,12 @@ package com.google.code.twig.test.festival;
 
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
-import com.google.appengine.api.datastore.Text;
 import com.google.code.twig.annotation.Embedded;
 import com.google.code.twig.annotation.Id;
 import com.google.code.twig.annotation.Type;
+import com.vercer.convert.GenericType;
 
 public class Album
 {
@@ -24,73 +25,9 @@ public class Album
 	boolean rocksTheHouse;
 	long sold;
 
-	@Embedded
+	class TrackListType extends GenericType<List<Track>> {}
+	@Embedded @Type(TrackListType.class)
 	Track[] tracks;
-
-	public static class Track
-	{
-		@Override
-		public String toString()
-		{
-			return "Track [details=" + details + ", length=" + length + ", title=" + title + "]";
-		}
-
-		public static class SingleDetails
-		{
-			String bside;
-			int released;
-		}
-		
-		@Type(Text.class)
-		String title;
-		float length;
-		
-		SingleDetails details;
-
-		@Override
-		public int hashCode()
-		{
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + Float.floatToIntBits(length);
-			result = prime * result + ((title == null) ? 0 : title.hashCode());
-			return result;
-		}
-		
-		@Override
-		public boolean equals(Object obj)
-		{
-			if (this == obj)
-			{
-				return true;
-			}
-			if (obj == null)
-			{
-				return false;
-			}
-			if (!(obj instanceof Track))
-			{
-				return false;
-			}
-			Track other = (Track) obj;
-			if (Float.floatToIntBits(length) != Float.floatToIntBits(other.length))
-			{
-				return false;
-			}
-			if (title == null)
-			{
-				if (other.title != null)
-				{
-					return false;
-				}
-			}
-			else if (!title.equals(other.title))
-			{
-				return false;
-			}
-			return true;
-		}
-	}
 
 	@Override
 	public int hashCode()

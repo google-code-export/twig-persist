@@ -71,9 +71,9 @@ abstract class StandardCommonFindCommand<C extends StandardCommonFindCommand<C>>
 		Object value;
 	}
 
-	StandardCommonFindCommand(TranslatorObjectDatastore datastore)
+	StandardCommonFindCommand(TranslatorObjectDatastore datastore, int initialActivaitonDepth)
 	{
-		super(datastore);
+		super(datastore, initialActivaitonDepth);
 	}
 
 	protected abstract Query newQuery();
@@ -249,7 +249,7 @@ abstract class StandardCommonFindCommand<C extends StandardCommonFindCommand<C>>
 
 	public ChildFindCommand addChildCommand()
 	{
-		StandardBranchFindCommand child = new StandardBranchFindCommand(this);
+		StandardBranchFindCommand child = new StandardBranchFindCommand(this, datastore.defaultActivationDepth);
 		if (children == null)
 		{
 			children = new ArrayList<StandardBranchFindCommand>(2);
@@ -300,7 +300,7 @@ abstract class StandardCommonFindCommand<C extends StandardCommonFindCommand<C>>
 
 	public boolean isUnactivated()
 	{
-		return activationDepth != null && activationDepth < 0;
+		return currentActivationDepth < 0;
 	}
 
 	// TODO replace this with stick and make cache options
@@ -375,18 +375,8 @@ abstract class StandardCommonFindCommand<C extends StandardCommonFindCommand<C>>
 				// do not cache results from keys only queries
 				if (isUnactivated())
 				{
-					// turn on all caching but only while we cache these entities
-					CacheMode existingCacheMode = datastore.getCacheMode();
-					datastore.setCachMode(CacheMode.ON);
-					try
-					{
-						// put all the entities in the entity cache
-						datastore.putToMemoryAndMemcache(received);
-					}
-					finally
-					{
-						datastore.setCachMode(existingCacheMode);
-					}
+					// put all the entities in the entity cache
+					datastore.putToMemoryAndMemcache(received, CacheMode.ON);
 				}
 			}
 

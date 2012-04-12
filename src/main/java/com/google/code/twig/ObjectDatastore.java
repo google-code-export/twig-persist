@@ -79,10 +79,6 @@ public interface ObjectDatastore extends Activator
 	void deleteAll(Class<?> type);
 	void deleteAll(Collection<?> instances);
 
-	// activation
-	int getActivationDepth();
-	void setActivationDepth(int depth);
-
 	/**
 	 * Refresh an associated instance with the latest version from the datastore
 	 * @param instance The instance to refresh from datastore

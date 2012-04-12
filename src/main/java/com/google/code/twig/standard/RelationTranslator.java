@@ -1,4 +1,5 @@
 /**
+/**
  *
  */
 package com.google.code.twig.standard;
@@ -62,19 +63,14 @@ class RelationTranslator implements PropertyTranslator
 		}
 	}
 
-	protected Object keysToInstances(List<Key> keys)
+	protected List<Object> keysToInstances(List<Key> keys)
 	{
-		Map<Key, Object> keysToInstances;
-		try
-		{
-			datastore.activationDepth--;
-			keysToInstances = datastore.load().keys(keys).now();
-		}
-		finally
-		{
-			datastore.activationDepth++;
-		}
-
+		// use the same settings as the current decode command
+		StandardDecodeCommand<?> current = (StandardDecodeCommand<?>) datastore.command;
+		StandardUntypedMultipleLoadCommand load = datastore.load().keys(keys);
+		transferCurrentCommandState(current, load);
+		
+		Map<Key, Object> keysToInstances = load.now();
 		List<Object> result = new ArrayList<Object>();
 
 		// keep order the same as keys
@@ -94,24 +90,27 @@ class RelationTranslator implements PropertyTranslator
 	}
 
 	protected Object keyToInstance(Key key)
-	{
-		Object result;
-		try
-		{
-			datastore.activationDepth--;
-			result = this.datastore.load().key(key).now();
-		}
-		finally
-		{
-			datastore.activationDepth++;
-		}
-
+	{		
+		// use the same settings as the current decode command
+		StandardDecodeCommand<?> current = (StandardDecodeCommand<?>) datastore.command;
+		StandardUntypedSingleLoadCommand load = this.datastore.load().key(key);
+		transferCurrentCommandState(current, load);
+		
+		// get the instance by key
+		Object result = load.now();
+		
 		if (result == null)
 		{
 			result = NULL_VALUE;
 			logger.warning("No entity found for referenced key " + key);
 		}
 		return result;
+	}
+
+	private void transferCurrentCommandState(StandardDecodeCommand<?> current, StandardDecodeCommand<?> decode)
+	{
+		decode.currentActivationDepth = current.currentActivationDepth;
+		decode.builder = current.builder;
 	}
 
 	public Set<Property> encode(final Object instance, final Path path, final boolean indexed)
@@ -182,15 +181,15 @@ class RelationTranslator implements PropertyTranslator
 	protected Key instanceToKey(final Object instance)
 	{
 		Key key = datastore.associatedKey(instance);
-		if (key == null)
+		if (key == null || !key.isComplete())
 		{
 			key = datastore.store().instance(instance).parentKey(getParentKey()).now();
 		}
 
-		if (!key.isComplete())
-		{
-			throw new IllegalStateException("Incomplete key for instance " + instance);
-		}
+//		if (!key.isComplete())
+//		{
+//			throw new IllegalStateException("Incomplete key for instance " + instance);
+//		}
 
 		return key;
 	}

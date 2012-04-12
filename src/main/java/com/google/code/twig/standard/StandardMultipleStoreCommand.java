@@ -44,7 +44,9 @@ public class StandardMultipleStoreCommand<T> extends StandardCommonStoreCommand<
 		}
 			
 		// actually put the entities in the datastore
-		List<Key> keys = datastore.servicePut(filtered, null);
+		
+		// TODO allow command to override settings
+		List<Key> keys = datastore.servicePut(filtered, datastore.getDefaultSettings());
 		
 		// make a map to return
 		return createKeyMapAndUpdateKeyCache(entities, keys);

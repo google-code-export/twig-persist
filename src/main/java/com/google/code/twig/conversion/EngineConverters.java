@@ -16,6 +16,7 @@ import com.google.code.twig.conversion.CoreConverters.StringToDate;
 import com.google.code.twig.util.io.NoDescriptorObjectInputStream;
 import com.google.code.twig.util.io.NoDescriptorObjectOutputStream;
 import com.vercer.convert.Converter;
+import com.vercer.convert.GenericType;
 
 public class EngineConverters implements Iterable<Converter<?, ?>>
 {
@@ -86,7 +87,7 @@ public class EngineConverters implements Iterable<Converter<?, ?>>
 		}
 	}
 
-	public static class BlobToObject implements Converter<Blob, Object>
+	public static class BlobToAnything implements Converter<Blob, Object>
 	{
 		public Object convert(Blob blob)
 		{
@@ -118,7 +119,7 @@ public class EngineConverters implements Iterable<Converter<?, ?>>
 		}
 	}
 
-	public static class NoDescriptorBlobToAnything extends BlobToObject
+	public static class NoDescriptorBlobToAnything extends BlobToAnything
 	{
 		@Override
 		protected ObjectInputStream createObjectInputStream(ByteArrayInputStream bais) throws IOException
@@ -130,7 +131,7 @@ public class EngineConverters implements Iterable<Converter<?, ?>>
 	@Override
 	public Iterator<Converter<?, ?>> iterator()
 	{
-		return Arrays.asList(
+		return Arrays.<Converter<?, ?>>asList(
 		new StringToText(),
 		new TextToString(),
 		new StringToDate(),
@@ -138,6 +139,6 @@ public class EngineConverters implements Iterable<Converter<?, ?>>
 		new ByteArrayToBlob(),
 		new BlobToByteArray(),
 		new ObjectToBlob(),
-		new BlobToObject()).iterator();
+		new BlobToAnything()).iterator();
 	}
 }

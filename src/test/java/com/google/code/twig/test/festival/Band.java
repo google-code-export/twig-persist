@@ -9,6 +9,7 @@ import java.util.Locale;
 
 import com.google.code.twig.annotation.Child;
 import com.google.code.twig.annotation.Id;
+import com.google.code.twig.annotation.Type;
 
 public class Band
 {
@@ -19,6 +20,7 @@ public class Band
 	
 	Locale locale;
 
+	@Type(value=List.class, parameters=Musician.class)
 	LinkedList<Musician> members = new LinkedList<Musician>();
 
 	@Child List<Album> albums;

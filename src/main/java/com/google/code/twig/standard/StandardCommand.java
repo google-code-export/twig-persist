@@ -6,6 +6,8 @@ class StandardCommand
 
 	StandardCommand(TranslatorObjectDatastore datastore)
 	{
+		datastore.command = this;
+		
 		// check we have the same thread
 		if (datastore.thread != Thread.currentThread())
 		{
