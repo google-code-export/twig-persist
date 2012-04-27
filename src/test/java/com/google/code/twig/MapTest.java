@@ -2,6 +2,7 @@ package com.google.code.twig;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 import junit.framework.Assert;
@@ -77,7 +78,7 @@ public class MapTest extends LocalDatastoreTestCase
 		Map<String, Contained> blank;
 		Map<?, ?> nulled;
 		Map<Long, Contained> initialised = new TreeMap<Long, Contained>();
-		
+		Map<String, Set<String>> stingToStringSet;
 	}
 	
 	public static class Contained implements Comparable<Contained>
@@ -150,14 +151,16 @@ public class MapTest extends LocalDatastoreTestCase
 		created.blank.put("c2", new Contained("im the second", 84));
 		created.initialised.put(45l, new Contained("dated one", 32));
 		created.initialised.put(67l, new Contained("dated today", 18));
+		created.stingToStringSet = new HashMap<String, Set<String>>();
+		
+		Set<String> values = new java.util.HashSet<String>();
+		values.add("There");
+		created.stingToStringSet.put("Hi", values);
 		
 		AnnotationObjectDatastore datastore = new AnnotationObjectDatastore();
 		Key key = datastore.store(created);
-		
 		datastore.disassociateAll();
-		
 		Object loaded = datastore.load(key);
-		
 		Assert.assertEquals(created, loaded);
 	}
 }
