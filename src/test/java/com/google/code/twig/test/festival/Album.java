@@ -10,7 +10,6 @@ import java.util.List;
 import com.google.code.twig.annotation.Embedded;
 import com.google.code.twig.annotation.Id;
 import com.google.code.twig.annotation.Type;
-import com.vercer.convert.GenericType;
 
 public class Album
 {
@@ -25,8 +24,7 @@ public class Album
 	boolean rocksTheHouse;
 	long sold;
 
-	class TrackListType extends GenericType<List<Track>> {}
-	@Embedded @Type(TrackListType.class)
+	@Embedded @Type(value=List.class, parameters=Track.class)
 	Track[] tracks;
 
 	@Override

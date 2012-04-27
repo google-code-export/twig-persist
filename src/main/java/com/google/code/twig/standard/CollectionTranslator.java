@@ -58,9 +58,8 @@ public class CollectionTranslator extends DecoratingTranslator
 
 		if (componentType == null)
 		{
-			componentType = Object.class;
+			throw new IllegalStateException("No Collection elelemt type specified. As an example, use @Type(value=\"List.class\", parameters=String.class)");
 		}
-
 
 		// TODO this does not respect denormalisation by enhancing existing existing items
 		// instead it adds to the existing items

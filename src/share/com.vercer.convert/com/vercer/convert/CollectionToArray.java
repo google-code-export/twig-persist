@@ -1,6 +1,7 @@
 package com.vercer.convert;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Iterator;
@@ -29,7 +30,19 @@ public class CollectionToArray extends BaseTypeConverter
 		
 		if (Collection.class.isAssignableFrom(sourceClass))
 		{
-			sourceElementType = Generics.getTypeParameter(source, Iterable.class.getTypeParameters()[0]);
+			if (source instanceof ParameterizedType)
+			{
+				sourceElementType = Generics.getTypeParameter(source, Iterable.class.getTypeParameters()[0]);
+			}
+			else if (source instanceof Class<?>)
+			{
+				// do not do a conversion
+				sourceElementType = null;
+			}
+			else
+			{
+				throw new IllegalStateException("Could not get Collection element type from " + source);
+			}
 		}
 		else
 		{
@@ -53,6 +66,12 @@ public class CollectionToArray extends BaseTypeConverter
 		for (int i = 0; i < result.length; i++)
 		{
 			Object next = iterator.next();
+
+			// a raw collection so we don't know the from type
+			if (sourceElementType == null)
+			{
+				sourceElementType = next.getClass();
+			}
 			next = delegate.convert(next, sourceElementType, targetElementType);
 			result[i] = next;
 		}

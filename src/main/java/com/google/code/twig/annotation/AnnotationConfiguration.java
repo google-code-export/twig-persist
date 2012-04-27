@@ -188,7 +188,7 @@ public class AnnotationConfiguration extends DefaultConfiguration
 		}
 		else
 		{
-			if (annotation.parameters() == null)
+			if (annotation.parameters().length == 0)
 			{
 				return annotation.value();
 			}
