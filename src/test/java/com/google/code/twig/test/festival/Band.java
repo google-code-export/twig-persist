@@ -25,7 +25,7 @@ public class Band
 
 	@Child List<Album> albums;
 	Band.HairStyle hair;
-
+	
 	@Override
 	public String toString()
 	{

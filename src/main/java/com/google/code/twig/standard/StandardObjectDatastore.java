@@ -17,10 +17,10 @@ import com.google.code.twig.translator.ChainedTranslator;
 import com.google.code.twig.translator.ConverterTranslator;
 import com.google.code.twig.translator.EnumTranslator;
 import com.google.code.twig.translator.NativeDirectTranslator;
-import com.vercer.convert.ArrayToList;
+import com.vercer.convert.ArrayToIterable;
 import com.vercer.convert.ChainedTypeConverter;
 import com.vercer.convert.CollectionConverters;
-import com.vercer.convert.CollectionToArray;
+import com.vercer.convert.IterableToArray;
 import com.vercer.convert.CombinedTypeConverter;
 import com.vercer.convert.Converter;
 import com.vercer.convert.ConverterRegistry;
@@ -51,9 +51,7 @@ public class StandardObjectDatastore extends TranslatorObjectDatastore
 		converters(converter, new StringToPrimitive());
 		converters(converter, new CollectionConverters());
 
-		converter.register(new ArrayToList());
 		converter.register(new ObjectToString());
-
 		MapConverters.registerAll(converter);
 
 		return converter;
@@ -91,7 +89,8 @@ public class StandardObjectDatastore extends TranslatorObjectDatastore
 			
 			ChainedTypeConverter chain = new ChainedTypeConverter();
 			chain.add(converters);
-			chain.add(new CollectionToArray(chain));
+			chain.add(new IterableToArray(chain));
+			chain.add(new ArrayToIterable(chain));
 			chain.add(new IterableToFirstElement());
 			
 			converter = chain;

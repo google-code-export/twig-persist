@@ -142,7 +142,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 
 		// embed a field value in the current entity
 		embedTranslator = new ChainedTranslator();
-		embedTranslator.append(new CollectionTranslator(this, embedTranslator));
+		embedTranslator.append(new IterableTranslator(this, embedTranslator));
 		embedTranslator.append(new MapTranslator(this, embedTranslator, converter));
 		embedTranslator.append(objectFieldTranslator);
 
@@ -156,13 +156,13 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 
 		// allow it to handle maps and lists of polymorphic instances
 		polymorphicComponentTranslator = new ChainedTranslator(
-				new CollectionTranslator(this, polymorphicTranslator),
+				new IterableTranslator(this, polymorphicTranslator),
 				new MapTranslator(this, polymorphicTranslator, converter),
 				polymorphicTranslator);
 
 		// by default, translate simple values and then try the fallback if that fails
 		defaultTranslator = new ChainedTranslator();
-		defaultTranslator.append(new CollectionTranslator(this, defaultTranslator));
+		defaultTranslator.append(new IterableTranslator(this, defaultTranslator));
 		defaultTranslator.append(new MapTranslator(this, defaultTranslator, converter));
 		defaultTranslator.append(valueTranslatorChain);
 		defaultTranslator.append(getFallbackTranslator());

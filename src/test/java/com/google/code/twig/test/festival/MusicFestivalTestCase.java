@@ -64,8 +64,10 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		Musician page = new Musician();
 		page.name = "Jimmy Page";
 		page.birthday = dateFormat.parse("9 January 1944");
+		page.favouriteNumbers = new int[] {5, 9, 15};
 		ledzep.members = new LinkedList<Musician>();
 		ledzep.members.add(page);
+		
 
 		Musician jones = new Musician();
 		jones.name = "John Paul Jones";

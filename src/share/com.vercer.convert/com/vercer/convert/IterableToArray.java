@@ -8,11 +8,11 @@ import java.util.Iterator;
 
 import com.google.code.twig.util.generic.Generics;
 
-public class CollectionToArray extends BaseTypeConverter
+public class IterableToArray extends BaseTypeConverter
 {
 	private final TypeConverter delegate;
 
-	public CollectionToArray(TypeConverter delegate)
+	public IterableToArray(TypeConverter delegate)
 	{
 		this.delegate = delegate;
 	}
@@ -28,7 +28,7 @@ public class CollectionToArray extends BaseTypeConverter
 		Class<?> sourceClass = Generics.erase(source);
 		Class<?> targetClass = Generics.erase(target);
 		
-		if (Collection.class.isAssignableFrom(sourceClass))
+		if (Iterable.class.isAssignableFrom(sourceClass))
 		{
 			if (source instanceof ParameterizedType)
 			{
@@ -41,7 +41,7 @@ public class CollectionToArray extends BaseTypeConverter
 			}
 			else
 			{
-				throw new IllegalStateException("Could not get Collection element type from " + source);
+				throw new IllegalStateException("Could not get element type from " + source);
 			}
 		}
 		else
@@ -60,10 +60,10 @@ public class CollectionToArray extends BaseTypeConverter
 		
 		Collection<?> collection = (Collection<?>) instance;
 		
-		Object[] result = (Object[]) Array.newInstance(Generics.erase(targetElementType), collection.size());
+		Object result = Array.newInstance(Generics.erase(targetElementType), collection.size());
 		
 		Iterator<?> iterator = collection.iterator();
-		for (int i = 0; i < result.length; i++)
+		for (int i = 0; i < collection.size(); i++)
 		{
 			Object next = iterator.next();
 
@@ -73,7 +73,7 @@ public class CollectionToArray extends BaseTypeConverter
 				sourceElementType = next.getClass();
 			}
 			next = delegate.convert(next, sourceElementType, targetElementType);
-			result[i] = next;
+			Array.set(result, i, next);
 		}
 		
 		@SuppressWarnings("unchecked")

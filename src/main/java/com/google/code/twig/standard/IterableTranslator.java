@@ -22,11 +22,11 @@ import com.google.code.twig.util.SinglePropertySet;
 import com.google.code.twig.util.generic.Generics;
 import com.google.common.collect.Lists;
 
-public class CollectionTranslator extends DecoratingTranslator
+public class IterableTranslator extends DecoratingTranslator
 {
 	private final TranslatorObjectDatastore datastore;
 
-	public CollectionTranslator(TranslatorObjectDatastore datastore, PropertyTranslator chained)
+	public IterableTranslator(TranslatorObjectDatastore datastore, PropertyTranslator chained)
 	{
 		super(chained);
 		this.datastore = datastore;
@@ -34,7 +34,7 @@ public class CollectionTranslator extends DecoratingTranslator
 
 	public Object decode(final Set<Property> properties, final Path path, Type type)
 	{
-		if (!Collection.class.isAssignableFrom(Generics.erase(type)))
+		if (!Iterable.class.isAssignableFrom(Generics.erase(type)))
 		{
 			return null;
 		}
@@ -58,7 +58,8 @@ public class CollectionTranslator extends DecoratingTranslator
 
 		if (componentType == null)
 		{
-			throw new IllegalStateException("No Collection elelemt type specified. As an example, use @Type(value=\"List.class\", parameters=String.class)");
+			// simple native values will still decode despite unknown type
+			componentType = Object.class;
 		}
 
 		// TODO this does not respect denormalisation by enhancing existing existing items
@@ -149,9 +150,9 @@ public class CollectionTranslator extends DecoratingTranslator
 
 	public Set<Property> encode(Object object, Path path, boolean indexed)
 	{
-		if (object instanceof Collection<?>)
+		if (object instanceof Iterable<?>)
 		{
-			Collection<?> list = (Collection<?>) object;
+			Iterable<?> list = (Iterable<?>) object;
 
 			final Map<Path, List<Property>> lists = new HashMap<Path, List<Property>>(8);
 

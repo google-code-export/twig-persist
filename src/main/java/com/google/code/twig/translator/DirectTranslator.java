@@ -21,7 +21,7 @@ public class DirectTranslator implements PropertyTranslator
 	
 	public Object decode(Set<Property> properties, Path path, Type type)
 	{
-		if (isDirectType(type))
+		if (type == Object.class || isDirectType(type))
 		{
 			Object value;
 			if (properties.isEmpty())
@@ -33,12 +33,20 @@ public class DirectTranslator implements PropertyTranslator
 				value = PropertySets.firstValue(properties);
 			}
 			
+			// convert from Text to String
 			if (type == String.class && value != null && value.getClass() == Text.class)
 			{
 				value = ((Text) value).getValue();
 			}
 			
-			return converter.convert(value, type);
+			if (type == null)
+			{
+				return value;
+			}
+			else
+			{
+				return converter.convert(value, type);
+			}
 		}
 		else
 		{
