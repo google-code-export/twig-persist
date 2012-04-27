@@ -71,9 +71,6 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	// ensure only used be a single thread
 	protected Thread thread;
 
-	/** are properties indexed by default */
-	protected boolean indexed;
-
 	// translators are selected for particular fields by the configuration
 	private final ObjectFieldTranslator objectFieldTranslator;
 	private final ChainedTranslator embedTranslator;
@@ -779,11 +776,6 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	protected boolean isAssociating()
 	{
 		return this.associating;
-	}
-
-	protected final void setIndexed(boolean indexed)
-	{
-		this.indexed = indexed;
 	}
 
 	final Query createQuery(Class<?> type)

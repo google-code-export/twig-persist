@@ -100,7 +100,7 @@ class StandardDecodeCommand<C extends StandardDecodeCommand<C>> extends Standard
 			{
 				Type type = datastore.getConfiguration().kindToType(entity.getKind());
 	
-				Set<Property> properties = PropertySets.create(entity.getProperties(), datastore.indexed);
+				Set<Property> properties = PropertySets.create(entity.getProperties(), false);
 				
 				// filter out unwanted properties at this low level
 				if (predicate != null)

@@ -326,7 +326,7 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 
 		// translate fields to properties - sets key ancestors and id
 		PropertyTranslator encoder = datastore.encoder(instance);
-		Set<Property> properties = encoder.encode(instance, Path.EMPTY_PATH, datastore.indexed);
+		Set<Property> properties = encoder.encode(instance, Path.EMPTY_PATH, false);
 		if (properties == null)
 		{
 			throw new IllegalStateException("Could not translate instance: " + instance);
