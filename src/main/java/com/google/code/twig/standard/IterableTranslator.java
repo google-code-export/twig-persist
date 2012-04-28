@@ -44,11 +44,11 @@ public class IterableTranslator extends DecoratingTranslator
 			return NULL_VALUE;
 		}
 
-		Collection<Object> objects = createCollection(type);
+		List<Object> list = createCollection(type);
 
 		if (properties.isEmpty())
 		{
-			return objects;
+			return list;
 		}
 
 		List<Set<Property>> propertySets = extractPropertySets(properties);
@@ -79,10 +79,13 @@ public class IterableTranslator extends DecoratingTranslator
 				decoded = null;
 			}
 
-			objects.add(decoded);
+			list.add(decoded);
 		}
 
-		return objects;
+		// convert the List into other Iterable types if needed
+		Iterable<?> iterable = datastore.getTypeConverter().convert(list, type);
+		
+		return iterable;
 	}
 
 	public static List<Set<Property>> extractPropertySets(final Set<Property> properties)

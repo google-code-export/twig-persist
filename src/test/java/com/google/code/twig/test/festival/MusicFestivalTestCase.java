@@ -30,6 +30,7 @@ import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.appengine.api.datastore.Transaction;
 import com.google.code.twig.LocalDatastoreTestCase;
 import com.google.code.twig.ObjectDatastore;
+import com.google.code.twig.Settings;
 import com.google.code.twig.annotation.AnnotationObjectDatastore;
 import com.google.code.twig.annotation.Embedded;
 import com.google.code.twig.annotation.Id;
@@ -46,7 +47,7 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 	@Before
 	public void createDatastore()
 	{
-		datastore = new AnnotationObjectDatastore();
+		datastore = new AnnotationObjectDatastore(Settings.defaults().crossGroupTransactions(false).build());
 	}
 
 	public static MusicFestival createFestival() throws ParseException
