@@ -725,7 +725,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		}
 
 		// load from datastore into the refresh instances
-		Map<Key, Object> loaded = load().keys(keys).instances(instances.iterator()).now();
+		Map<Key, Object> loaded = load().keys(keys).refresh().now();
 
 		if (loaded.size() != keys.size())
 		{
@@ -921,18 +921,19 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 			{
 				// give subclasses a chance to create the instance
 				result = TranslatorObjectDatastore.this.createInstance(clazz);
+				
+				// only cache persistent instance - not embedded components
+				if (keyCache.getInstance(decodeKey) == null)
+				{
+					// we have not activated the instance yet
+					keyCache.cache(decodeKey, result, null, 0);
+				}
 			}
 			else
 			{
 				assert clazz.isInstance(refresh);
 				result = refresh;
-			}
-			
-			// only cache persistent instance - not embedded components
-			if (keyCache.getInstance(decodeKey) == null)
-			{
-				// we have not activated the instance yet
-				keyCache.cache(decodeKey, result, null, 0);
+				refresh = null;
 			}
 
 			return result;
