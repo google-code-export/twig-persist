@@ -27,6 +27,11 @@ public class AnnotationObjectDatastore extends StandardObjectDatastore
 		}
 		return registry;
 	}
+	
+	public AnnotationObjectDatastore(Settings settings)
+	{
+		super(settings, createConfiguration(false), getStaticRegistry());
+	}
 
 	public AnnotationObjectDatastore(Settings defaults, Registry registry, boolean indexed)
 	{
