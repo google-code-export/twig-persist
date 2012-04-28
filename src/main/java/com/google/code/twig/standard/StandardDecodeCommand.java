@@ -23,7 +23,6 @@ import com.google.code.twig.Restriction;
 import com.google.code.twig.Settings;
 import com.google.code.twig.util.PropertySets;
 import com.google.code.twig.util.RestrictionToPredicateAdaptor;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 
 @SuppressWarnings("unchecked")
@@ -35,7 +34,7 @@ class StandardDecodeCommand<C extends StandardDecodeCommand<C>> extends Standard
 	protected Restriction<Entity> entityRestriction;
 	protected Restriction<Property> propertyRestriction;
 	protected Settings.Builder builder;
-	private Iterator<?> refreshes = Iterators.emptyIterator();
+	private boolean refresh;
 	
 	StandardDecodeCommand(TranslatorObjectDatastore datastore, int initialActivationDepth)
 	{
@@ -43,10 +42,9 @@ class StandardDecodeCommand<C extends StandardDecodeCommand<C>> extends Standard
 		this.currentActivationDepth = initialActivationDepth;
 	}
 	
-	public C instances(Iterator<?> instances)
+	public C refresh()
 	{
-		assert !refreshes.hasNext();
-		this.refreshes = instances;
+		this.refresh = true;
 		return (C) this;
 	}
 	
@@ -74,73 +72,74 @@ class StandardDecodeCommand<C extends StandardDecodeCommand<C>> extends Standard
 		Object instance = datastore.keyCache.getInstance(entity.getKey());
 		
 		// activate existing instance if we fetched the data
-		if (instance != null && currentActivationDepth >= 0 && !datastore.isActivated(instance))
+		if (instance != null)
 		{
-			// do not create new instance - reuse this one
-			datastore.refresh = instance;
-		
-			// just to trigger the activation code
-			instance = null;
+			// if we are freshing or the instance is not activated then load it
+			if (currentActivationDepth >= 0 && (refresh || !datastore.isActivated(instance)))
+			{
+				// do not create new instance - reuse this one
+				datastore.refresh = instance;
+				
+				// just to trigger the activation code
+				instance = null;
+			}
+			else
+			{
+				// return the existing instance and do not load it with new data
+				return instance;
+			}
 		}
-		else if (refreshes.hasNext())
-		{
-			// we are doing a refresh
-			datastore.refresh = refreshes.next();
-		}
+	
+		// push new decode context state
+		Key existingDecodeKey = datastore.decodeKey;
+		datastore.decodeKey = entity.getKey();
 		
-		if (instance == null)
+		// the activation depth may change while decoding a field value
+		int existingActivationDepth = currentActivationDepth;
+		try
 		{
-			// push new decode context state
-			Key existingDecodeKey = datastore.decodeKey;
-			datastore.decodeKey = entity.getKey();
+			Type type = datastore.getConfiguration().kindToType(entity.getKind());
+
+			Set<Property> properties = PropertySets.create(entity.getProperties(), false);
 			
-			// the activation depth may change while decoding a field value
-			int existingActivationDepth = currentActivationDepth;
-			try
+			// filter out unwanted properties at this low level
+			if (predicate != null)
 			{
-				Type type = datastore.getConfiguration().kindToType(entity.getKind());
-	
-				Set<Property> properties = PropertySets.create(entity.getProperties(), false);
-				
-				// filter out unwanted properties at this low level
-				if (predicate != null)
-				{
-					properties = Sets.filter(properties, new RestrictionToPredicateAdaptor<Property>(predicate));
-				}
-	
-				// order the properties for efficient separation by field
-				Set<Property> sorted = new TreeSet<Property>();
-				sorted.addAll(properties);
-				properties = sorted;
-	
-				currentActivationDepth--;
-				
-				PropertyTranslator decoder = datastore.decoder(entity);
-				instance = decoder.decode(properties, Path.EMPTY_PATH, type);
-				
-				currentActivationDepth++;
-				
-				// null signifies that the properties could not be decoded
-				if (instance == null)
-				{
-					throw new IllegalStateException("Could not translate entity " + entity);
-				}
-				
-				// a null value is indicated by this special return value
-				if (instance == PropertyTranslator.NULL_VALUE)
-				{
-					instance = null;
-				}
-				
-				// set if this instance is activated or not
-				datastore.keyCache.setActivation(instance, currentActivationDepth >= 0);
+				properties = Sets.filter(properties, new RestrictionToPredicateAdaptor<Property>(predicate));
 			}
-			finally
+
+			// order the properties for efficient separation by field
+			Set<Property> sorted = new TreeSet<Property>();
+			sorted.addAll(properties);
+			properties = sorted;
+
+			currentActivationDepth--;
+			
+			PropertyTranslator decoder = datastore.decoder(entity);
+			instance = decoder.decode(properties, Path.EMPTY_PATH, type);
+			
+			currentActivationDepth++;
+			
+			// null signifies that the properties could not be decoded
+			if (instance == null)
 			{
-				// pop the decode context
-				datastore.decodeKey = existingDecodeKey;
-				currentActivationDepth = existingActivationDepth;
+				throw new IllegalStateException("Could not translate entity " + entity);
 			}
+			
+			// a null value is indicated by this special return value
+			if (instance == PropertyTranslator.NULL_VALUE)
+			{
+				instance = null;
+			}
+			
+			// set if this instance is activated or not
+			datastore.keyCache.setActivation(instance, currentActivationDepth >= 0);
+		}
+		finally
+		{
+			// pop the decode context
+			datastore.decodeKey = existingDecodeKey;
+			currentActivationDepth = existingActivationDepth;
 		}
 
 		return instance;
@@ -201,17 +200,17 @@ class StandardDecodeCommand<C extends StandardDecodeCommand<C>> extends Standard
 			T instance = (T) datastore.keyCache.getInstance(key);
 
 			// if we are doing a refresh/associate then do load the entity
-			if (instance != null && !refreshes.hasNext())
-			{
-				result.put(key, instance);
-			}
-			else
+			if (instance == null || refresh)
 			{
 				if (missing == null)
 				{
 					missing = new ArrayList<Key>(keys.size());
 				}
 				missing.add(key);
+			}
+			else
+			{
+				result.put(key, instance);
 			}
 		}
 		
