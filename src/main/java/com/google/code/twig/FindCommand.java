@@ -21,7 +21,19 @@ public interface FindCommand
 	enum MergeOperator { OR };
 	
 	<T> RootFindCommand<T> type(Class<? extends T> type);
-
+	
+	/**
+	 * Returns all descendants of this ancestor (children, grandchildren etc) but not
+	 * this ancestor itself. This is useful to quickly populate the cache in a single
+	 * datastore operation.
+	 */
+	DescendantsCommand descendants(Object ancestor);
+	
+	interface DescendantsCommand extends CommonDecodeCommand<DescendantsCommand>
+	{
+		Iterator<Object> now();
+	}
+	
 	interface CommonFindCommand<C extends CommonFindCommand<C>> extends CommonDecodeCommand<C>
 	{
 		C addFilter(String field, FilterOperator operator, Object value);
