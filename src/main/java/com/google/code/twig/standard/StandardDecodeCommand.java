@@ -66,7 +66,7 @@ class StandardDecodeCommand<C extends StandardDecodeCommand<C>> extends Standard
 		return (C) this;
 	}
 	
-	public final Object entityToInstance(Entity entity, Restriction<Property> predicate)
+	public final Object entityToInstance(Entity entity, Restriction<Property> restriction)
 	{
 		// we have the entity data but must return the associated instance
 		Object instance = datastore.keyCache.getInstance(entity.getKey());
@@ -103,9 +103,9 @@ class StandardDecodeCommand<C extends StandardDecodeCommand<C>> extends Standard
 			Set<Property> properties = PropertySets.create(entity.getProperties(), false);
 			
 			// filter out unwanted properties at this low level
-			if (predicate != null)
+			if (restriction != null)
 			{
-				properties = Sets.filter(properties, new RestrictionToPredicateAdaptor<Property>(predicate));
+				properties = Sets.filter(properties, new RestrictionToPredicateAdaptor<Property>(restriction));
 			}
 
 			// order the properties for efficient separation by field
@@ -192,14 +192,14 @@ class StandardDecodeCommand<C extends StandardDecodeCommand<C>> extends Standard
 	
 	public final <T> Map<Key, T> keysToInstances(Collection<Key> keys, Restriction<Property> filter)
 	{
-		// find all keys we do not already have in the cache
+		// only load the instances we do not already have in the cache
 		Map<Key, T> result = new HashMap<Key, T>(keys.size());
 		List<Key> missing = null;
 		for (Key key : keys)
 		{
 			T instance = (T) datastore.keyCache.getInstance(key);
 
-			// if we are doing a refresh/associate then do load the entity
+			// if we are doing a refresh or activate then do load the entity
 			if (instance == null || refresh)
 			{
 				if (missing == null)

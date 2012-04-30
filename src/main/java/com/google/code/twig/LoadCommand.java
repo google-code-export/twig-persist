@@ -49,8 +49,9 @@ public interface LoadCommand
 		<T> T now();
 	}
 	
-	interface MultipleUntypedLoadCommand extends CommonLoadCommand<MultipleUntypedLoadCommand>, CommandTerminator<Map<Key, Object>>
+	interface MultipleUntypedLoadCommand extends CommonLoadCommand<MultipleUntypedLoadCommand>
 	{
+		<T> Map<Key, T> now();
 	}
 	
 	interface MultipleTypedLoadCommand<T> extends CommonLoadCommand<MultipleTypedLoadCommand<T>>, CommandTerminator<Map<Object, T>>
