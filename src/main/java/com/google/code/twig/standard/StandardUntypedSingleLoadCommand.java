@@ -13,8 +13,9 @@ public class StandardUntypedSingleLoadCommand extends StandardDecodeCommand<Stan
 		this.key = key;
 	}
 	
+	@SuppressWarnings("unchecked")
 	public <T> T now()
 	{
-		return keyToInstance(key, null);
+		return (T) keyToInstance(key, null);
 	}
 }
