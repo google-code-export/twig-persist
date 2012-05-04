@@ -11,10 +11,11 @@ public class ArrayToObject extends BaseTypeConverter
 		this.converter = converter;
 	}
 	
+	@SuppressWarnings("unchecked")
 	@Override
 	public <T> T convert(Object instance, Type source, Type target) throws CouldNotConvertException
 	{
 		Object single = ((Object[]) instance)[0];
-		return converter.convert(single, source, target);
+		return (T) converter.convert(single, source, target);
 	}
 }

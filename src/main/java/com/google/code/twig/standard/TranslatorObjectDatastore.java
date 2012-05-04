@@ -451,7 +451,8 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	@Override
 	public <T> T associate(T instance, Key key, long version)
 	{
-		T existing = keyCache.getInstance(key);
+		@SuppressWarnings("unchecked")
+		T existing = (T) keyCache.getInstance(key);
 		if (existing != null)
 		{
 			return existing;
@@ -548,7 +549,8 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 			Key key = command.instanceToKey(instance, id);
 
 			// check if there is already an instance with this key
-			T existing = keyCache.getInstance(key);
+			@SuppressWarnings("unchecked")
+			T existing = (T) keyCache.getInstance(key);
 
 			if (existing != null)
 			{

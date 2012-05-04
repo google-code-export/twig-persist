@@ -27,7 +27,7 @@ public class AppendTypeConverter extends BaseTypeConverter
 		}
 		else
 		{
-			return delegate.convert(instance, source, target);
+			return (T) delegate.convert(instance, source, target);
 		}
 	}
 }
