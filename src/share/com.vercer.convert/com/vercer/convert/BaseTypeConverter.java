@@ -10,6 +10,6 @@ public abstract class BaseTypeConverter implements TypeConverter
 	{
 		if (instance == null) return null;
 		if (instance.getClass().equals(target)) return (T) instance; 
-		return convert(instance, instance.getClass(), target);
+		return (T) convert(instance, instance.getClass(), target);
 	}
 }
