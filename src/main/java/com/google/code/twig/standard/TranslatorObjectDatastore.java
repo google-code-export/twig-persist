@@ -42,25 +42,6 @@ import com.vercer.convert.TypeConverter;
 
 /**
  * TODO split this into a base impl with caching, activation etc and the translator
- * stuff on top. Translators are very specific to coding object fields.
- *
- * @author John Patterson (jdpatterson@gmail.com)
- */
-/**
- * @author John Patterson
- *
- */
-/**
- * @author John Patterson
- *
- */
-/**
- * @author John Patterson
- *
- */
-/**
- * @author John Patterson
- *
  */
 public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 {

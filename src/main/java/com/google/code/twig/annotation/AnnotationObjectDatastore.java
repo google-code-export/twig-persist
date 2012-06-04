@@ -17,12 +17,12 @@ public class AnnotationObjectDatastore extends StandardObjectDatastore
 
 	public AnnotationObjectDatastore(Settings settings)
 	{
-		this(Settings.builder().build(), 0, false);
+		this(settings, Integer.MAX_VALUE, true);
 	}
 	
 	public AnnotationObjectDatastore(Settings settings, boolean indexed)
 	{
-		this(Settings.builder().build(), 0, indexed);
+		this(settings, Integer.MAX_VALUE, true);
 	}
 	
 	public AnnotationObjectDatastore(Settings settings, int activation, boolean indexed)

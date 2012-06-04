@@ -9,9 +9,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
 
+import com.google.appengine.api.datastore.Key;
 import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
@@ -20,6 +22,7 @@ import com.google.code.twig.util.PropertySets;
 import com.google.code.twig.util.SimpleProperty;
 import com.google.code.twig.util.SinglePropertySet;
 import com.google.code.twig.util.generic.Generics;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 public class IterableTranslator extends DecoratingTranslator
@@ -42,6 +45,14 @@ public class IterableTranslator extends DecoratingTranslator
 		if (properties.size() == 1 && PropertySets.firstValue(properties) == null)
 		{
 			return NULL_VALUE;
+		}
+		
+		// collections always come back as ArrayLists
+		Collection<Object> collection = PropertySets.firstValue(properties);
+		if (collection != null && Iterables.getFirst(collection, null) instanceof Key)
+		{
+			// leave keys for the relation translator which can load all at once
+			return null;
 		}
 
 		Collection<Object> list = createCollection(type);

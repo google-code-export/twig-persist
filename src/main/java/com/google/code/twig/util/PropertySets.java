@@ -23,6 +23,7 @@ public class PropertySets
 	@SuppressWarnings("unchecked")
 	public static <T> T firstValue(Set<Property> properties)
 	{
+		if (properties.isEmpty()) return null;
 		return (T) firstProperty(properties).getValue();
 	}
 	

@@ -20,7 +20,6 @@ public class Band
 	
 	Locale locale;
 
-	@Type(value=List.class, parameters=Musician.class)
 	LinkedList<Musician> members = new LinkedList<Musician>();
 
 	@Child List<Album> albums;

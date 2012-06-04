@@ -24,8 +24,7 @@ public class ChainedTypeConverter extends BaseTypeConverter
 		if (instance == null) return null;
 		for (TypeConverter converter : converters)
 		{
-			@SuppressWarnings("unchecked")
-			T converted = (T) converter.convert(instance, source, target);
+			T converted = converter.convert(instance, source, target);
 			if (converted != null)
 			{
 				return converted;

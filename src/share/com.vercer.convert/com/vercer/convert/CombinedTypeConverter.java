@@ -82,7 +82,7 @@ public class CombinedTypeConverter extends BaseTypeConverter implements Converte
 			return null;
 		}
 
-		return (T) typesafe(converter, input);
+		return typesafe(converter, input);
 	}
 	
 	private static final Converter<?, ?> NONE = new Converter<Object, Object>()

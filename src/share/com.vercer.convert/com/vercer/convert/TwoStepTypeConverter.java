@@ -17,14 +17,13 @@ public class TwoStepTypeConverter extends BaseTypeConverter
 		this.target = target;
 	}
 	
-	@SuppressWarnings("unchecked")
 	@Override
 	public <T> T convert(Object instance, Type source, Type target) throws CouldNotConvertException
 	{
 		if (source.equals(this.source) && target.equals(this.target))
 		{
 			Object temp = converter.convert(instance, source, middle);
-			return (T) converter.convert(temp, middle, target);
+			return converter.convert(temp, middle, target);
 		}
 		
 		return null;
