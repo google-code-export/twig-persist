@@ -103,6 +103,7 @@ public class DenormaliseTranslator implements PropertyTranslator
 			// do not create a new instance when decoding fields
 			datastore.decodeKey = datastore.associatedKey(instance);
 			datastore.denormalising = true;
+			datastore.refresh = instance;
 
 			// set field values for only the properties we denormalised
 			Object embedded = datastore.getEmbeddedTranslator().decode(properties, path, type);
@@ -112,6 +113,7 @@ public class DenormaliseTranslator implements PropertyTranslator
 			// replace the previous state
 			datastore.decodeKey = existingDecodeKey;
 			datastore.denormalising = existingDenormalising;
+			datastore.refresh = null;
 		}
 	}
 
@@ -122,16 +124,16 @@ public class DenormaliseTranslator implements PropertyTranslator
 		Set<Property> related = relation.encode(instance, path, indexed);
 		result.addAll(related);
 
-		KeySpecification existingEncodeKey = datastore.encodeKeySpec;
+		KeyDetails existingEncodeKey = datastore.encodeKeyDetails;
 
 		// make a dummy encode key because we already have the full key
-		datastore.encodeKeySpec = new KeySpecification();
+		datastore.encodeKeyDetails = new KeyDetails();
 
 		// get all embedded properties
 		Set<Property> embedded = datastore.getEmbeddedTranslator().encode(instance, path, indexed);
 
 		// reset the existing encode key
-		datastore.encodeKeySpec = existingEncodeKey;
+		datastore.encodeKeyDetails = existingEncodeKey;
 
 		// filter all embedded properties to only store the ones we want
 		Set<Property> filtered = Sets.filter(embedded, new Predicate<Property>()

@@ -160,7 +160,7 @@ public class MapTest extends LocalDatastoreTestCase
 		AnnotationObjectDatastore datastore = new AnnotationObjectDatastore();
 		Key key = datastore.store(created);
 		datastore.disassociateAll();
-		Object loaded = datastore.load(key);
+		Object loaded = datastore.load().key(key).activateAll().now();
 		Assert.assertEquals(created, loaded);
 	}
 }

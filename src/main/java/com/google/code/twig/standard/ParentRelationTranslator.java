@@ -51,10 +51,10 @@ final class ParentRelationTranslator extends RelationTranslator
 			};
 	
 			// an existing ancestors key ref shows ancestors is still being stored
-			if (datastore.encodeKeySpec != null && datastore.encodeKeySpec.getParentKeyReference() == null)
+			if (datastore.encodeKeyDetails != null && datastore.encodeKeyDetails.getParentKeyReference() == null)
 			{
 				// store the ancestors key inside the current key
-				datastore.encodeKeySpec.setParentKeyReference(keyReference);
+				datastore.encodeKeyDetails.setParentKeyReference(keyReference);
 			}
 		}
 

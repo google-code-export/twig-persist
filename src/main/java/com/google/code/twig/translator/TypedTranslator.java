@@ -6,18 +6,15 @@ import java.util.Set;
 import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
-import com.vercer.convert.TypeConverter;
 
 public class TypedTranslator extends DecoratingTranslator
 {
 	private final Type type;
-	private final TypeConverter converter;
 
-	public TypedTranslator(PropertyTranslator chained, Type type, TypeConverter converter)
+	public TypedTranslator(PropertyTranslator chained, Type type)
 	{
 		super(chained);
 		this.type = type;
-		this.converter = converter;
 	}
 
 	@Override
@@ -29,8 +26,7 @@ public class TypedTranslator extends DecoratingTranslator
 	@Override
 	public Set<Property> encode(Object instance, Path path, boolean indexed)
 	{
-		Object converted = converter.convert(instance, type);
-		return chained.encode(converted, path, indexed);
+		return chained.encode(instance, path, indexed);
 	}
 
 }

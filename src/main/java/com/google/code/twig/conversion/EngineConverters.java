@@ -16,7 +16,6 @@ import com.google.code.twig.conversion.CoreConverters.StringToDate;
 import com.google.code.twig.util.io.NoDescriptorObjectInputStream;
 import com.google.code.twig.util.io.NoDescriptorObjectOutputStream;
 import com.vercer.convert.Converter;
-import com.vercer.convert.GenericType;
 
 public class EngineConverters implements Iterable<Converter<?, ?>>
 {

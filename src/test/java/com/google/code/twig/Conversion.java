@@ -24,25 +24,25 @@ public class Conversion extends LocalDatastoreTestCase
 	{
 		Registry registry = new Registry(new Annotator());
 		
-		StandardObjectDatastore storeWith = new StandardObjectDatastore(Settings.defaults().build(), new AnnotationConfiguration(true)
+		StandardObjectDatastore storeWith = new StandardObjectDatastore(Settings.builder().build(), new AnnotationConfiguration()
 		{
 			@Override
 			protected String typeToName(Class<?> type)
 			{
 				return "name";
 			}
-		}, registry);
+		}, 0, false);
 		
 		Key key = storeWith.store(new ClassWithInteger());
 		
-		StandardObjectDatastore loadWith = new StandardObjectDatastore(Settings.defaults().build(), new AnnotationConfiguration(true)
+		StandardObjectDatastore loadWith = new StandardObjectDatastore(Settings.builder().build(), new AnnotationConfiguration()
 		{
 			@Override
 			protected Class<?> nameToType(String name)
 			{
 				return ClassWithString.class;
 			}
-		}, registry);
+		}, 0, false);
 		
 		ClassWithString loaded = loadWith.load(key);
 		

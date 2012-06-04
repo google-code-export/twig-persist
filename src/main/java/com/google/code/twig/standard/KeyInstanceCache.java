@@ -11,12 +11,11 @@ import com.google.code.twig.util.reference.SimpleObjectReference;
 import com.google.common.collect.MapMaker;
 
 // TODO make this the base class of translator object datastore
-public class InstanceKeyCache
+public class KeyInstanceCache
 {
 	public static class KeyReference extends SimpleObjectReference<Key>
 	{
 		private static final long serialVersionUID = 1L;
-		private Boolean activated;
 		private long version;
 		
 		public KeyReference(Key object)
@@ -49,11 +48,10 @@ public class InstanceKeyCache
 	 * only once the instance is put and the real Key is known.
 	 * @param activated Is this instance activated
 	 */
-	public void cache(Key key, Object object, Boolean activated, long version)
+	public void cache(Key key, Object object, long version)
 	{
 		keyToInstance.put(key, object);
 		KeyReference reference = new KeyReference(key);
-		reference.activated = activated;
 		reference.version = version;
 		instanceToKeyReference.put(object, reference);
 	}
@@ -174,6 +172,23 @@ public class InstanceKeyCache
 		}
 	}
 	
+	public void setVersion(Object instance, long version)
+	{
+		KeyReference reference = instanceToKeyReference.get(instance);
+		if (reference != null)
+		{
+			if (reference.version > 0 && version != reference.version + 1)
+			{
+				throw new IllegalStateException("Version must increment");
+			}
+			reference.version = version;
+		}
+		else
+		{
+			throw new IllegalArgumentException("Instance is not associated: " + instance);
+		}
+	}
+	
 	/**
 	 * Useful when you need to know if the instance is already associated
 	 * but when the Key might not yet be complete (during encoding)
@@ -189,17 +204,6 @@ public class InstanceKeyCache
 		return keyToInstance.keySet();
 	}
 	
-	public void setActivation(Object instance, boolean activated)
-	{
-		// we are sure of the key reference type because the full key and instance must have been added 
-		KeyReference reference = (KeyReference) instanceToKeyReference.get(instance);
-		if (Boolean.TRUE.equals(reference.activated))
-		{
-			throw new IllegalStateException("Instance was already activated");
-		}
-		reference.activated = activated;
-	}
-	
 	public boolean isActivated(Object instance)
 	{
 		KeyReference reference = (KeyReference) instanceToKeyReference.get(instance);
@@ -207,7 +211,7 @@ public class InstanceKeyCache
 		{
 			throw new IllegalArgumentException("Object is not an associated instance: " + instance);
 		}
-		return Boolean.TRUE.equals(reference.activated);
+		return reference.version > 0;
 	}
 	
 	public boolean isActivatable(Object instance)
@@ -217,7 +221,7 @@ public class InstanceKeyCache
 		{
 			return false;
 		}
-		return Boolean.FALSE.equals(reference.activated);
+		return reference.version == 0;
 	}
 
 	public boolean containsKey(Key key)

@@ -300,7 +300,7 @@ abstract class StandardCommonFindCommand<C extends StandardCommonFindCommand<C>>
 
 	public boolean isUnactivated()
 	{
-		return currentActivationDepth < 0;
+		return depth < 0;
 	}
 
 	// TODO replace this with stick and make cache options

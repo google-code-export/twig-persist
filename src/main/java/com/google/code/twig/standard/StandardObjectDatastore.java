@@ -7,7 +7,6 @@ import java.util.Locale;
 import java.util.logging.Logger;
 
 import com.google.code.twig.PropertyTranslator;
-import com.google.code.twig.Registry;
 import com.google.code.twig.Settings;
 import com.google.code.twig.configuration.Configuration;
 import com.google.code.twig.conversion.CoreConverters;
@@ -20,11 +19,12 @@ import com.google.code.twig.translator.NativeDirectTranslator;
 import com.vercer.convert.ArrayToIterable;
 import com.vercer.convert.ChainedTypeConverter;
 import com.vercer.convert.CollectionConverters;
-import com.vercer.convert.IterableToArray;
+import com.vercer.convert.CollectionTypeConverter;
 import com.vercer.convert.CombinedTypeConverter;
 import com.vercer.convert.Converter;
 import com.vercer.convert.ConverterRegistry;
 import com.vercer.convert.DateConverters;
+import com.vercer.convert.IterableToArray;
 import com.vercer.convert.IterableToFirstElement;
 import com.vercer.convert.NumberConverters;
 import com.vercer.convert.ObjectToString;
@@ -35,9 +35,9 @@ public class StandardObjectDatastore extends TranslatorObjectDatastore
 {
 	static final Logger log = Logger.getLogger(StandardObjectDatastore.class.getName());
 
-	public StandardObjectDatastore(Settings settings, Configuration strategy, Registry registry)
+	public StandardObjectDatastore(Settings settings, Configuration strategy, int activation, boolean index)
 	{
-		super(settings, strategy, registry);
+		super(settings, strategy, activation, index);
 	}
 
 	protected ConverterRegistry createStaticConverterRegistry()
@@ -49,7 +49,6 @@ public class StandardObjectDatastore extends TranslatorObjectDatastore
 		converters(converter, new CoreConverters());
 		converters(converter, new DateConverters());
 		converters(converter, new StringToPrimitive());
-		converters(converter, new CollectionConverters());
 
 		converter.register(new ObjectToString());
 		MapConverters.registerAll(converter);
@@ -66,7 +65,7 @@ public class StandardObjectDatastore extends TranslatorObjectDatastore
 	}
 
 	// volatile to allow double checked locking
-	private volatile static ConverterRegistry converters;
+	private volatile static ConverterRegistry registry;
 	
 	private TypeConverter converter;
 
@@ -76,19 +75,21 @@ public class StandardObjectDatastore extends TranslatorObjectDatastore
 		if (converter == null)
 		{
 			// TODO problem if more than one subclass - set converters in constructor
-			if (converters == null)
+			if (registry == null)
 			{
 				synchronized (this)
 				{
-					if (converters == null)
+					if (registry == null)
 					{
-						converters = createStaticConverterRegistry();
+						registry = createStaticConverterRegistry();
 					}
 				}
 			}
 			
+			// these are added for every OD instance
 			ChainedTypeConverter chain = new ChainedTypeConverter();
-			chain.add(converters);
+			chain.add(registry);
+			chain.add(new CollectionTypeConverter(chain));
 			chain.add(new IterableToArray(chain));
 			chain.add(new ArrayToIterable(chain));
 			chain.add(new IterableToFirstElement());
@@ -104,12 +105,16 @@ public class StandardObjectDatastore extends TranslatorObjectDatastore
 		ChainedTranslator result = new ChainedTranslator();
 		
 		// types that will be translated to datastore types automatically
-		result.append(new NativeDirectTranslator(converters));
-		result.append(new ConverterTranslator(Class.class, String.class, converters));
-		result.append(new ConverterTranslator(URL.class, String.class, converters));
-		result.append(new ConverterTranslator(URI.class, String.class, converters));
-		result.append(new ConverterTranslator(Locale.class, String.class, converters));
-		result.append(new ConverterTranslator(Currency.class, String.class, converters));
+		result.append(new NativeDirectTranslator(registry));
+		
+		// use a converter to convert to a native type
+		result.append(new ConverterTranslator(Class.class, String.class, registry));
+		result.append(new ConverterTranslator(URL.class, String.class, registry));
+		result.append(new ConverterTranslator(URI.class, String.class, registry));
+		result.append(new ConverterTranslator(Locale.class, String.class, registry));
+		result.append(new ConverterTranslator(Currency.class, String.class, registry));
+		
+		// encode enums as their string name
 		result.append(new EnumTranslator());
 		
 		return result;
