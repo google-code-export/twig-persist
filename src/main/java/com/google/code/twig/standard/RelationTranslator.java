@@ -74,7 +74,7 @@ class RelationTranslator implements PropertyTranslator
 		List<Object> result = new ArrayList<Object>();
 
 		// keep order the same as keys
-		for (Key key : keysToInstances.keySet())
+		for (Key key : keys)
 		{
 			Object instance = keysToInstances.get(key);
 			if (instance != null)
