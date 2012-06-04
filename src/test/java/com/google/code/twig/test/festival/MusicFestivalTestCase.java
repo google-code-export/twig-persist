@@ -369,10 +369,12 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 
 		Transaction txn = datastore.beginTransaction();
 
+		datastore.disassociateAll();
+		
 		// overwrite band1
 		Band band3 = new Band();
 		band3.name = "Kasier Chiefs";
-		datastore.store().instance(band3);
+		datastore.store(band3);
 		txn.commit();
 
 		txn = datastore.beginTransaction();
@@ -511,30 +513,4 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		
 		assertEquals(HairStyle.LONG_LIKE_A_GIRL, datastore.load(Band.class, "Pearl Jam").hair);
 	}
-
-	@Test
-	public void testEmbeddedPrimitives()
-	{
-		ClassWithEmbeddedPrimitives testType = new ClassWithEmbeddedPrimitives();
-		testType.number = 8;
-		testType.blob = new Blob(new byte[] { 3, 4 });
-		boolean threw = false;
-		try
-		{
-			datastore.store(testType);
-		}
-		catch (IllegalStateException e)
-		{
-			threw = true;
-		}
-		assertTrue(threw);
-	}
-	
-	public static class ClassWithEmbeddedPrimitives
-	{
-		@Embedded long number;
-		@Embedded Blob blob;
-		@Embedded ClassWithEmbeddedPrimitives inner;
-	}
-	
 }

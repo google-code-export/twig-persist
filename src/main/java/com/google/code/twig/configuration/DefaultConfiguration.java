@@ -95,7 +95,10 @@ public abstract class DefaultConfiguration implements Configuration
 		}
 		
 		//use space as a place holder as it cannot exist in property names
+		name = name.replaceAll("__", " ");
 		name = name.replaceAll("_", ".");
+		name = name.replaceAll(" ", "_");
+		
 		return nameToType(name);
 	}
 
@@ -118,6 +121,7 @@ public abstract class DefaultConfiguration implements Configuration
 		String kind = typeToName(type);
 		
 		// replace . with _ and _ with __
+		kind = kind.replace("_", "__");
 		kind = kind.replace('.', '_');
 		
 		int version = version(type);

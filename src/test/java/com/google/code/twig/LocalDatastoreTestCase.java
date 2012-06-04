@@ -9,7 +9,7 @@ import com.google.appengine.tools.development.testing.LocalServiceTestHelper;
 public abstract class LocalDatastoreTestCase 
 {
     private final LocalServiceTestHelper helper =
-        new LocalServiceTestHelper(new LocalDatastoreServiceTestConfig());
+        new LocalServiceTestHelper(new LocalDatastoreServiceTestConfig()); //.setDefaultHighRepJobPolicyUnappliedJobPercentage(1));
 
     @Before
     public void setupDatastore() 

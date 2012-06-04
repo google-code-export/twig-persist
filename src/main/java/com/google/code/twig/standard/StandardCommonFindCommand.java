@@ -25,10 +25,12 @@ import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.SortPredicate;
 import com.google.appengine.api.datastore.QueryResultIterator;
+import com.google.appengine.api.memcache.MemcacheServicePb.MergedNamespaceStatsOrBuilder;
 import com.google.code.twig.FindCommand.ChildFindCommand;
 import com.google.code.twig.FindCommand.MergeFindCommand;
 import com.google.code.twig.FindCommand.MergeOperator;
 import com.google.code.twig.LoadCommand.CacheMode;
+import com.google.code.twig.FindCommand;
 import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
@@ -43,7 +45,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.MapMaker;
 
-abstract class StandardCommonFindCommand<C extends StandardCommonFindCommand<C>> extends StandardRestrictedFindCommand<C>
+abstract class StandardCommonFindCommand<C extends StandardCommonFindCommand<C>> extends StandardRestrictedFindCommand<C> implements FindCommand.MergeFindCommand
 {
 	protected List<StandardBranchFindCommand> children;
 	protected List<Filter> filters;
