@@ -24,7 +24,6 @@ import com.google.code.twig.LoadCommand.CacheMode;
 import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
-import com.google.code.twig.Registry;
 import com.google.code.twig.Settings;
 import com.google.code.twig.configuration.Configuration;
 import com.google.code.twig.translator.ChainedTranslator;
@@ -66,7 +65,7 @@ import com.vercer.convert.TypeConverter;
 public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 {
 	// keeps track of which instances are associated with which keys
-	protected final InstanceKeyCache keyCache = new InstanceKeyCache();
+	protected final KeyInstanceCache keyCache = new KeyInstanceCache();
 
 	// ensure only used be a single thread
 	protected Thread thread;
@@ -89,13 +88,15 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	/**************State fields********************/
 
 	// key details are updated as the current instance is encoded
-	protected KeySpecification encodeKeySpec;
+	protected KeyDetails encodeKeyDetails;
 
 	// the key of the currently decoding entity
 	protected Key decodeKey;
 
 	// current activation depth
-	final int defaultActivationDepth = Integer.MAX_VALUE;
+	final int defaultActivationDepth;
+	
+	final boolean defaultIndexFields;
 
 	// indicates we are only associating instances so do not store them
 	boolean associating = false;
@@ -103,6 +104,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	// when we associating should instances be activated
 	boolean activate = true;
 
+	// use for the next instance to be decoded instead of creating
 	protected Object refresh;
 	
 	boolean denormalising;
@@ -113,14 +115,16 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 
 	private final Configuration configuration;
 
-	public TranslatorObjectDatastore(Settings settings, Configuration configuration, Registry registry)
+	public TranslatorObjectDatastore(Settings settings, Configuration configuration, int activation, boolean index)
 	{
 		super(settings);
 		this.configuration = configuration;
-
-		TypeConverter converter = getTypeConverter();
+		defaultActivationDepth = activation;
+		defaultIndexFields = index;
 
 		this.thread = Thread.currentThread();
+		
+		TypeConverter converter = getTypeConverter();
 
 		// top level translator which examines object field values
 		objectFieldTranslator = new ObjectFieldTranslator(converter);
@@ -457,7 +461,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		{
 			return existing;
 		}
-		keyCache.cache(key, instance, version > 0, version);
+		keyCache.cache(key, instance, version);
 		return instance;
 	}
 
@@ -476,24 +480,23 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	@Override
 	public <T> T associate(T instance, boolean activated)
 	{
-		return associate(instance, activated, null);
+		return associate(instance, 1, null, null);
 	}
 
 	@Override
 	public <T> T associate(Class<T> type, long id)
 	{
-		return createAndAssociate(type, id);
+		return createSetKeyAssociate(type, id);
 	}
 
 	@Override
 	public <T> T associate(Class<T> type, String id)
 	{
-		return createAndAssociate(type, id);
+		return createSetKeyAssociate(type, id);
 	}
 
-	private <T> T createAndAssociate(Class<T> type, Object id)
+	private <T> T createSetKeyAssociate(Class<T> type, Object id)
 	{
-		@SuppressWarnings("unchecked")
 		T instance = (T) createInstance(type);
 
 		Field keyField = idField(type);
@@ -510,21 +513,8 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		return associate(instance);
 	}
 
-	@Override @Deprecated
-	// TODO separate association from storing
-	public <T> T associate(T instance, boolean activate, Object parent)
-	{
-		return associate(instance, activate, parent, null);
-	}
-
 	@Override
-	// TODO separate association from storing
-	public <T> T associate(T instance, boolean activate, Object parent, Object id)
-	{
-		return associate(instance, activate, parent, id, 0);
-	}
-	
-	public <T> T associate(T instance, boolean activate, Object parent, Object id, long version)
+	public <T> T associate(T instance, long version, Object parent, Object id)
 	{
 		try
 		{
@@ -536,18 +526,24 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 
 			// flag that we should not really store the instance
 			this.associating = true;
-			this.activate = activate;
+			this.activate = version > 0;
 
-			// use a store command to analyse this and all referenced instances
-			StandardSingleStoreCommand<Object> command = store().instance(null);
+			// remember the real current command
+			StandardCommand existingCommand = command;
+			
+			// use a dummy store command to analyse this and all referenced instances
+			StandardSingleStoreCommand<Object> dummy = store().instance(null);
 			if (parent != null)
 			{
-				command.parent(parent);
+				dummy.parent(parent);
 			}
 
 			// create key from @Id and @Parent fields
-			Key key = command.instanceToKey(instance, id);
+			Key key = dummy.instanceToKey(instance, id);
 
+			// replace the real command
+			command = existingCommand;
+			
 			// check if there is already an instance with this key
 			@SuppressWarnings("unchecked")
 			T existing = (T) keyCache.getInstance(key);
@@ -558,7 +554,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 			}
 			else
 			{
-				keyCache.cache(key, instance, activate, version);
+				keyCache.cache(key, instance, version);
 				return instance;
 			}
 		}
@@ -585,6 +581,12 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	public final Key associatedKey(Object instance)
 	{
 		return keyCache.getKey(instance);
+	}
+	
+	@Override
+	public <T> T associatedInstance(Key key)
+	{
+		return keyCache.getInstance(key);
 	}
 	
 	@Override
@@ -669,7 +671,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		return defaultTranslator;
 	}
 
-	protected final InstanceKeyCache getKeyCache()
+	protected final KeyInstanceCache getKeyCache()
 	{
 		return keyCache;
 	}
@@ -799,7 +801,8 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		}
 	}
 
-	protected void deleteKeys(Collection<Key> keys)
+	@Override
+	public void deleteKeys(Collection<Key> keys)
 	{
 		// TODO is auto the right setting here?
 		serviceDelete(keys, CacheMode.AUTO);
@@ -810,6 +813,12 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 				keyCache.evictKey(key);
 			}
 		}
+	}
+	
+	@Override
+	public void deleteKey(Key key)
+	{
+		deleteKeys(ImmutableList.of(key));
 	}
 
 	// permanent cache of class fields to reduce reflection
@@ -822,7 +831,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	{
 		private ObjectFieldTranslator(TypeConverter converters)
 		{
-			super(converters);
+			super(converters, configuration);
 		}
 
 		private Comparator<Field> fieldComparator = new Comparator<Field>()
@@ -851,7 +860,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 			fields.addAll(unsorted);
 			return fields;
 		}
-
+		
 		@Override
 		protected Constructor<?> getDefaultConstructor(Class<?> clazz) throws NoSuchMethodException
 		{
@@ -872,11 +881,11 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 			return constructor;
 		}
 
-
 		@Override
 		protected boolean indexed(Field field)
 		{
-			return TranslatorObjectDatastore.this.configuration.index(field);
+			Boolean index = TranslatorObjectDatastore.this.configuration.index(field);
+			return index == null ? defaultIndexFields : index;
 		}
 
 		@Override
@@ -928,7 +937,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 				if (keyCache.getInstance(decodeKey) == null)
 				{
 					// we have not activated the instance yet
-					keyCache.cache(decodeKey, result, null, 0);
+					keyCache.cache(decodeKey, result, 0);
 				}
 			}
 			else
@@ -940,23 +949,38 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 
 			return result;
 		}
-
+		
 		@Override
 		protected void decodeField(Object instance, Field field, Path path, Set<Property> properties)
 		{
 			// temporarily change the activation depth if this field has one set
 			StandardDecodeCommand<?> decode = (StandardDecodeCommand<?>) command;
-			int depth = configuration.activationDepth(field, decode.getCurrentActivationDepth());
-			decode.setCurrentActivationDepth(depth);
+			int depth = configuration.activationDepth(field, decode.getDepth());
+			decode.setDepth(depth);
+
+			final Object value = Reflection.get(field, instance);
 
 			// when denormalising we enhance the existing value
 			if (denormalising)
 			{
-				refresh = Reflection.get(field, instance);
+				refresh = value;
 			}
-
+			else if (value instanceof Collection<?>)
+			{
+				// reuse existing collection instances
+				Collection<?> collection = (Collection<?>) value;
+				collection.clear();
+				refresh = collection;
+			}
+			else if (value instanceof Map<?, ?>)
+			{
+				// reuse existing map instances
+				Map<?, ?> map = (Map<?, ?>) value;
+				map.clear();
+				refresh = map;
+			}
 			super.decodeField(instance, field, path, properties);
-
+			
 			refresh = null;
 		}
 	}
@@ -1042,9 +1066,10 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	 * @param clazz The type to create
 	 * @return A new instance or null to use the default behaviour
 	 */
-	protected Object createInstance(Class<?> clazz)
+	@SuppressWarnings("unchecked")
+	protected <T> T createInstance(Class<T> clazz)
 	{
-		return objectFieldTranslator.defautCreateInstance(clazz);
+		return (T) objectFieldTranslator.defautCreateInstance(clazz);
 	}
 
 	public Configuration getConfiguration()

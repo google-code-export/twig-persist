@@ -44,7 +44,7 @@ public class IterableTranslator extends DecoratingTranslator
 			return NULL_VALUE;
 		}
 
-		List<Object> list = createCollection(type);
+		Collection<Object> list = createCollection(type);
 
 		if (properties.isEmpty())
 		{
@@ -136,12 +136,13 @@ public class IterableTranslator extends DecoratingTranslator
 		return propertySets;
 	}
 
-	protected List<Object> createCollection(Type type)
+	protected Collection<Object> createCollection(Type type)
 	{
+		// support reusing existing implementations 
 		if (datastore.refresh != null)
 		{
 			@SuppressWarnings("unchecked")
-			List<Object> result = (List<Object>) datastore.refresh;
+			Collection<Object> result = (Collection<Object>) datastore.refresh;
 			datastore.refresh = null;
 			return result;
 		}

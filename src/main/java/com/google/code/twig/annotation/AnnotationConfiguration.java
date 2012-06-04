@@ -10,13 +10,6 @@ import com.vercer.generics.ParameterizedTypeImpl;
 
 public class AnnotationConfiguration extends DefaultConfiguration
 {
-	private final boolean indexed;
-	
-	public AnnotationConfiguration(boolean indexPropertiesDefault)
-	{
-		this.indexed = indexPropertiesDefault;
-	}
-
 	public void register(Class<?> type)
 	{
 		Class<?> tempType = type;
@@ -155,20 +148,21 @@ public class AnnotationConfiguration extends DefaultConfiguration
 		}
 	}
 
-	public boolean index(Field field)
+	public Boolean index(Field field)
 	{
 		Index annotation = field.getDeclaringClass().getAnnotation(Index.class);
 		if (field.getAnnotation(Index.class) != null)
 		{
 			annotation = field.getAnnotation(Index.class);
 		}
+		
 		if (annotation != null)
 		{
 			return annotation.value();
 		}
 		else
 		{
-			return indexed;
+			return null;
 		}
 	}
 
@@ -289,9 +283,15 @@ public class AnnotationConfiguration extends DefaultConfiguration
 			return super.name(field);
 		}
 	}
-
-	public boolean isIndexed()
+	
+	@Override
+	public String versionPropertyName(Class<?> type)
 	{
-		return indexed;
+		Version annotation = type.getAnnotation(Version.class);
+		if (annotation != null)
+		{
+			return annotation.property();
+		}
+		return null;
 	}
 }

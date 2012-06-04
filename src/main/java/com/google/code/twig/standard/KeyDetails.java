@@ -2,21 +2,21 @@ package com.google.code.twig.standard;
 
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
-import com.google.code.twig.standard.InstanceKeyCache.KeyReference;
+import com.google.code.twig.standard.KeyInstanceCache.KeyReference;
 import com.google.code.twig.util.reference.ObjectReference;
 import com.google.code.twig.util.reference.SimpleObjectReference;
 
-public class KeySpecification
+public class KeyDetails
 {
 	private String kind;
 	private ObjectReference<Key> parentKeyReference;
 	private Object id;
 
-	public KeySpecification()
+	public KeyDetails()
 	{
 	}
 
-	public KeySpecification(String kind, Key parentKey, Object id)
+	public KeyDetails(String kind, Key parentKey, Object id)
 	{
 		if (!(id == null || id instanceof String || id instanceof Long))
 		{
@@ -106,7 +106,7 @@ public class KeySpecification
 		};
 	}
 
-	public void merge(KeySpecification specification)
+	public void merge(KeyDetails specification)
 	{
 		// fill in any blanks with info we have gathered from the instance
 		// fields

@@ -50,7 +50,7 @@ public class ActivationTest extends LocalDatastoreTestCase
 		Key key = datastore.store(a);
 		datastore.disassociateAll();
 		
-		A reloaded = datastore.load(key);
+		A reloaded = datastore.load().key(key).activateAll().now();
 		
 		// show c is not activated
 		Assert.assertNull(reloaded.bs.get(0).cs.get(0).field);

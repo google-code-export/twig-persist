@@ -190,7 +190,7 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 				entity = instanceToEntity(instance, parentKey, null);
 			}
 
-			// put null if we do not have the entity
+			// put null if instance was already stored - don't store again
 			entities.put(instance, entity);
 		}
 
@@ -271,19 +271,13 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 		String kind = datastore.getConfiguration().typeToKind(instance.getClass());
 
 		// push a new encode context
-		KeySpecification existingEncodeKeySpec = datastore.encodeKeySpec;
-		datastore.encodeKeySpec = new KeySpecification(kind, parentKey, id);
+		KeyDetails existingEncodeKeySpec = datastore.encodeKeyDetails;
+		datastore.encodeKeyDetails = new KeyDetails(kind, parentKey, id);
 
 		// if we are updating the key is already in the key cache
 		if (command.update == Boolean.TRUE ||								// update
 				command.update == null && datastore.isAssociated(instance)) // updateOrStore
 		{
-			// make sure we are updating an activated instance
-			if (!datastore.isActivated(instance))
-			{
-				throw new IllegalStateException("Cannot update unactivated instance " + instance);
-			}
-
 			// get the key associated with this instance
 			Key associatedKey = datastore.associatedKey(instance);
 
@@ -291,37 +285,48 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 			{
 				throw new IllegalArgumentException("Cannot update unassociated instance " + instance + ". Use store instead");
 			}
+			
+			// make sure we are updating an activated instance
+			if (!datastore.isActivated(instance))
+			{
+				throw new IllegalStateException("Cannot update unactivated instance " + instance);
+			}
 
 			// set the id and ancestors to ensure entity will be overwritten
 			if (associatedKey.getName() != null)
 			{
-				datastore.encodeKeySpec.setName(associatedKey.getName());
+				datastore.encodeKeyDetails.setName(associatedKey.getName());
 			}
 			else if (associatedKey.getId() != 0)
 			{
-				datastore.encodeKeySpec.setId(associatedKey.getId());
+				datastore.encodeKeyDetails.setId(associatedKey.getId());
+			}
+			else
+			{
+				throw new IllegalStateException("No id found for associated instance " + instance);
 			}
 
 			if (associatedKey.getParent() != null)
 			{
-				datastore.encodeKeySpec.setParentKeyReference(new SimpleObjectReference<Key>(associatedKey.getParent()));
+				datastore.encodeKeyDetails.setParentKeyReference(new SimpleObjectReference<Key>(associatedKey.getParent()));
 			}
 		}
 		else
 		{
+			// we are storing or associating a new instance
 			if (datastore.isAssociated(instance))
 			{
 				throw new IllegalArgumentException("Cannot store associated instance " + instance + ". Use update instead.");
 			}
 
 			// set incomplete key reference before stored for back references
-			datastore.keyCache.cacheKeyReferenceForInstance(instance, datastore.encodeKeySpec.toKeyReference());
-		}
+			datastore.keyCache.cacheKeyReferenceForInstance(instance, datastore.encodeKeyDetails.toKeyReference());
 
-		// don't bother getting auto ids when just associating
-		if (datastore.associating == false)
-		{
-			maybeSetAllocatedId(instance);
+			// don't bother getting auto ids when just associating
+			if (datastore.associating == false)
+			{
+				maybeSetAllocatedId(instance);
+			}
 		}
 
 		// translate fields to properties - sets key ancestors and id
@@ -339,8 +344,18 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 		transferProperties(entity, properties);
 
 		// pop the encode context
-		datastore.encodeKeySpec = existingEncodeKeySpec;
+		datastore.encodeKeyDetails = existingEncodeKeySpec;
 
+		// check that id field is numeric if auto-generating id
+		Field idField = datastore.idField(instance.getClass());
+		if (!entity.getKey().isComplete() 		// no id was set
+				&& idField != null 				// there is an @id field
+				&& !idField.getType().isPrimitive()	// its not a primitive
+				&& !Number.class.isAssignableFrom(idField.getType())) // its not a number
+		{
+			throw new IllegalStateException("No id was set for " + instance + " and its @Id field is not numeric");
+		}
+		
 		return entity;
 	}
 
@@ -350,12 +365,12 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 		long allocateIdsForType = datastore.getConfiguration().allocateIdsFor(instance.getClass());
 		if (allocateIdsForType > 0)
 		{
-			if (datastore.encodeKeySpec.getId() == null)
+			if (datastore.encodeKeyDetails.getId() == null)
 			{
 				parentKey = null;
-				ObjectReference<Key> parentKeyReference = datastore.encodeKeySpec.getParentKeyReference();
+				ObjectReference<Key> parentKeyReference = datastore.encodeKeyDetails.getParentKeyReference();
 				StringBuilder kindAndParentBuilder = new StringBuilder();
-				kindAndParentBuilder.append(datastore.encodeKeySpec.getKind());
+				kindAndParentBuilder.append(datastore.encodeKeyDetails.getKind());
 				if (parentKeyReference != null)
 				{
 					parentKey = parentKeyReference.get();
@@ -377,7 +392,7 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 				{
 					range = datastore.getDefaultService().allocateIds(
 									parentKey,
-									datastore.encodeKeySpec.getKind(),
+									datastore.encodeKeyDetails.getKind(),
 									allocateIdsForType)
 									.iterator();
 
@@ -385,7 +400,7 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 				}
 
 				// get the id from the key - the rest of the key spec should be the same
-				datastore.encodeKeySpec.setId(range.next().getId());
+				datastore.encodeKeyDetails.setId(range.next().getId());
 			}
 		}
 	}

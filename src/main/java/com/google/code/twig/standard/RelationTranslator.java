@@ -24,11 +24,11 @@ import com.google.code.twig.util.generic.Generics;
 import com.google.code.twig.util.reference.ObjectReference;
 import com.google.code.twig.util.reference.ReadOnlyObjectReference;
 
-class RelationTranslator implements PropertyTranslator
+public class RelationTranslator implements PropertyTranslator
 {
 	protected final TranslatorObjectDatastore datastore;
 	private static final Logger logger = Logger.getLogger(RelationTranslator.class.getName());
-
+	
 	/**
 	 * @param strategyObjectDatastore
 	 */
@@ -46,7 +46,7 @@ class RelationTranslator implements PropertyTranslator
 
 		if (Collection.class.isAssignableFrom(Generics.erase(type)))
 		{
-			if (properties.isEmpty()) return new ArrayList<Object>();
+			if (properties.isEmpty()) return createCollection();
 
 			Object value = PropertySets.firstValue(properties);
 
@@ -62,16 +62,39 @@ class RelationTranslator implements PropertyTranslator
 			return keyToInstance((Key) value);
 		}
 	}
+	
+	protected Collection<Object> createCollection()
+	{
+		// support reusing existing implementations 
+		if (datastore.refresh != null)
+		{
+			@SuppressWarnings("unchecked")
+			Collection<Object> result = (Collection<Object>) datastore.refresh;
+			datastore.refresh = null;
+			return result;
+		}
+		else
+		{
+			return new ArrayList<Object>();
+		}
+	}
 
-	protected List<Object> keysToInstances(List<Key> keys)
+	protected Collection<Object> keysToInstances(List<Key> keys)
 	{
 		// use the same settings as the current decode command
 		StandardDecodeCommand<?> current = (StandardDecodeCommand<?>) datastore.command;
-		StandardUntypedMultipleLoadCommand load = datastore.load().keys(keys);
-		transferCurrentCommandState(current, load);
 		
+		// create a new command which replaces the current command
+		StandardUntypedMultipleLoadCommand load = datastore.load().keys(keys);
+		
+		// keep the same settings as the current command
+		transferCommandState(current, load);
+		
+		// create or reuse collection before create children
+		Collection<Object> result = createCollection();
+
+		// load the instances
 		Map<Key, Object> keysToInstances = load.now();
-		List<Object> result = new ArrayList<Object>();
 
 		// keep order the same as keys
 		for (Key key : keys)
@@ -90,26 +113,31 @@ class RelationTranslator implements PropertyTranslator
 	}
 
 	protected Object keyToInstance(Key key)
-	{		
+	{
 		// use the same settings as the current decode command
 		StandardDecodeCommand<?> current = (StandardDecodeCommand<?>) datastore.command;
-		StandardUntypedSingleLoadCommand load = this.datastore.load().key(key);
-		transferCurrentCommandState(current, load);
+		
+		// create a new command which replaces the current command
+		StandardUntypedSingleLoadCommand load = datastore.load().key(key);
+	
+		// keep the same settings as the current command
+		transferCommandState(current, load);
 		
 		// get the instance by key
 		Object result = load.now();
 		
 		if (result == null)
 		{
+			// ignore missing instances as they might have been deleted
 			result = NULL_VALUE;
 			logger.warning("No entity found for referenced key " + key);
 		}
 		return result;
 	}
 
-	private void transferCurrentCommandState(StandardDecodeCommand<?> current, StandardDecodeCommand<?> decode)
+	private void transferCommandState(StandardDecodeCommand<?> current, StandardDecodeCommand<?> decode)
 	{
-		decode.currentActivationDepth = current.currentActivationDepth;
+		decode.activate(current.getDepth() - 1);
 		decode.builder = current.builder;
 	}
 

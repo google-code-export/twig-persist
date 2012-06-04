@@ -25,7 +25,7 @@ final class IdFieldTranslator extends DecoratingTranslator
 	public Set<Property> encode(Object instance, Path path, boolean indexed)
 	{
 		// key specification may be null if we are in an update as we already have the key
-		if (datastore.encodeKeySpec != null)
+		if (datastore.encodeKeyDetails != null)
 		{
 			if (instance != null)
 			{
@@ -36,12 +36,12 @@ final class IdFieldTranslator extends DecoratingTranslator
 					long longValue = ((Number) instance).longValue();
 					if (longValue != 0l)
 					{
-						datastore.encodeKeySpec.setId(longValue);
+						datastore.encodeKeyDetails.setId(longValue);
 					}
 				}
 				else if (instance instanceof String)
 				{
-					datastore.encodeKeySpec.setName((String) instance);
+					datastore.encodeKeyDetails.setName((String) instance);
 				}
 			}
 		}

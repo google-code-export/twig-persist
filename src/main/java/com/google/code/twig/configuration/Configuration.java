@@ -95,7 +95,7 @@ public interface Configuration
 	 * @param field The reflected Field to be examined
 	 * @return true if the field is indexed
 	 */
-	boolean index(Field field);
+	Boolean index(Field field);
 
 	/**
 	 * Should the field be stored at all
@@ -142,5 +142,7 @@ public interface Configuration
 	String name(Field field);
 	
 	int retryNonTransactionPut();
-	
+
+
+	String versionPropertyName(Class<?> type);
 }

@@ -18,6 +18,8 @@ import com.google.appengine.api.datastore.Key;
 import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
+import com.google.code.twig.configuration.Configuration;
+import com.google.code.twig.standard.RelationTranslator;
 import com.google.code.twig.util.PrefixPropertySet;
 import com.google.code.twig.util.PropertySets;
 import com.google.code.twig.util.Reflection;
@@ -33,10 +35,12 @@ public abstract class FieldTranslator implements PropertyTranslator
 {
 	private static final Logger log = Logger.getLogger(FieldTranslator.class.getName());
 	private final TypeConverter converters;
+	private final Configuration configuration;
 
-	public FieldTranslator(TypeConverter converters)
+	public FieldTranslator(TypeConverter converters, Configuration configuration)
 	{
 		this.converters = converters;
+		this.configuration = configuration;
 	}
 
 	public Object decode(Set<Property> properties, Path path, Type type)
@@ -57,10 +61,13 @@ public abstract class FieldTranslator implements PropertyTranslator
 				}
 			}
 		}
-
+		
 		// create the instance
 		Class<?> clazz = Generics.erase(type);
 		Object instance = createInstance(clazz);
+		
+		// sanity check that our instance is the correct type
+		assert clazz.isAssignableFrom(instance.getClass());
 
 		// ensure the properties are sorted
 		if (properties instanceof SortedSet<?> == false)
@@ -139,13 +146,14 @@ public abstract class FieldTranslator implements PropertyTranslator
 		// get the type that we need to store
 		Type type = type(field);
 		
+		// generic declarations are not captured in java
 		if (GenericType.class.isAssignableFrom(Generics.erase(type)))
 		{
 			type = Generics.getTypeParameter(type, GenericType.class.getTypeParameters()[0]);
 		}
 
-		onBeforeDecode(field, properties);
-
+		onBeforeDecode(field, instance);
+		
 		Object value;
 		try
 		{
@@ -179,54 +187,9 @@ public abstract class FieldTranslator implements PropertyTranslator
 		// the value can be stored as a different type
 		value = converters.convert(value, type, field.getGenericType());
 
-		// for collections we can reuse an existing instance
-		if (reusedExistingImplementation(value, field, instance) == false)
-		{
-			setFieldValue(instance, field, value);
-		}
+		setFieldValue(instance, field, value);
 
 		onAfterDecode(field, value);
-	}
-
-	private boolean reusedExistingImplementation(Object value, Field field, Object instance)
-	{
-		// check for a default implementations of collections and reuse
-		if (Collection.class.isAssignableFrom(field.getType()))
-		{
-			// see if there is a default value
-			Collection<?> existing = (Collection<?>) Reflection.get(field, instance);
-			if (existing != null && value != null)
-			{
-				Collection<?> collection = (Collection<?>) value;
-
-				// only reuse if it is a different type of collection
-				// unactivated instances use EMPTY_LIST for all collections
-				if (existing.getClass() != value.getClass() &&
-						!collection.isEmpty() &&
-						existing != Collections.EMPTY_LIST)
-				{
-					existing.clear();
-					typesafeAddAll(collection, existing);
-					return true;
-				}
-			}
-		}
-		else if (Map.class.isAssignableFrom(field.getType()))
-		{
-				// see if there is a default value
-				Map<?, ?> existing = (Map<?, ?>) Reflection.get(field, instance);
-				if (existing != null && value != null)
-				{
-					Map<?, ?> map = (Map<?, ?>) value;
-					if (existing.getClass() != value.getClass() && !map.isEmpty())
-					{
-						existing.clear();
-						typesafePutAll(map, existing);
-						return true;
-					}
-				}
-		}
-		return false;
 	}
 
 	private void setFieldValue(Object instance, Field field, Object value)
@@ -258,7 +221,7 @@ public abstract class FieldTranslator implements PropertyTranslator
 	{
 	}
 
-	protected void onBeforeDecode(Field field, Set<Property> childProperties)
+	protected void onBeforeDecode(Field field, Object instance)
 	{
 	}
 

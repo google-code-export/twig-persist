@@ -12,8 +12,6 @@ public final class Settings implements Cloneable
 	private boolean crossGroupTransactions = true;
 	private CacheMode cacheMode;
 	private int retries = 3;
-	private boolean indexed;
-	private int activation = Integer.MAX_VALUE;
 	
 	public static class Builder
 	{
@@ -42,12 +40,6 @@ public final class Settings implements Cloneable
 			return this;
 		}
 		
-		public Builder activate(int depth)
-		{
-			settings.activation = depth;
-			return this;
-		}
-
 		public Builder consistency(Consistency consistency)
 		{
 			settings.consistency = consistency;
@@ -66,12 +58,6 @@ public final class Settings implements Cloneable
 			return this;
 		}
 
-		public Builder indexed(boolean indexed)
-		{
-			settings.indexed = indexed;
-			return this;
-		}
-		
 		public Builder crossGroupTransactions(boolean xgt)
 		{
 			settings.crossGroupTransactions = xgt;
@@ -98,7 +84,7 @@ public final class Settings implements Cloneable
 	{
 	}
 
-	public static Builder defaults()
+	public static Builder builder()
 	{
 		return new Builder();
 	}
@@ -111,16 +97,6 @@ public final class Settings implements Cloneable
 	public int getRetries()
 	{
 		return retries;
-	}
-	
-	public boolean isIndexed()
-	{
-		return this.indexed;
-	}
-	
-	public int getActivation()
-	{
-		return activation;
 	}
 	
 	public CacheMode getCacheMode()

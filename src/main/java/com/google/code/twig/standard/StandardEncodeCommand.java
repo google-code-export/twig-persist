@@ -18,17 +18,17 @@ public class StandardEncodeCommand extends StandardCommand
 
 	final Entity createEntity()
 	{
-		if (datastore.encodeKeySpec.isComplete())
+		if (datastore.encodeKeyDetails.isComplete())
 		{
 			// we have a complete key with id specified 
-			return new Entity(datastore.encodeKeySpec.toKey());
+			return new Entity(datastore.encodeKeyDetails.toKey());
 		}
 		else
 		{
 			// we have no id specified so must create entity for auto-generated id
-			ObjectReference<Key> parentKeyReference = datastore.encodeKeySpec.getParentKeyReference();
+			ObjectReference<Key> parentKeyReference = datastore.encodeKeyDetails.getParentKeyReference();
 			Key parentKey = parentKeyReference == null ? null : parentKeyReference.get();
-			return Entities.createEntity(datastore.encodeKeySpec.getKind(), null, parentKey);
+			return Entities.createEntity(datastore.encodeKeyDetails.getKind(), null, parentKey);
 		}
 	}
 

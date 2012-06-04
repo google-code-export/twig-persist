@@ -1,6 +1,5 @@
 package com.google.code.twig.standard;
 
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -30,7 +29,7 @@ class StandardDecodeCommand<C extends StandardDecodeCommand<C>> extends Standard
 {
 //	private static final Logger log = Logger.getLogger(StandardDecodeCommand.class.getName());
 	
-	protected int currentActivationDepth;
+	protected int depth;
 	protected Restriction<Entity> entityRestriction;
 	protected Restriction<Property> propertyRestriction;
 	protected Settings.Builder builder;
@@ -39,9 +38,9 @@ class StandardDecodeCommand<C extends StandardDecodeCommand<C>> extends Standard
 	StandardDecodeCommand(TranslatorObjectDatastore datastore, int initialActivationDepth)
 	{
 		super(datastore);
-		this.currentActivationDepth = initialActivationDepth;
+		this.depth = initialActivationDepth;
 	}
-	
+
 	public C refresh()
 	{
 		this.refresh = true;
@@ -75,7 +74,7 @@ class StandardDecodeCommand<C extends StandardDecodeCommand<C>> extends Standard
 		if (instance != null)
 		{
 			// if we are freshing or the instance is not activated then load it
-			if (currentActivationDepth >= 0 && (refresh || !datastore.isActivated(instance)))
+			if (depth >= 0 && (refresh || !datastore.isActivated(instance)))
 			{
 				// do not create new instance - reuse this one
 				datastore.refresh = instance;
@@ -93,12 +92,14 @@ class StandardDecodeCommand<C extends StandardDecodeCommand<C>> extends Standard
 		// push new decode context state
 		Key existingDecodeKey = datastore.decodeKey;
 		datastore.decodeKey = entity.getKey();
+		StandardCommand existingCommand = datastore.command;
 		
 		// the activation depth may change while decoding a field value
-		int existingActivationDepth = currentActivationDepth;
+		int existingActivationDepth = depth;
+		
 		try
 		{
-			Type type = datastore.getConfiguration().kindToType(entity.getKind());
+			Class<?> type = datastore.getConfiguration().kindToType(entity.getKind());
 
 			Set<Property> properties = PropertySets.create(entity.getProperties(), false);
 			
@@ -113,12 +114,8 @@ class StandardDecodeCommand<C extends StandardDecodeCommand<C>> extends Standard
 			sorted.addAll(properties);
 			properties = sorted;
 
-			currentActivationDepth--;
-			
 			PropertyTranslator decoder = datastore.decoder(entity);
 			instance = decoder.decode(properties, Path.EMPTY_PATH, type);
-			
-			currentActivationDepth++;
 			
 			// null signifies that the properties could not be decoded
 			if (instance == null)
@@ -132,14 +129,34 @@ class StandardDecodeCommand<C extends StandardDecodeCommand<C>> extends Standard
 				instance = null;
 			}
 			
-			// set if this instance is activated or not
-			datastore.keyCache.setActivation(instance, currentActivationDepth >= 0);
+			// set the version number
+			String versionPropertyName = datastore.getConfiguration().versionPropertyName(type);
+			if (versionPropertyName != null)
+			{
+				Object property = entity.getProperty(versionPropertyName);
+				if (property != null)
+				{
+					if (property instanceof Long == false)
+					{
+						throw new IllegalStateException("Version property must be long but was " + property);
+					}
+					datastore.keyCache.setVersion(instance, (Long) property);
+				}
+			}
+
+			// set the version for activated non-versioned instances
+			if (depth >= 0 && !datastore.isActivated(instance))
+			{
+				// version of 1 means activated
+				datastore.keyCache.setVersion(instance, 1);
+			}
 		}
 		finally
 		{
 			// pop the decode context
 			datastore.decodeKey = existingDecodeKey;
-			currentActivationDepth = existingActivationDepth;
+			depth = existingActivationDepth;
+			datastore.command = existingCommand;
 		}
 
 		return instance;
@@ -242,7 +259,7 @@ class StandardDecodeCommand<C extends StandardDecodeCommand<C>> extends Standard
 
 	final Entity keyToEntity(Key key)
 	{
-		if (currentActivationDepth >= 0)
+		if (depth >= 0)
 		{
 			try
 			{
@@ -263,7 +280,7 @@ class StandardDecodeCommand<C extends StandardDecodeCommand<C>> extends Standard
 	final Map<Key, Entity> keysToEntities(Collection<Key> keys)
 	{
 		// only load entity if we will activate instance
-		if (currentActivationDepth >= 0)
+		if (depth >= 0)
 		{
 			return datastore.serviceGet(keys, getSettings());
 		}
@@ -281,13 +298,13 @@ class StandardDecodeCommand<C extends StandardDecodeCommand<C>> extends Standard
 
 	public C activate(int depth)
 	{
-		this.currentActivationDepth = depth;
+		this.depth = depth;
 		return (C) this;
 	}
 
 	public C activateAll()
 	{
-		this.currentActivationDepth = Integer.MAX_VALUE;
+		this.depth = Integer.MAX_VALUE;
 		return (C) this;
 	}
 	
@@ -331,13 +348,13 @@ class StandardDecodeCommand<C extends StandardDecodeCommand<C>> extends Standard
 		}
 	}
 	
-	void setCurrentActivationDepth(int currentActivationDepth)
+	void setDepth(int depth)
 	{
-		this.currentActivationDepth = currentActivationDepth;
+		this.depth = depth;
 	}
 	
-	int getCurrentActivationDepth()
+	int getDepth()
 	{
-		return currentActivationDepth;
+		return depth;
 	}
 }

@@ -16,6 +16,6 @@ class ChildRelationTranslator extends RelationTranslator
 	@Override
 	protected Key getParentKey()
 	{
-		return datastore.encodeKeySpec.toKey();
+		return datastore.encodeKeyDetails.toKey();
 	}
 }

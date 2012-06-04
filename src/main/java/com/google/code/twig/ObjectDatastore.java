@@ -78,6 +78,8 @@ public interface ObjectDatastore extends Activator
 	void delete(Object instance);
 	void deleteAll(Class<?> type);
 	void deleteAll(Collection<?> instances);
+	void deleteKey(Key key);
+	void deleteKeys(Collection<Key> key);
 
 	/**
 	 * Refresh an associated instance with the latest version from the datastore
@@ -115,13 +117,13 @@ public interface ObjectDatastore extends Activator
 	// to associate or not depending on if it is already associated.
 
 	<T> T associate(T instance);
-	<T> Collection<T> associateAll(Collection<T> instances);
-	
 	<T> T associate(T instance, boolean activated);
-	<T> T associate(T instance, boolean activated, Object parent);
+
 
 	// TODO this could be confused with other methods - best to make a method chain
-	<T> T associate(T instance, boolean activate, Object parent, Object id);
+	<T> T associate(T instance, long version, Object parent, Object id);
+
+	<T> Collection<T> associateAll(Collection<T> instances);
 
 	/**
 	 * Adds this instance but not other referenced instances to the internal
@@ -166,6 +168,9 @@ public interface ObjectDatastore extends Activator
 	 * @return The Key that is associated with this instance.
 	 */
 	Key associatedKey(Object instance);
+	
+
+	<T> T associatedInstance(Key key);
 
 	boolean isAssociated(Object instance);
 

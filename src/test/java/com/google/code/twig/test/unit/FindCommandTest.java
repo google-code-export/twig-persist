@@ -8,7 +8,6 @@ import java.util.Collection;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.code.twig.LocalDatastoreTestCase;
 import com.google.code.twig.ObjectDatastore;
@@ -60,24 +59,6 @@ public class FindCommandTest extends LocalDatastoreTestCase
 		assertSame(uriGaragrin, shouldBeUri);
 	}
 
-	@Test
-	public void filterOnRelatedInstanceByKey()
-	{
-		RocketShip laikasSpaceship = new RocketShip(Planet.VENUS);
-		Pilot laikaSpaceDog = new Pilot("Laika", laikasSpaceship);
-		datastore.store(laikaSpaceDog);
-		
-		Key laikasShipKey = datastore.associatedKey(laikasSpaceship);
-		
-		Pilot shouldBeLaika = datastore.find()
-			.type(Pilot.class)
-			.addFilter("spaceship", FilterOperator.EQUAL, laikasShipKey)
-			.returnUnique()
-			.now();
-		
-		assertSame(laikaSpaceDog, shouldBeLaika);
-	}
-	
 	@Test
 	public void findInstanceById()
 	{

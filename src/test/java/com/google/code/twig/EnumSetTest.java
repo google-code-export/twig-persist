@@ -14,7 +14,7 @@ public class EnumSetTest extends LocalDatastoreTestCase
 	
 	public static class EnumContainer 
 	{
-		EnumSet<MyEnum> theEnumSet;
+		EnumSet<MyEnum> theEnumSet = EnumSet.noneOf(MyEnum.class);
 	}
 	
 	@Test

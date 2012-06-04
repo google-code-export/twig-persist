@@ -47,7 +47,7 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 	@Before
 	public void createDatastore()
 	{
-		datastore = new AnnotationObjectDatastore(Settings.defaults().crossGroupTransactions(false).build());
+		datastore = new AnnotationObjectDatastore(Settings.builder().crossGroupTransactions(false).build());
 	}
 
 	public static MusicFestival createFestival() throws ParseException

@@ -73,7 +73,7 @@ public class DelegatingConfiguration implements Configuration
 		return delegate.typeOf(field);
 	}
 
-	public boolean index(Field field)
+	public Boolean index(Field field)
 	{
 		return delegate.index(field);
 	}
@@ -113,5 +113,11 @@ public class DelegatingConfiguration implements Configuration
 	public Configuration getDelegate()
 	{
 		return this.delegate;
+	}
+	
+	@Override
+	public String versionPropertyName(Class<?> type)
+	{
+		return delegate.versionPropertyName(type);
 	}
 }
