@@ -118,6 +118,7 @@ public interface ObjectDatastore extends Activator
 
 	<T> T associate(T instance);
 	<T> T associate(T instance, boolean activated);
+	<T> T associate(T instance, boolean activated, Object parent);
 
 
 	// TODO this could be confused with other methods - best to make a method chain

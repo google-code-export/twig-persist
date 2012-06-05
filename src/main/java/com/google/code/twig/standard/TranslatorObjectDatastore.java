@@ -493,6 +493,11 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 
 		return associate(instance);
 	}
+	
+	public <T> T associate(T instance, boolean activated, Object parent) 
+	{
+		return associate(instance, 1, parent, null);
+	};
 
 	@Override
 	public <T> T associate(T instance, long version, Object parent, Object id)
