@@ -10,7 +10,7 @@ public final class Settings implements Cloneable
 	private Long deadline;
 	private Consistency consistency;
 	private boolean crossGroupTransactions = true;
-	private CacheMode cacheMode;
+	private CacheMode cacheMode = CacheMode.AUTO;
 	private int retries = 3;
 	
 	public static class Builder

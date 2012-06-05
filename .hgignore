@@ -10,3 +10,5 @@ WEB-INF/appengine-generated
 .classpath
 .project
 .externalToolBuilders
+.git
+bin

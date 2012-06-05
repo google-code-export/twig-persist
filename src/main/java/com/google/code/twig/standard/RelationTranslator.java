@@ -32,7 +32,7 @@ public class RelationTranslator implements PropertyTranslator
 	/**
 	 * @param strategyObjectDatastore
 	 */
-	RelationTranslator(TranslatorObjectDatastore strategyObjectDatastore)
+	public RelationTranslator(TranslatorObjectDatastore strategyObjectDatastore)
 	{
 		this.datastore = strategyObjectDatastore;
 	}
@@ -109,6 +109,10 @@ public class RelationTranslator implements PropertyTranslator
 				logger.warning("No entity found for referenced key " + key);
 			}
 		}
+		
+		// replace current command
+		datastore.command = current;
+		
 		return result;
 	}
 
@@ -125,6 +129,9 @@ public class RelationTranslator implements PropertyTranslator
 		
 		// get the instance by key
 		Object result = load.now();
+		
+		// replace the current command
+		datastore.command = current;
 		
 		if (result == null)
 		{
@@ -208,6 +215,8 @@ public class RelationTranslator implements PropertyTranslator
 
 	protected Key instanceToKey(final Object instance)
 	{
+		StandardCommand existing = datastore.command;
+		
 		Key key = datastore.associatedKey(instance);
 		if (key == null || !key.isComplete())
 		{
@@ -218,12 +227,16 @@ public class RelationTranslator implements PropertyTranslator
 //		{
 //			throw new IllegalStateException("Incomplete key for instance " + instance);
 //		}
+		
+		datastore.command = existing;
 
 		return key;
 	}
 
 	private <T> Map<T, Key> instancesToKeys(Collection<T> instances, Key parentKey)
 	{
+		StandardCommand existing = datastore.command;
+
 		Map<T, Key> result = new IdentityHashMap<T, Key>(instances.size());
 		List<T> missed = new ArrayList<T>(instances.size());
 		for (T instance : instances)
@@ -253,6 +266,8 @@ public class RelationTranslator implements PropertyTranslator
 			}
 		}
 
+		datastore.command = existing;
+		
 		return result;
 	}
 
