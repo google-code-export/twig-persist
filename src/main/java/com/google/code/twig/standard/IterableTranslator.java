@@ -42,19 +42,24 @@ public class IterableTranslator extends DecoratingTranslator
 			return null;
 		}
 
-		if (properties.size() == 1 && PropertySets.firstValue(properties) == null)
+		if (properties.size() == 1)
 		{
-			return NULL_VALUE;
+			if (PropertySets.firstValue(properties) == null)
+			{
+				return NULL_VALUE;
+			}
+			else
+			{
+				// collections always come back as ArrayLists
+				Collection<Object> collection = PropertySets.firstValue(properties);
+				if (collection != null && Iterables.getFirst(collection, null) instanceof Key)
+				{
+					// leave keys for the relation translator which can load all at once
+					return null;
+				}
+			}	
 		}
 		
-		// collections always come back as ArrayLists
-		Collection<Object> collection = PropertySets.firstValue(properties);
-		if (collection != null && Iterables.getFirst(collection, null) instanceof Key)
-		{
-			// leave keys for the relation translator which can load all at once
-			return null;
-		}
-
 		Collection<Object> list = createCollection(type);
 
 		if (properties.isEmpty())

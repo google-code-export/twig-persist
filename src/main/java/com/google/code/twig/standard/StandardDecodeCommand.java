@@ -176,7 +176,9 @@ class StandardDecodeCommand<C extends StandardDecodeCommand<C>> extends Standard
 			@Override
 			public T next()
 			{
-				return (T) entityToInstance(entities.next(), filter);
+				datastore.command = StandardDecodeCommand.this;
+				final T instance = (T) entityToInstance(entities.next(), filter);
+				return instance;
 			}
 
 			@Override

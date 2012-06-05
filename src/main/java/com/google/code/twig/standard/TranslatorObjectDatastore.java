@@ -90,7 +90,14 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	
 	boolean denormalising;
 	
-	StandardCommand command;
+	// TODO - this is very fragile! need more reliable way to reference current command
+	// main problem is during iteration of results the last command will change
+	// so it must be reset on every iteration. Also must always remember the current
+	// command whenever creating a new command inside the framework and then reset it
+	// TODO hide this - just for testing
+	
+	// allow current command to be manipulated by field annotations
+	public StandardCommand command;
 
 	Map<String, Iterator<Key>> allocatedIdRanges;
 
@@ -461,7 +468,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	@Override
 	public <T> T associate(T instance, boolean activated)
 	{
-		return associate(instance, 1, null, null);
+		return associate(instance, activated ? 1 : 0, null, null);
 	}
 
 	@Override
@@ -817,7 +824,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	{
 		private ObjectFieldTranslator(TypeConverter converters)
 		{
-			super(converters, configuration);
+			super(converters);
 		}
 
 		private Comparator<Field> fieldComparator = new Comparator<Field>()

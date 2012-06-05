@@ -35,12 +35,10 @@ public abstract class FieldTranslator implements PropertyTranslator
 {
 	private static final Logger log = Logger.getLogger(FieldTranslator.class.getName());
 	private final TypeConverter converters;
-	private final Configuration configuration;
 
-	public FieldTranslator(TypeConverter converters, Configuration configuration)
+	public FieldTranslator(TypeConverter converters)
 	{
 		this.converters = converters;
-		this.configuration = configuration;
 	}
 
 	public Object decode(Set<Property> properties, Path path, Type type)
@@ -203,19 +201,6 @@ public abstract class FieldTranslator implements PropertyTranslator
 			throw new IllegalStateException("Could not set value " + value + " to field " + field, e);
 		}
 	}
-
-	@SuppressWarnings("unchecked")
-	private <K, V> void typesafePutAll(Map<?, ?> value, Map<?, ?> existing)
-	{
-		((Map<K, V>) existing).putAll((Map<K, V>) value);
-	}
-
-	@SuppressWarnings("unchecked")
-	private <T> void typesafeAddAll(Collection<?> value, Collection<?> existing)
-	{
-		((Collection<T>) existing).addAll((Collection<T>) value);
-	}
-
 
 	protected void onAfterDecode(Field field, Object value)
 	{
