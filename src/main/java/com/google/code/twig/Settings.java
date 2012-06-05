@@ -89,6 +89,11 @@ public final class Settings implements Cloneable
 		return new Builder();
 	}
 	
+	public static Settings defaults()
+	{
+		return new Settings();
+	}
+	
 	public static Builder copy(Settings settings)
 	{
 		return new Builder(settings);
