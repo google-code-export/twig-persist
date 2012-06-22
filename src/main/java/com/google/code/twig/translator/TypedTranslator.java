@@ -20,13 +20,13 @@ public class TypedTranslator extends DecoratingTranslator
 	@Override
 	public Object decode(Set<Property> properties, Path path, Type ignore)
 	{
-		return chained.decode(properties, path, type);
+		return delegate.decode(properties, path, type);
 	}
 
 	@Override
 	public Set<Property> encode(Object instance, Path path, boolean indexed)
 	{
-		return chained.encode(instance, path, indexed);
+		return delegate.encode(instance, path, indexed);
 	}
 
 }

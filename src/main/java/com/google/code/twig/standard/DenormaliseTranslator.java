@@ -70,7 +70,7 @@ public class DenormaliseTranslator implements PropertyTranslator
 			Collection<Object> instances = (Collection<Object>) decoded;
 
 			// get all properties for each instance
-			Iterator<Set<Property>> propertySetorator = IterableTranslator.extractPropertySets(properties).iterator();
+			Iterator<Set<Property>> propertySetorator = IterableTranslator.decodePropertySets(properties).iterator();
 
 			Type elementType = Generics.getTypeParameter(type, Collection.class.getTypeParameters()[0]);
 

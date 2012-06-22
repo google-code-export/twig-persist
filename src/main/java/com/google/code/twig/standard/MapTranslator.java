@@ -77,7 +77,7 @@ public class MapTranslator extends DecoratingTranslator
 			}
 
 			// decode the value properties using the generic type info
-			Object decoded = chained.decode(pps.getProperties(), pps.getPrefix(), valueType);
+			Object decoded = delegate.decode(pps.getProperties(), pps.getPrefix(), valueType);
 
 			// if we cannot convert every member of the list we fail
 			if (decoded == null)
@@ -135,7 +135,7 @@ public class MapTranslator extends DecoratingTranslator
 			}
 
 			Path childPath = Path.builder(path).key(keyString).build();
-			Set<Property> properties = chained.encode(value, childPath, indexed);
+			Set<Property> properties = delegate.encode(value, childPath, indexed);
 
 			if (properties == null)
 			{

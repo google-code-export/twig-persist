@@ -37,12 +37,12 @@ public class PolymorphicTranslator extends DecoratingTranslator
 			properties = Sets.filter(properties, Predicates.not(new PathPrefixPredicate(kindNamePath)));
 			type = configuration.kindToType(kindName);
 		}
-		return chained.decode(properties, prefix, type);
+		return delegate.decode(properties, prefix, type);
 	}
 
 	public Set<Property> encode(Object object, Path prefix, boolean indexed)
 	{
-		Set<Property> properties = chained.encode(object, prefix, indexed);
+		Set<Property> properties = delegate.encode(object, prefix, indexed);
 		
 //		// add the type meta-data if we need to query by sub-type
 //		if (configuration.polymorphic(object.getClass()))

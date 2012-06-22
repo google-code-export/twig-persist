@@ -28,12 +28,14 @@ public class ChainedTranslator implements PropertyTranslator
 
 	public PropertyTranslator append(PropertyTranslator translator)
 	{
+		assert translator != null;
 		this.translators.add(translator);
 		return this;
 	}
 
 	public PropertyTranslator prepend(PropertyTranslator translator)
 	{
+		assert translator != null;
 		this.translators.add(0, translator);
 		return this;
 	}
