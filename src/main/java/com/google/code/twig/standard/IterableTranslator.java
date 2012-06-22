@@ -67,7 +67,7 @@ public class IterableTranslator extends DecoratingTranslator
 			return list;
 		}
 
-		List<Set<Property>> propertySets = extractPropertySets(properties);
+		List<Set<Property>> propertySets = decodePropertySets(properties);
 
 		// handles the tricky task of finding what type of list we have
 		Type componentType = Generics.getTypeParameter(type, Iterable.class.getTypeParameters()[0]);
@@ -82,7 +82,7 @@ public class IterableTranslator extends DecoratingTranslator
 		// instead it adds to the existing items
 		for (Set<Property> itemProperties : propertySets)
 		{
-			Object decoded = chained.decode(itemProperties, path, componentType);
+			Object decoded = delegate.decode(itemProperties, path, componentType);
 
 			// if we cannot convert every member of the list we fail
 			if (decoded == null)
@@ -104,7 +104,7 @@ public class IterableTranslator extends DecoratingTranslator
 		return iterable;
 	}
 
-	public static List<Set<Property>> extractPropertySets(final Set<Property> properties)
+	public static List<Set<Property>> decodePropertySets(final Set<Property> properties)
 	{
 		// need to adapt a set of property lists into a list of property sets
 		List<Set<Property>> propertySets = Lists.newArrayList();
@@ -174,124 +174,145 @@ public class IterableTranslator extends DecoratingTranslator
 		{
 			Iterable<?> list = (Iterable<?>) object;
 
-			final Map<Path, List<Property>> lists = new HashMap<Path, List<Property>>(8);
+			List<Set<Property>> propertySets = new ArrayList<Set<Property>>();
 
-			int count = 0;
 			for (Object item : list)
 			{
 				if (item != null)
 				{
-					Set<Property> properties = chained.encode(item, path, indexed);
+					Set<Property> properties = delegate.encode(item, path, indexed);
 
+					// fail if we cannot encode any of the items
 					if (properties == null)
 					{
 						return null;
 					}
-
-					for (Property property : properties)
-					{
-						Path itemPath = property.getPath();
-
-						List<Property> values = lists.get(itemPath);
-						if (values == null)
-						{
-							values = new ArrayList<Property>(4);
-
-							lists.put(itemPath, values);
-						}
-
-						// need to pad the list with nulls if any values are missing
-						while (values.size() < count)
-						{
-							values.add(null);
-						}
-						values.add(property);
-					}
 				}
 				else
 				{
-					Collection<List<Property>> values = lists.values();
-					for (List<Property> value : values)
-					{
-						value.add(null);
-					}
+					propertySets.add(null);
 				}
-				count++;
 			}
-
-			// optimise for case of single properties
-			if (lists.size() == 1)
-			{
-				Path childPath = lists.keySet().iterator().next();
-				List<Property> properties = lists.get(childPath);
-				List<Object> values = new ArrayList<Object>(properties.size());
-				for (Property property : properties)
-				{
-					values.add(property.getValue());
-
-					// should be the same for all properties
-					indexed = property.isIndexed();
-				}
-				return new SinglePropertySet(childPath, values, indexed);
-			}
-			else
-			{
-				// avoid creating a new collection object
-				return new AbstractSet<Property>()
-				{
-					@Override
-					public Iterator<Property> iterator()
-					{
-						return new Iterator<Property>()
-						{
-							Iterator<Entry<Path, List<Property>>> iterator = lists.entrySet().iterator();
-
-							public boolean hasNext()
-							{
-								return iterator.hasNext();
-							}
-
-							public Property next()
-							{
-								Entry<Path, List<Property>> next = iterator.next();
-
-								// extract the values
-								List<Property> properties = next.getValue();
-								boolean indexed = false;
-								List<Object> values = new ArrayList<Object>(properties.size());
-								for (Property property : properties)
-								{
-									Object value = null;
-									if (property != null)
-									{
-										value = property.getValue();
-										// should be the same for all properties
-										indexed = property.isIndexed();
-									}
-									values.add(value);
-								}
-								return new SimpleProperty(next.getKey(), values, indexed);
-							}
-
-							public void remove()
-							{
-								throw new UnsupportedOperationException();
-							}
-						};
-					}
-
-					@Override
-					public int size()
-					{
-						return lists.size();
-					}
-				};
-			}
+			
+			return encodePropertySets(propertySets);
 		}
 		else
 		{
 			return null;
 		}
 	}
+
+	public static Set<Property> encodePropertySets(List<Set<Property>> propertySets)
+	{
+		final Map<Path, List<Property>> lists = new HashMap<Path, List<Property>>(8);
+
+		int length = 0;
+		for (Set<Property> itemProperties : propertySets)
+		{
+			if (itemProperties != null)
+			{
+				for (Property property : itemProperties)
+				{
+					Path itemPath = property.getPath();
+
+					// create or get existing value list
+					List<Property> values = lists.get(itemPath);
+					if (values == null)
+					{
+						values = new ArrayList<Property>(4);
+						lists.put(itemPath, values);
+					}
+
+					// need to pad the list with nulls if any values are missing
+					while (values.size() < length)
+					{
+						values.add(null);
+					}
+					values.add(property);
+				}
+			}
+			else
+			{
+				// put a null for every field - could put place holder for null
+				Collection<List<Property>> values = lists.values();
+				for (List<Property> value : values)
+				{
+					value.add(null);
+				}
+			}
+			length++;
+		}
+
+		// optimise for case of single properties
+		if (lists.size() == 1)
+		{
+			Path childPath = lists.keySet().iterator().next();
+			List<Property> properties = lists.get(childPath);
+			List<Object> values = new ArrayList<Object>(properties.size());
+			boolean indexed = false;
+			for (Property property : properties)
+			{
+				values.add(property.getValue());
+
+				// should be the same for all properties
+				indexed = property.isIndexed();
+			}
+			return new SinglePropertySet(childPath, values, indexed);
+		}
+		else
+		{
+			// lazily create properties as needed
+			return new AbstractSet<Property>()
+			{
+				@Override
+				public Iterator<Property> iterator()
+				{
+					return new Iterator<Property>()
+					{
+						Iterator<Entry<Path, List<Property>>> iterator = lists.entrySet().iterator();
+
+						public boolean hasNext()
+						{
+							return iterator.hasNext();
+						}
+
+						public Property next()
+						{
+							Entry<Path, List<Property>> next = iterator.next();
+
+							// extract the values
+							List<Property> properties = next.getValue();
+							boolean indexed = false;
+							List<Object> values = new ArrayList<Object>(properties.size());
+							for (Property property : properties)
+							{
+								Object value = null;
+								if (property != null)
+								{
+									value = property.getValue();
+									// should be the same for all properties
+									indexed = property.isIndexed();
+								}
+								values.add(value);
+							}
+							return new SimpleProperty(next.getKey(), values, indexed);
+						}
+
+						public void remove()
+						{
+							throw new UnsupportedOperationException();
+						}
+					};
+				}
+
+				@Override
+				public int size()
+				{
+					return lists.size();
+				}
+			};
+		}
+	}
+
 
 }

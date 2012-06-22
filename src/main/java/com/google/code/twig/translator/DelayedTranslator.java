@@ -20,7 +20,7 @@ public class DelayedTranslator extends DecoratingTranslator
 
 	public Object decode(Set<Property> properties, Path path, Type type)
 	{
-		return chained.decode(properties, path, type);
+		return delegate.decode(properties, path, type);
 	}
 
 	public Set<Property> encode(final Object object, final Path path, final boolean indexed)
@@ -29,7 +29,7 @@ public class DelayedTranslator extends DecoratingTranslator
 		{
 			public Object get()
 			{
-				Set<Property> properties = chained.encode(object, path, indexed);
+				Set<Property> properties = delegate.encode(object, path, indexed);
 				return properties.iterator().next().getValue();
 			}
 		};
