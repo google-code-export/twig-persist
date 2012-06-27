@@ -9,7 +9,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -187,6 +186,8 @@ public class IterableTranslator extends DecoratingTranslator
 					{
 						return null;
 					}
+					
+					propertySets.add(properties);
 				}
 				else
 				{

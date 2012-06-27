@@ -14,6 +14,7 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Query.SortDirection;
+import com.google.appengine.api.datastore.Query.SortPredicate;
 import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.code.twig.CommandTerminator;
 import com.google.code.twig.FindCommand.ParentsCommand;
@@ -339,17 +340,24 @@ public class StandardRootFindCommand<T> extends StandardCommonFindCommand<Standa
 	public <P> ParentsCommand<P> parentsCommandNow()
 	{
 		Collection<Query> queries = queries();
-		Iterator<Entity> childEntities;
 		if (queries.size() == 1)
 		{
-			childEntities = nowSingleQueryEntities(queries.iterator().next());
+			QueryResultIterator<Entity> childEntities = nowSingleQueryEntities(queries.iterator().next());
+			return new StandardSingleParentsCommand<P>(this, childEntities, datastore.defaultActivationDepth);
 		}
 		else
 		{
-			childEntities = nowMultipleQueryEntities(queries);
+			List<Iterator<Entity>> iterators = new ArrayList<Iterator<Entity>>(queries.size());
+			
+			List<SortPredicate> sortPredicates = null;
+			for (Query query : queries)
+			{
+				Iterator<Entity> entities = nowSingleQueryEntities(query);
+				sortPredicates = query.getSortPredicates();
+				iterators.add(entities);
+			}
+			return new StandardMultipleParentsCommand<P>(this, iterators, sortPredicates, datastore.defaultActivationDepth);
 		}
-		childEntities = applyEntityFilter(childEntities);
-		return new StandardSingleParentsCommand<P>(this, childEntities, datastore.defaultActivationDepth);
 	}
 
 	public <P> Future<ParentsCommand<P>> parentsCommandLater()
