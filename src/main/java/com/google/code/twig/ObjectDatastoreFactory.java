@@ -8,7 +8,7 @@ import com.google.code.twig.standard.StandardObjectDatastore;
 
 public class ObjectDatastoreFactory
 {
-	private static ObjectDatastoreFactory instance;
+	private static ObjectDatastoreFactory instance = new ObjectDatastoreFactory();
 	
 	public static ObjectDatastore createObjectDatastore()
 	{
@@ -17,7 +17,7 @@ public class ObjectDatastoreFactory
 	
 	public static ObjectDatastore createObjectDatastore(Settings settings)
 	{
-		return instance.create(getSettings(), getConfiguration());
+		return getInstance().create(getSettings(), getConfiguration());
 	}
 
 	static Settings getSettings()
