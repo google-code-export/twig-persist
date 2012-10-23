@@ -15,6 +15,7 @@ import java.util.concurrent.Future;
 import com.google.appengine.api.datastore.AsyncDatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Transaction;
@@ -231,7 +232,7 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 
 			// the key is now complete for this activated instance
 			assert datastore.associating == false;
-			datastore.associate(instance, key);
+			datastore.associate(instance, key, 1);
 		}
 		return result;
 	}
@@ -244,7 +245,7 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 		{
 			checkUniqueKeys(Collections.singleton(entity));
 		}
-
+		
 		Key key;
 		if (datastore.associating)
 		{
@@ -256,6 +257,55 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 		}
 		else
 		{
+			// not associating so must be updating or storing
+			
+			// if we have a version name then instance is versioned
+			String versionPropertyName = datastore.getConfiguration().versionPropertyName(instance.getClass());
+			if (command.versionPropertyName != null)
+			{
+				versionPropertyName = command.versionPropertyName;
+			}
+			
+			if (versionPropertyName != null)
+			{
+				try
+				{
+					// get current version
+					long local = datastore.version(instance);
+
+					// if version is positive it was loaded in this session
+					if (local < 0)
+					{
+						// change to positive to indicate we checked it in this session
+						local = -local;
+						
+						// load existing entity to get current version
+						Entity existing = datastore.serviceGet(entity.getKey(), datastore.getDefaultSettings());
+						Long version = version(existing, instance.getClass());
+						if (version == null)
+						{
+							// allow unversioned types to become versioned
+							version = 1l;
+						}
+
+						if (local != version)
+						{
+							throw new IllegalStateException("Versions not equal " + version + ":" + local);
+						}
+					}
+					
+					// increment the version locally
+					datastore.keyCache.setVersion(instance, ++local);
+
+					// add the version property to store with entity
+					entity.setProperty(versionPropertyName, local);
+				}
+				catch (EntityNotFoundException e)
+				{
+					throw new IllegalArgumentException("Update missing entity " + entity.getKey());
+				}
+			}
+
 			// TODO allow command to override settings
 			key = datastore.servicePut(entity, datastore.getDefaultSettings());
 		}

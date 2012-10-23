@@ -14,7 +14,7 @@ public interface LoadCommand
 	<T> TypedLoadCommand<T> type(Class<? extends T> type);
 	SingleUntypedLoadCommand key(Key key);
 //	SingleUntypedLoadCommand<?> key(Key key);
-//	MultipleUntypedLoadCommand<?> keys(Collection<Key> key);
+	MultipleUntypedLoadCommand keys(Collection<Key> key);
 	
 	interface TypedLoadCommand<T>
 	{
@@ -49,7 +49,7 @@ public interface LoadCommand
 		<T> T now();
 	}
 	
-	interface MultipleUntypedLoadCommand extends CommonLoadCommand<MultipleUntypedLoadCommand>
+	interface MultipleUntypedLoadCommand extends CommonDecodeCommand<MultipleUntypedLoadCommand>
 	{
 		<T> Map<Key, T> now();
 	}

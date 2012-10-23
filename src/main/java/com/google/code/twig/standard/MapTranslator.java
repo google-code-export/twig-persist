@@ -17,7 +17,6 @@ import com.google.code.twig.util.PrefixPropertySet;
 import com.google.code.twig.util.PropertySets;
 import com.google.code.twig.util.collections.MergeSet;
 import com.google.code.twig.util.generic.Generics;
-import com.google.common.collect.Iterators;
 import com.vercer.convert.TypeConverter;
 
 public class MapTranslator extends DecoratingTranslator

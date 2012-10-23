@@ -6,13 +6,12 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Target({ElementType.FIELD, ElementType.TYPE})
+/**
+ *	The field value is the current containing entity instance
+ */
+@Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
-public @interface Entity
+public @interface Root
 {
-	String kind() default "";
-	long allocateIdsBy() default 0;
-	boolean polymorphic() default false;
-	int version() default 0;
 }

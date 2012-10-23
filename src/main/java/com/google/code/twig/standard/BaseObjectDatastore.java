@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -25,12 +26,13 @@ import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.ReadPolicy;
 import com.google.appengine.api.datastore.Transaction;
 import com.google.appengine.api.datastore.TransactionOptions;
+import com.google.appengine.api.memcache.AsyncMemcacheService;
 import com.google.appengine.api.memcache.Expiration;
-import com.google.appengine.api.memcache.MemcacheService;
 import com.google.appengine.api.memcache.MemcacheServiceFactory;
 import com.google.code.twig.LoadCommand.CacheMode;
 import com.google.code.twig.ObjectDatastore;
 import com.google.code.twig.Settings;
+import com.google.code.twig.Transactable;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.MapMaker;
@@ -53,9 +55,10 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 	private static final Logger logger = Logger.getLogger(BaseObjectDatastore.class.getName());
 
 	private Map<Key, Entity> batched;
+	private int threshold = Integer.MAX_VALUE;
 
 	private static final String MEMCACHE_PREFIX = "__twig";
-	private static MemcacheService memcache;
+	private static AsyncMemcacheService memcache;
 
 	public static class Statistics
 	{
@@ -228,10 +231,13 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 	@Override
 	public void stopBatchMode()
 	{
-		assert batched.isEmpty();
 		if (batched == null)
 		{
 			throw new IllegalStateException("Batch was not in progress");
+		}
+		else if (!batched.isEmpty())
+		{
+			throw new IllegalStateException("Must flush batch before stopping");
 		}
 		else
 		{
@@ -248,8 +254,12 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 
 		logger.info("Flush " + batched.size() + " entities");
 
-		List<Key> keys = bulkPutWithTransaction(Collections2.filter(batched.values(), Predicates.notNull()), defaultSettings);
+		// put new entities
+		List<Key> keys = bulkPutWithTransaction(Collections2.filter(batched.values(), Predicates.notNull()), settings);
+		
+		// delete removed entities
 		bulkDeleteWithTransaction(Maps.filterValues(batched, Predicates.isNull()).keySet(), settings.getCacheMode());
+		
 		batched.clear();
 
 		return keys;
@@ -267,7 +277,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 			}
 			else
 			{
-				batched.put(entity.getKey(), entity);
+				batch(entity.getKey(), entity);
 
 				// assume key is complete
 				return entity.getKey();
@@ -280,6 +290,21 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 				logger.fine(System.currentTimeMillis() - start + "ms " + entity.getKey().toString());
 			}
 		}
+	}
+
+	protected void batch(Key key, Entity entity)
+	{
+		batched.put(entity.getKey(), entity);
+		if (batched.size() >= threshold)
+		{
+			flushEntities(defaultSettings);
+		}
+	}
+	
+	@Override
+	public void setAutoflushThreshold(int threshold)
+	{
+		this.threshold = threshold;
 	}
 
 	private Key singlePutWithTransaction(Entity entity, Settings settings)
@@ -360,12 +385,12 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 		}
 	}
 
-	private MemcacheService getMemcacheService()
+	private AsyncMemcacheService getMemcacheService()
 	{
 		// multi-threaded but not important if more than one created
 		if (memcache == null)
 		{
-			memcache = MemcacheServiceFactory.getMemcacheService();
+			memcache = MemcacheServiceFactory.getAsyncMemcacheService();
 		}
 		return memcache;
 	}
@@ -397,7 +422,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 			List<Key> keys = new ArrayList<Key>();
 			for (Entity entity : entities)
 			{
-				batched.put(entity.getKey(), entity);
+				batch(entity.getKey(), entity);
 				keys.add(entity.getKey());
 			}
 
@@ -504,6 +529,15 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 	{
 		try
 		{
+			if (batched != null)
+			{
+				// allow for nulls which signify a deleted entity
+				if (batched.containsKey(key))
+				{
+					return batched.get(key);
+				}
+			}
+			
 			statistics.datastoreGets++;
 			Entity result;
 			if (transaction == null)
@@ -548,7 +582,22 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 		if (details.global)
 		{
 			statistics.memcacheGets++;
-			result = (Entity) getMemcacheService().get(datastoreToMemcacheKey(key));
+			try
+			{
+				result = (Entity) getMemcacheService().get(datastoreToMemcacheKey(key)).get();
+			}
+			catch (Exception e)
+			{
+				if (e instanceof RuntimeException)
+				{
+					throw (RuntimeException) e;
+				}
+				else
+				{
+					throw new RuntimeException(e);
+				}
+			}
+			
 			if (result != null)
 			{
 				// only increment hits as total was ++ in memory cache
@@ -598,12 +647,35 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 						result.putAll(fromMemcache);
 					}
 				}
+				
+				// check pending batched operations
+				if (batched != null)
+				{
+					Iterator<Key> keyator = keys.iterator();
+					while (keyator.hasNext())
+					{
+						Key key = (Key) keyator.next();
+						
+						// allow for null values which indicate a deleted entity
+						if (batched.containsKey(key))
+						{
+							Entity entity = batched.get(key);
+							
+							// do not return anything for deleted entities
+							if (result != null)
+							{
+								result.put(key, entity);
+							}
+							keyator.remove();
+						}
+					}
+				}
 
 				if (keys.isEmpty())
 				{
 					return result;
 				}
-
+				
 				// get entities from the datastore
 				statistics.datastoreGets++;
 				Map<Key, Entity> fromDatastore = service(settings).get(keys);
@@ -788,7 +860,22 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 
 		// check memcache for entities
 		statistics.memcacheGets++;
-		Map<String, Object> cached = getMemcacheService().getAll(stringKeys);
+		Map<String, Object> cached;
+		try
+		{
+			cached = getMemcacheService().getAll(stringKeys).get();
+		}
+		catch (Exception e)
+		{
+			if (e instanceof RuntimeException)
+			{
+				throw (RuntimeException) e;
+			}
+			else
+			{
+				throw new RuntimeException(e);
+			}
+		}
 
 		// put each result in the memory cache
 		Map<Key, Entity> result = new HashMap<Key, Entity>(cached.size());
@@ -818,7 +905,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 		{
 			for (Key key : keys)
 			{
-				batched.put(key, null);
+				batch(key, null);
 			}
 		}
 	}
@@ -901,13 +988,29 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 		transaction = null;
 	}
 
-	public final void transact(Runnable task)
+	@Override
+	public void transact(final Runnable runnable)
+	{
+		transact(new Transactable<Void>()
+		{
+			@Override
+			public Void perform(ObjectDatastore datastore)
+			{
+				runnable.run();
+				return null;
+			}
+		});
+	}
+	
+	@SuppressWarnings("unchecked")
+	public final <T> T transact(Transactable<T> transactable)
 	{
 		Transaction transaction = defaultDatastoreService.beginTransaction();
 		try
 		{
-			task.run();
+			Object result = transactable.perform(this);
 			transaction.commit();
+			return (T) result;
 		}
 		finally
 		{

@@ -177,7 +177,7 @@ public class KeyInstanceCache
 		KeyReference reference = instanceToKeyReference.get(instance);
 		if (reference != null)
 		{
-			if (reference.version > 0 && version != reference.version + 1)
+			if (reference.version != 0 && version != Math.abs(reference.version) + 1)
 			{
 				throw new IllegalStateException("Version must increment");
 			}
@@ -211,7 +211,7 @@ public class KeyInstanceCache
 		{
 			throw new IllegalArgumentException("Object is not an associated instance: " + instance);
 		}
-		return reference.version > 0;
+		return reference.version != 0;
 	}
 	
 	public boolean isActivatable(Object instance)

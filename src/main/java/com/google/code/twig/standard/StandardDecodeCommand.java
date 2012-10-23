@@ -97,71 +97,55 @@ class StandardDecodeCommand<C extends StandardDecodeCommand<C>> extends Standard
 		// the activation depth may change while decoding a field value
 		int existingActivationDepth = depth;
 		
-		try
+		Class<?> type = datastore.getConfiguration().kindToType(entity.getKind());
+
+		Set<Property> properties = PropertySets.create(entity.getProperties(), false);
+		
+		// filter out unwanted properties at this low level
+		if (restriction != null)
 		{
-			Class<?> type = datastore.getConfiguration().kindToType(entity.getKind());
-
-			Set<Property> properties = PropertySets.create(entity.getProperties(), false);
-			
-			// filter out unwanted properties at this low level
-			if (restriction != null)
-			{
-				properties = Sets.filter(properties, new RestrictionToPredicateAdaptor<Property>(restriction));
-			}
-
-			// order the properties for efficient separation by field
-			Set<Property> sorted = new TreeSet<Property>();
-			sorted.addAll(properties);
-			properties = sorted;
-
-			PropertyTranslator decoder = datastore.decoder(entity);
-			instance = decoder.decode(properties, Path.EMPTY_PATH, type);
-			
-			// null signifies that the properties could not be decoded
-			if (instance == null)
-			{
-				throw new IllegalStateException("Could not translate entity " + entity);
-			}
-			
-			// a null value is indicated by this special return value
-			if (instance == PropertyTranslator.NULL_VALUE)
-			{
-				instance = null;
-			}
-			
-			// set the version number
-			String versionPropertyName = datastore.getConfiguration().versionPropertyName(type);
-			if (versionPropertyName != null)
-			{
-				Object property = entity.getProperty(versionPropertyName);
-				if (property != null)
-				{
-					if (property instanceof Long == false)
-					{
-						throw new IllegalStateException("Version property must be long but was " + property);
-					}
-					datastore.keyCache.setVersion(instance, (Long) property);
-				}
-			}
-
-			// set the version for activated non-versioned instances
-			if (depth >= 0 && !datastore.isActivated(instance))
-			{
-				// version of 1 means activated
-				datastore.keyCache.setVersion(instance, 1);
-			}
+			properties = Sets.filter(properties, new RestrictionToPredicateAdaptor<Property>(restriction));
 		}
-		finally
+
+		// order the properties for efficient separation by field
+		Set<Property> sorted = new TreeSet<Property>();
+		sorted.addAll(properties);
+		properties = sorted;
+
+		PropertyTranslator decoder = datastore.decoder(entity);
+		instance = decoder.decode(properties, Path.EMPTY_PATH, type);
+		
+		// pop the decode context after decode
+		datastore.decodeKey = existingDecodeKey;
+		depth = existingActivationDepth;
+		datastore.command = existingCommand;
+		
+		// null signifies that the properties could not be decoded
+		if (instance == null)
 		{
-			// pop the decode context
-			datastore.decodeKey = existingDecodeKey;
-			depth = existingActivationDepth;
-			datastore.command = existingCommand;
+			throw new IllegalStateException("Could not translate entity " + entity);
+		}
+		
+		// a null value is indicated by this special return value
+		if (instance == PropertyTranslator.NULL_VALUE)
+		{
+			instance = null;
+		}
+		
+		// set the version number
+		Long version = version(entity, type);
+		if (version != null)
+		{
+			datastore.keyCache.setVersion(instance, version);
+		}
+		else if (depth >= 0 && !datastore.isActivated(instance))
+		{
+			// set the version to 1 for activated non-versioned instances
+			datastore.keyCache.setVersion(instance, 1);
 		}
 
 		return instance;
 	}
-	
 
 	public final <T> Iterator<T> entitiesToInstances(final Iterator<Entity> entities, final Restriction<Property> filter)
 	{

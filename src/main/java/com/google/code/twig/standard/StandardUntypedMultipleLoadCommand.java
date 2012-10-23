@@ -4,8 +4,9 @@ import java.util.Collection;
 import java.util.Map;
 
 import com.google.appengine.api.datastore.Key;
+import com.google.code.twig.LoadCommand;
 
-public class StandardUntypedMultipleLoadCommand extends StandardDecodeCommand<StandardUntypedMultipleLoadCommand>
+public class StandardUntypedMultipleLoadCommand extends StandardDecodeCommand<StandardUntypedMultipleLoadCommand> implements LoadCommand.MultipleUntypedLoadCommand
 {
 	private final Collection<Key> keys;
 

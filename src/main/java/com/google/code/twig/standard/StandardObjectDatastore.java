@@ -18,7 +18,6 @@ import com.google.code.twig.translator.EnumTranslator;
 import com.google.code.twig.translator.NativeDirectTranslator;
 import com.vercer.convert.ArrayToIterable;
 import com.vercer.convert.ChainedTypeConverter;
-import com.vercer.convert.CollectionConverters;
 import com.vercer.convert.CollectionTypeConverter;
 import com.vercer.convert.CombinedTypeConverter;
 import com.vercer.convert.Converter;

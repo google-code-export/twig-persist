@@ -12,10 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.FetchOptions;
@@ -25,12 +22,11 @@ import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.SortPredicate;
 import com.google.appengine.api.datastore.QueryResultIterator;
-import com.google.appengine.api.memcache.MemcacheServicePb.MergedNamespaceStatsOrBuilder;
+import com.google.code.twig.FindCommand;
 import com.google.code.twig.FindCommand.ChildFindCommand;
 import com.google.code.twig.FindCommand.MergeFindCommand;
 import com.google.code.twig.FindCommand.MergeOperator;
 import com.google.code.twig.LoadCommand.CacheMode;
-import com.google.code.twig.FindCommand;
 import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
@@ -306,6 +302,7 @@ abstract class StandardCommonFindCommand<C extends StandardCommonFindCommand<C>>
 	}
 
 	// TODO replace this with stick and make cache options
+	@SuppressWarnings("deprecation")
 	private static final Map<Query, List<Key>> queryToEntities = new MapMaker()
 		.concurrencyLevel(10)
 		.expireAfterWrite(10, TimeUnit.MINUTES)
@@ -408,77 +405,77 @@ abstract class StandardCommonFindCommand<C extends StandardCommonFindCommand<C>>
 		return merged;
 	}
 
-	private Future<Iterator<Entity>> futureEntityIteratorsToFutureMergedIterator(
-			final List<Future<QueryResultIterator<Entity>>> futures, final List<SortPredicate> sorts)
-	{
-		return new Future<Iterator<Entity>>()
-		{
-
-			public boolean cancel(boolean mayInterruptIfRunning)
-			{
-				boolean success = true;
-				for (Future<QueryResultIterator<Entity>> future : futures)
-				{
-					if (future.cancel(mayInterruptIfRunning) == false)
-					{
-						success = false;
-					}
-				}
-				return success;
-			}
-
-			public Iterator<Entity> get() throws InterruptedException, ExecutionException
-			{
-				return futureQueriesToEntities(futures);
-			}
-
-			public Iterator<Entity> get(long timeout, TimeUnit unit) throws InterruptedException,
-					ExecutionException, TimeoutException
-			{
-				return futureQueriesToEntities(futures);
-			}
-
-			private Iterator<Entity> futureQueriesToEntities(
-					List<Future<QueryResultIterator<Entity>>> futures)
-					throws InterruptedException, ExecutionException
-			{
-				List<Iterator<Entity>> iterators = new ArrayList<Iterator<Entity>>(futures.size());
-				for (Future<QueryResultIterator<Entity>> future : futures)
-				{
-					Iterator<Entity> entities = future.get();
-					entities = applyEntityFilter(entities);
-					iterators.add(entities);
-				}
-				return mergeEntities(iterators, sorts);
-			}
-
-			public boolean isCancelled()
-			{
-				// only if all are canceled
-				for (Future<QueryResultIterator<Entity>> future : futures)
-				{
-					if (!future.isCancelled())
-					{
-						return false;
-					}
-				}
-				return true;
-			}
-
-			public boolean isDone()
-			{
-				// only if all are done
-				for (Future<QueryResultIterator<Entity>> future : futures)
-				{
-					if (!future.isDone())
-					{
-						return false;
-					}
-				}
-				return true;
-			}
-		};
-	}
+//	private Future<Iterator<Entity>> futureEntityIteratorsToFutureMergedIterator(
+//			final List<Future<QueryResultIterator<Entity>>> futures, final List<SortPredicate> sorts)
+//	{
+//		return new Future<Iterator<Entity>>()
+//		{
+//
+//			public boolean cancel(boolean mayInterruptIfRunning)
+//			{
+//				boolean success = true;
+//				for (Future<QueryResultIterator<Entity>> future : futures)
+//				{
+//					if (future.cancel(mayInterruptIfRunning) == false)
+//					{
+//						success = false;
+//					}
+//				}
+//				return success;
+//			}
+//
+//			public Iterator<Entity> get() throws InterruptedException, ExecutionException
+//			{
+//				return futureQueriesToEntities(futures);
+//			}
+//
+//			public Iterator<Entity> get(long timeout, TimeUnit unit) throws InterruptedException,
+//					ExecutionException, TimeoutException
+//			{
+//				return futureQueriesToEntities(futures);
+//			}
+//
+//			private Iterator<Entity> futureQueriesToEntities(
+//					List<Future<QueryResultIterator<Entity>>> futures)
+//					throws InterruptedException, ExecutionException
+//			{
+//				List<Iterator<Entity>> iterators = new ArrayList<Iterator<Entity>>(futures.size());
+//				for (Future<QueryResultIterator<Entity>> future : futures)
+//				{
+//					Iterator<Entity> entities = future.get();
+//					entities = applyEntityFilter(entities);
+//					iterators.add(entities);
+//				}
+//				return mergeEntities(iterators, sorts);
+//			}
+//
+//			public boolean isCancelled()
+//			{
+//				// only if all are canceled
+//				for (Future<QueryResultIterator<Entity>> future : futures)
+//				{
+//					if (!future.isCancelled())
+//					{
+//						return false;
+//					}
+//				}
+//				return true;
+//			}
+//
+//			public boolean isDone()
+//			{
+//				// only if all are done
+//				for (Future<QueryResultIterator<Entity>> future : futures)
+//				{
+//					if (!future.isDone())
+//					{
+//						return false;
+//					}
+//				}
+//				return true;
+//			}
+//		};
+//	}
 
 //	private final class KeyToInstanceFunction<T> implements Function<Entity, T>
 //	{

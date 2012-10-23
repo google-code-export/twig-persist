@@ -14,7 +14,6 @@ import com.google.code.twig.util.PropertySets;
 import com.google.code.twig.util.collections.MergeSet;
 import com.google.code.twig.util.generic.Generics;
 import com.google.common.base.Predicate;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 
 public class DenormaliseTranslator implements PropertyTranslator

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,7 @@ import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.Settings;
+import com.google.code.twig.annotation.Root;
 import com.google.code.twig.configuration.Configuration;
 import com.google.code.twig.translator.ChainedTranslator;
 import com.google.code.twig.translator.FieldTranslator;
@@ -53,6 +55,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 
 	// translators are selected for particular fields by the configuration
 	private final ObjectFieldTranslator objectFieldTranslator;
+	private final ContainerTranslator containerTranslator;
 	private final ChainedTranslator embedTranslator;
 	private final PropertyTranslator polymorphicComponentTranslator;
 	private final PropertyTranslator parentTranslator;
@@ -117,6 +120,8 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		// top level translator which examines object field values
 		objectFieldTranslator = new ObjectFieldTranslator(converter);
 
+		containerTranslator = new ContainerTranslator(this);
+		
 		// simple values encoded as a single property
 		valueTranslatorChain = createValueTranslatorChain();
 
@@ -131,6 +136,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 
 		// embed a field value in the current entity
 		embedTranslator = new ChainedTranslator();
+		embedTranslator.append(valueTranslatorChain); // always encode values as simple properties
 		embedTranslator.append(new IterableTranslator(this, embedTranslator));
 		embedTranslator.append(new MapTranslator(this, embedTranslator, converter));
 		embedTranslator.append(objectFieldTranslator);
@@ -140,8 +146,8 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		embedTranslator.append(independantTranslator);
 
 		// polymorphic translator - try simple values and then embedded components
-		ChainedTranslator polymorphicValueTranslator = new ChainedTranslator(valueTranslatorChain, embedTranslator);
-		PropertyTranslator polymorphicTranslator = new PolymorphicTranslator(polymorphicValueTranslator, configuration);
+//		ChainedTranslator polymorphicValueTranslator = new ChainedTranslator(valueTranslatorChain, embedTranslator);
+		PropertyTranslator polymorphicTranslator = new PolymorphicTranslator(embedTranslator, configuration);
 
 		// allow it to handle maps and lists of polymorphic instances
 		polymorphicComponentTranslator = new ChainedTranslator(
@@ -149,7 +155,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 				new MapTranslator(this, polymorphicTranslator, converter),
 				polymorphicTranslator);
 
-		// by default, translate simple values and then try the fallback if that fails
+		// by default, translate simple values and then try the fall-back if that fails
 		defaultTranslator = new ChainedTranslator();
 		defaultTranslator.append(new IterableTranslator(this, defaultTranslator));
 		defaultTranslator.append(new MapTranslator(this, defaultTranslator, converter));
@@ -257,7 +263,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		assert instance != null;
 
 		// store but set the internal update flag so
-		store().update(true).instance(instance).now();
+		store().update().instance(instance).now();
 	}
 
 	@Override
@@ -265,14 +271,19 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	{
 		assert instances != null;
 
-		store().update(true).instances(instances).now();
+		store().update().instances(instances).now();
 	}
 
 	@Override
 	public final void storeOrUpdate(Object instance)
 	{
 		assert instance != null;
-		store().instance(instance).now();
+		StandardStoreCommand store = store();
+		if (isAssociated(instance))
+		{
+			store.update();
+		}
+		store.instance(instance).now();
 	}
 
 	@Override
@@ -380,6 +391,10 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 				result = new ChainedTranslator(new MapTranslator(this, denormalizer, getTypeConverter()), denormalizer);
 			}
 		}
+		else if (field.isAnnotationPresent(Root.class))
+		{
+			result = containerTranslator;
+		}
 		else if (configuration.id(field))
 		{
 			result = idFieldTranslator;
@@ -404,6 +419,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 			result = defaultTranslator;
 		}
 
+		// if there are too many properties, serialize them 
 		int serializationThreshold = configuration.serializationThreshold(field);
 		if (serializationThreshold >= 0)
 		{
@@ -449,7 +465,9 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		{
 			return existing;
 		}
-		keyCache.cache(key, instance, version);
+		
+		// negative version indicates value was not loaded
+		keyCache.cache(key, instance, -version);
 		return instance;
 	}
 
@@ -547,7 +565,8 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 			}
 			else
 			{
-				keyCache.cache(key, instance, version);
+				// negative version indicates value was not loaded
+				keyCache.cache(key, instance, -version);
 				return instance;
 			}
 		}
@@ -709,7 +728,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	{
 		if (instances.isEmpty()) return;
 
-		List<Key> keys = new ArrayList<Key>(instances.size());
+		Collection<Key> keys = new HashSet<Key>(instances.size());
 		for (Object instance : instances)
 		{
 			Key key = associatedKey(instance);
@@ -726,7 +745,6 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 
 		if (loaded.size() != keys.size())
 		{
-			// TODO throw more specific runtime exception with missing keys
 			throw new IllegalStateException("Some instances were not found for keys " + keys + " found " + loaded);
 		}
 	}

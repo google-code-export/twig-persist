@@ -50,7 +50,7 @@ public class IterableTranslator extends DecoratingTranslator
 			else
 			{
 				// collections always come back as ArrayLists
-				Collection<Object> collection = PropertySets.firstValue(properties);
+				Iterable<Object> collection = PropertySets.firstValue(properties);
 				if (collection != null && Iterables.getFirst(collection, null) instanceof Key)
 				{
 					// leave keys for the relation translator which can load all at once
