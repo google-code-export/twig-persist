@@ -178,11 +178,13 @@ public interface ObjectDatastore extends Activator
 	// transactions
 	Transaction beginTransaction();
 	Transaction getTransaction();
+	<T> T transact(Transactable<T> transactable);
 	void transact(Runnable runnable);
 
 	void startBatchMode();
 	void stopBatchMode();
 	void flushBatchedOperations();
+	void setAutoflushThreshold(int threshold);
 
 	DatastoreService getDefaultService();
 

@@ -1,7 +1,5 @@
 package com.google.code.twig.standard;
 
-import java.util.Iterator;
-
 import com.google.code.twig.FindCommand;
 
 public class StandardFindCommand extends StandardCommand implements FindCommand

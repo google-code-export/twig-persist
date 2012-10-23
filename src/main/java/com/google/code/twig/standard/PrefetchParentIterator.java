@@ -73,6 +73,6 @@ class PrefetchParentIterator extends AbstractIterator<Entity>
 
 	protected Map<Key, Entity> keysToEntities(List<Key> keys)
 	{
-		return datastore.serviceGet(keys, null);
+		return datastore.serviceGet(keys, datastore.getDefaultSettings());
 	}
 }
