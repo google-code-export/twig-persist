@@ -101,9 +101,21 @@ public class SimpleProperty implements Property
 		{
 			return pc;
 		}
+		else if (value == o.getValue()) 
+		{
+			return 0;
+		}
+		else if (value == null)
+		{
+			return -1;
+		}
+		else if (o.getValue() == null)
+		{
+			return 1;
+		}
 		else if (value instanceof Comparable<?>)
 		{
-			return compare((Comparable<?>) o.getValue(), o.getValue());
+			return compare((Comparable<?>) value, o.getValue());
 		}
 		else
 		{
