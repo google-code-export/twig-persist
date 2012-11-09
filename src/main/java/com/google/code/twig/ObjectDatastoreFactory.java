@@ -33,9 +33,18 @@ public class ObjectDatastoreFactory
 	public static void register(Class<?> model)
 	{
 		Entity annotation = model.getAnnotation(Entity.class);
-		DefaultConfiguration.registerTypeName(model, annotation.kind());
+		String kind;
+		if (annotation == null)
+		{
+			kind = model.getSimpleName();
+		}
+		else
+		{
+			kind = annotation.kind();
+		}
+		DefaultConfiguration.registerTypeName(model, kind);
 	}
-
+	
 	protected ObjectDatastore create(Settings settings, Configuration configuration)
 	{
 		return new StandardObjectDatastore(settings, configuration, 0, false);

@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * @author John Patterson <jdpatterson@gmail.com>
+ * @author John Patterson <john@vercer.com>
  * 
  * @deprecated Use {@link Id} instead
  */

@@ -16,7 +16,7 @@ import com.google.code.twig.util.collections.ArraySortedSet;
  * about {@code SinglePropertySet} and so is very efficient at getting
  * the first item or value.
  *  
- * @author John Patterson (jdpatterson@gmail.com)
+ * @author John Patterson (john@vercer.com)
  */
 public class PropertySets
 {

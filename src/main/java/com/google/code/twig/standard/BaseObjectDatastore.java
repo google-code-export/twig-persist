@@ -46,7 +46,7 @@ import com.google.common.collect.Maps;
  *
  * TODO extend future to allow a value() with no checked throwing
  *
- * @author John Patterson (jdpatterson@gmail.com)
+ * @author John Patterson (john@vercer.com)
  */
 public abstract class BaseObjectDatastore implements ObjectDatastore
 {

@@ -26,7 +26,7 @@ import com.vercer.convert.GenericType;
 import com.vercer.convert.TypeConverter;
 
 /**
- * @author John Patterson <jdpatterson@gmail.com>
+ * @author John Patterson <john@vercer.com>
  */
 public abstract class FieldTranslator implements PropertyTranslator
 {

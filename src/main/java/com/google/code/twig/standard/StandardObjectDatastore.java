@@ -93,11 +93,17 @@ public class StandardObjectDatastore extends TranslatorObjectDatastore
 			chain.add(new ArrayToIterable(chain));
 			chain.add(new IterableToFirstElement());
 			
+			converters(chain);
+			
 			converter = chain;
 		}
 		return converter;
 	}
 	
+	protected void converters(ChainedTypeConverter chain)
+	{
+	}
+
 	@Override
 	protected ChainedTranslator createValueTranslatorChain()
 	{
