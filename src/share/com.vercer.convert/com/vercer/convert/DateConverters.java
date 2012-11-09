@@ -10,7 +10,7 @@ import java.util.Locale;
 
 /**
  * @author JRodriguez
- * @author John Patterson (jdpatterson@gmail.com)
+ * @author John Patterson (john@vercer.com)
  */
 public class DateConverters implements Iterable<Converter<?, ?>>
 {

@@ -6,15 +6,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * @author John Patterson <jdpatterson@gmail.com>
+ * @author John Patterson <john@vercer.com>
  */
 public abstract class DefaultConfiguration implements Configuration
 {
-	private static Map<String, Class<?>> nameToType;
-	private static Map<Class<?>,String> typeToName;
-	
-	// cache field types on the fly as the may involve calculation / replacement
-//	private static Map<Type, Type> typeToReplacement = Maps.newConcurrentMap();
+	private static Map<String, Class<?>> nameToType = new HashMap<String, Class<?>>();
+	private static Map<Class<?>,String> typeToName = new HashMap<Class<?>, String>();
 	
 	// TODO remove this
 	public static void secretMethodForSneakilyChangingTypeName(Class<?> type, String name)
@@ -25,13 +22,6 @@ public abstract class DefaultConfiguration implements Configuration
 
 	public static void registerTypeName(Class<?> type, String name)
 	{
-		if (nameToType == null)
-		{
-			// should be configured at start-up so no need for concurrency
-			nameToType = new HashMap<String, Class<?>>();
-			typeToName = new HashMap<Class<?>, String>();
-		}
-		
 		// put the values and check that there was no existing mappings
 		Type existingType = nameToType.get(name);
 		if (existingType == null)
@@ -67,21 +57,14 @@ public abstract class DefaultConfiguration implements Configuration
 	 */
 	protected Class<?> nameToType(String name)
 	{
-		try
-		{	
-			if (nameToType != null)
-			{
-				Class<?> type = nameToType.get(name);
-				if (type != null)
-				{
-					return type;
-				}
-			}
-			return Class.forName(name);
-		}
-		catch (ClassNotFoundException e)
+		Class<?> type = nameToType.get(name);
+		if (type != null)
 		{
-			throw new IllegalStateException(e);
+			return type;
+		}
+		else
+		{
+			throw new IllegalStateException("No type registered for name " + name);
 		}
 	}
 
@@ -140,15 +123,7 @@ public abstract class DefaultConfiguration implements Configuration
 	 */
 	protected String typeToName(Class<?> type)
 	{
-		if (typeToName != null)
-		{
-			String name = typeToName.get(type);
-			if (name != null)
-			{
-				return name;
-			}
-		}
-		return type.getName();
+		return typeToName.get(type);
 	}
 
 	/**
@@ -168,77 +143,5 @@ public abstract class DefaultConfiguration implements Configuration
 	public Type typeOf(Field field)
 	{
 		return field.getGenericType();
-//		return replace(field.getGenericType());
 	}
-//	
-//	private Type replace(Type type)
-//	{
-//		// check the cache fist as this could be expensive
-//		Type replaced = typeToReplacement.get(type);
-//		if (replaced != null) return replaced;
-//			
-//		Type converted;
-//		if (type instanceof ParameterizedType)
-//		{
-//			ParameterizedType parameterised = (ParameterizedType) type;
-//			Type[] arguments = parameterised.getActualTypeArguments();
-//			boolean changed = false;
-//			for (int i = 0; i < arguments.length; i++)
-//			{
-//				Type original = arguments[i];
-//				
-//				// recursively replace type parameters
-//				arguments[i] = replace(original);
-//				
-//				if (original != arguments[i]) changed = true;
-//			}
-//			
-//			Class<?> erased = Generics.erase(type);
-//			Class<?> swaped = swap(erased);
-//			if (swaped != erased) changed = true;
-//			
-//			if (changed)
-//			{
-//				converted = new ParameterizedTypeImpl(swaped, arguments, parameterised.getOwnerType());
-//			}
-//			else
-//			{
-//				converted = type;
-//			}
-//		}
-//		else
-//		{
-//			Type componentType = Generics.getArrayComponentType(type);
-//			if (componentType != null)
-//			{
-//				converted = new ParameterizedTypeImpl(Iterable.class, new Type[] {componentType}, null);
-//			}
-//			else if (type instanceof Class<?>)
-//			{
-//				converted = swap((Class<?>) type);
-//			}
-//			else
-//			{
-//				// just use the original type
-//				converted = type;
-//			}
-//		}
-//		
-//		typeToReplacement.put(type, converted);
-//		
-//		return converted;
-//	}
-//
-//	protected Class<?> swap(Class<?> type)
-//	{
-////		 store all iterables as lists
-//		if (Iterable.class.isAssignableFrom(type))
-//		{
-//			return List.class;
-//		}
-//		else
-//		{
-//			return type;
-//		}
-//	}
 }

@@ -5,7 +5,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * @author John Patterson (jdpatterson@gmail.com)
+ * @author John Patterson (john@vercer.com)
  */
 public class StringToPrimitive implements Iterable<Converter<?, ?>>
 {

@@ -8,7 +8,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 
 /**
- * @author John Patterson (jdpatterson@gmail.com)
+ * @author John Patterson (john@vercer.com)
  *
  */
 public class Path implements Comparable<Path>

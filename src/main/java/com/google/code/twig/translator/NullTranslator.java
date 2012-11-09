@@ -15,7 +15,7 @@ import com.google.code.twig.util.PropertySets;
  * 
  * Returns null in all other situations.
  * 
- * @author John Patterson (jdpatterson@gmail.com)
+ * @author John Patterson (john@vercer.com)
  */
 public class NullTranslator implements PropertyTranslator
 {
