@@ -357,7 +357,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 		{
 			try
 			{
-				return service(settings).put(entity);
+				return service(settings).put(null, entity);
 			}
 			catch (RuntimeException e)
 			{
@@ -455,7 +455,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 		{
 			try
 			{
-				return service(settings).put(entities);
+				return service(settings).put(null, entities);
 			}
 			catch (RuntimeException e)
 			{
@@ -544,7 +544,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 			Entity result;
 			if (transaction == null || !transaction.isActive())
 			{
-				result = service(settings).get(key);
+				result = service(settings).get(null, key);
 			}
 			else
 			{
@@ -680,7 +680,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 				
 				// get entities from the datastore
 				statistics.datastoreGets++;
-				Map<Key, Entity> fromDatastore = service(settings).get(keys);
+				Map<Key, Entity> fromDatastore = service(settings).get(null, keys);
 
 				putToMemoryAndMemcache(fromDatastore.values(), settings.getCacheMode());
 
@@ -956,7 +956,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 	{
 		if (transaction == null || !transaction.isActive())
 		{
-			return service(settings).prepare(query);
+			return service(settings).prepare(null, query);
 		}
 		else
 		{
