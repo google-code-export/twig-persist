@@ -18,6 +18,11 @@ import com.vercer.convert.ConverterRegistry;
 
 public class SerializeCollectionsTest extends LocalDatastoreTestCase
 {
+	public SerializeCollectionsTest()
+	{
+		ObjectDatastoreFactory.register(TypeWithCollections.class);
+		ObjectDatastoreFactory.register(TypeWithEnum.class);
+	}
 	@Test
 	public void test()
 	{

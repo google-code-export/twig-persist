@@ -123,7 +123,12 @@ public abstract class DefaultConfiguration implements Configuration
 	 */
 	protected String typeToName(Class<?> type)
 	{
-		return typeToName.get(type);
+		String name = typeToName.get(type);
+		if (name == null)
+		{
+			throw new IllegalStateException("Unregistered type " + type);
+		}
+		return name;
 	}
 
 	/**
@@ -143,5 +148,11 @@ public abstract class DefaultConfiguration implements Configuration
 	public Type typeOf(Field field)
 	{
 		return field.getGenericType();
+	}
+
+	public static void unregisterAll()
+	{
+		nameToType.clear();
+		typeToName.clear();
 	}
 }

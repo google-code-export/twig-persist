@@ -114,10 +114,4 @@ public class DelegatingConfiguration implements Configuration
 	{
 		return this.delegate;
 	}
-	
-	@Override
-	public String versionPropertyName(Class<?> type)
-	{
-		return delegate.versionPropertyName(type);
-	}
 }

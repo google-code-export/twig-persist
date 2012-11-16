@@ -35,7 +35,7 @@ public class StandardMultipleStoreCommand<T> extends StandardCommonStoreCommand<
 		// convert into entities ready to store
 		Map<T, Entity> entities = instancesToEntities();
 
-		// we can get null entities when they are already stored
+		// we can get null entities when they are already stored by being referenced
 		Collection<Entity> filtered = Collections2.filter(entities.values(), Predicates.notNull());
 
 		if (datastore.associating)

@@ -5,36 +5,22 @@ import static org.junit.Assert.assertEquals;
 import java.io.Serializable;
 import java.util.HashMap;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 import com.google.appengine.api.datastore.Blob;
-import com.google.appengine.tools.development.testing.LocalDatastoreServiceTestConfig;
-import com.google.appengine.tools.development.testing.LocalServiceTestHelper;
 import com.google.code.twig.annotation.AnnotationObjectDatastore;
 import com.google.code.twig.annotation.Embedded;
 import com.google.code.twig.annotation.Id;
 import com.google.code.twig.annotation.Type;
 
-public class HashMapTest
+public class HashMapTest extends LocalDatastoreTestCase
 {
-	private final LocalServiceTestHelper helper = new LocalServiceTestHelper(
-			new LocalDatastoreServiceTestConfig()).setEnvIsAdmin(true).setEnvIsLoggedIn(true)
-			.setEnvEmail("test@test.com").setEnvAuthDomain("google.com");
-
-	@Before
-	public void setUp() throws Exception
+	public HashMapTest()
 	{
-		helper.setUp();
+		ObjectDatastoreFactory.register(InnerFoo.class);
+		ObjectDatastoreFactory.register(Foo.class);
 	}
-
-	@After
-	public void tearDown() throws Exception
-	{
-		helper.tearDown();
-	}
-
+	
 	public static class InnerFoo implements Serializable
 	{
 		public InnerFoo(String name)

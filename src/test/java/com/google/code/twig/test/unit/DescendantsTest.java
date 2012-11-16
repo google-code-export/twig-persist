@@ -16,6 +16,13 @@ import com.google.common.collect.Iterators;
 
 public class DescendantsTest extends LocalDatastoreTestCase
 {
+	public DescendantsTest()
+	{
+		ObjectDatastoreFactory.register(Granddad.class);
+		ObjectDatastoreFactory.register(Mum.class);
+		ObjectDatastoreFactory.register(Child.class);
+	}
+	
 	public static class Granddad
 	{
 		@Id

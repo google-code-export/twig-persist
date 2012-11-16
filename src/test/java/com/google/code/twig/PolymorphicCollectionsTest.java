@@ -11,62 +11,141 @@ import com.google.code.twig.annotation.AnnotationObjectDatastore;
 import com.google.code.twig.annotation.Embed;
 import com.google.code.twig.annotation.Id;
 
-class Driver {
-	@Id public Long id;
-	@Embed(polymorphic=true) public Vehicle vehicle;
-	public Driver() {}
-	public Driver(Vehicle vehicle) {this.vehicle = vehicle;}
+class Driver
+{
+	@Id
+	public Long id;
 	
-	public Long getName() {return id;}
-	public Vehicle getVehicle() {return vehicle;}
+	@Embed(polymorphic = true)
+	public Vehicle vehicle;
+
+	public Driver()
+	{
+	}
+
+	public Driver(Vehicle vehicle)
+	{
+		this.vehicle = vehicle;
+	}
+
+	public Long getName()
+	{
+		return id;
+	}
+
+	public Vehicle getVehicle()
+	{
+		return vehicle;
+	}
+
 	@Override
-	public String toString() {
+	public String toString()
+	{
 		return "Test [" + (id != null ? "id=" + id + ", " : "")
-				+ (vehicle != null ? "vehicle=" + vehicle + ", " : "")
-				+ "]";}
+				+ (vehicle != null ? "vehicle=" + vehicle + ", " : "") + "]";
+	}
 }
 
-class Vehicle {
+class Vehicle
+{
 	public String type;
-	public Vehicle() {}
-	public Vehicle(String type) {this.type = type;}
-	public String getType() {return type;}
+
+	public Vehicle()
+	{
+	}
+
+	public Vehicle(String type)
+	{
+		this.type = type;
+	}
+
+	public String getType()
+	{
+		return type;
+	}
+
 	@Override
-	public String toString() {return "Vehicle [type=" + type + "]";}
+	public String toString()
+	{
+		return "Vehicle [type=" + type + "]";
+	}
 }
 
-class Car extends Vehicle {
+class Car extends Vehicle
+{
 	public Date rentDate;
-	public Car() {}
-	public Car(Date rentDate){super("ground");this.rentDate = rentDate;}
-	public Date getRentDate() {return rentDate;}
+
+	public Car()
+	{
+	}
+
+	public Car(Date rentDate)
+	{
+		super("ground");
+		this.rentDate = rentDate;
+	}
+
+	public Date getRentDate()
+	{
+		return rentDate;
+	}
+
 	@Override
-	public String toString() {return "vehicle [rentDate=" + rentDate + "]";}
+	public String toString()
+	{
+		return "vehicle [rentDate=" + rentDate + "]";
+	}
 }
 
-class Lorry extends Vehicle {
+class Lorry extends Vehicle
+{
 	public Long maxSpeed;
-	public Lorry() {}
-	public Lorry(Long maxSpeed) {super("ground");this.maxSpeed = maxSpeed;}
-	public Long getTestTriple() {return maxSpeed;}
+
+	public Lorry()
+	{
+	}
+
+	public Lorry(Long maxSpeed)
+	{
+		super("ground");
+		this.maxSpeed = maxSpeed;
+	}
+
+	public Long getTestTriple()
+	{
+		return maxSpeed;
+	}
+
 	@Override
-	public String toString() {return "lorry [Maxspeed=" + maxSpeed + "]";}
+	public String toString()
+	{
+		return "lorry [Maxspeed=" + maxSpeed + "]";
+	}
 }
 
 public class PolymorphicCollectionsTest extends LocalDatastoreTestCase
 {
+	public PolymorphicCollectionsTest()
+	{
+		ObjectDatastoreFactory.register(Driver.class);
+		ObjectDatastoreFactory.register(Car.class);
+		ObjectDatastoreFactory.register(Lorry.class);
+	}
+	
 	@Test
 	public void test()
 	{
 		ObjectDatastore datastore = new AnnotationObjectDatastore();
-			
-		for(int i=0;i<10; i++){
+
+		for (int i = 0; i < 10; i++)
+		{
 			datastore.store(new Driver(new Car(new Date())));
-			datastore.store(new Driver(new Lorry(new Long(50+i))));
+			datastore.store(new Driver(new Lorry(new Long(50 + i))));
 		}
-		
-		QueryResultIterator<Driver> result = datastore.find().type(Driver.class).unactivated().now();
-		
+
+		QueryResultIterator<Driver> result = datastore.find().type(Driver.class).unactivated()
+				.now();
+
 		Assert.assertTrue(result.hasNext());
 	}
 }

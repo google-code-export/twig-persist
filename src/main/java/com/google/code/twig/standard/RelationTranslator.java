@@ -154,6 +154,10 @@ public class RelationTranslator implements PropertyTranslator
 		{
 			return PropertySets.singletonPropertySet(path, null, indexed);
 		}
+		else if (datastore.associating && !isKeyRelation())
+		{
+			return Collections.emptySet();
+		}
 
 		ObjectReference<?> reference;
 		if (instance instanceof Collection<?>)
@@ -161,18 +165,6 @@ public class RelationTranslator implements PropertyTranslator
 			final Collection<?> instances = (Collection<?>) instance;
 
 			if (instances.isEmpty()) return Collections.emptySet();
-
-			// if we are associating check that all referenced instances are already associated
-			if (datastore.associating)
-			{
-				for (Object element : instances)
-				{
-					if (!datastore.isAssociated(element))
-					{
-						throw new IllegalStateException("Referenced instance " + element + " was not associated.");
-					}
-				}
-			}
 
 			reference = new ReadOnlyObjectReference<List<Key>>()
 			{
@@ -213,14 +205,23 @@ public class RelationTranslator implements PropertyTranslator
 		return new SinglePropertySet(path, reference, indexed);
 	}
 
+	protected boolean isKeyRelation()
+	{
+		return false;
+	}
+
 	protected Key instanceToKey(final Object instance)
 	{
-		StandardCommand existing = datastore.command;
+		StandardCommonStoreCommand<?, ?> existing = (StandardCommonStoreCommand<?, ?>) datastore.command;
 		
 		Key key = datastore.associatedKey(instance);
-		if (key == null || !key.isComplete())
+		if (key == null || !key.isComplete() || existing.command.cascade)
 		{
-			key = datastore.store().instance(instance).parentKey(getParentKey()).now();
+			key = datastore.store()
+					.cascade(existing.command.cascade)
+					.instance(instance)
+					.parentKey(getParentKey())
+					.now();
 		}
 
 //		if (!key.isComplete())
@@ -234,15 +235,15 @@ public class RelationTranslator implements PropertyTranslator
 	}
 
 	private <T> Map<T, Key> instancesToKeys(Collection<T> instances, Key parentKey)
-	{
-		StandardCommand existing = datastore.command;
+	{		
+		StandardCommonStoreCommand<?, ?> existing = (StandardCommonStoreCommand<?, ?>) datastore.command;
 
 		Map<T, Key> result = new IdentityHashMap<T, Key>(instances.size());
 		List<T> missed = new ArrayList<T>(instances.size());
 		for (T instance : instances)
 		{
 			Key key = datastore.associatedKey(instance);
-			if (key == null)
+			if (key == null || existing.command.cascade)
 			{
 				missed.add(instance);
 			}
@@ -255,7 +256,13 @@ public class RelationTranslator implements PropertyTranslator
 		if (!missed.isEmpty())
 		{
 			// encode the instances to entities
-			result.putAll(datastore.store().instances(missed).parentKey(parentKey).now());
+			 Map<T, Key> instanceToKey = datastore.store()
+					.cascade(existing.command.cascade)
+					.instances(missed)
+					.parentKey(getParentKey())
+					.now();
+			 
+			result.putAll(instanceToKey);
 		}
 
 		for (Key key : result.values())

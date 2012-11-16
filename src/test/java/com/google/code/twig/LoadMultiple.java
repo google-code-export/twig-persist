@@ -13,6 +13,11 @@ import com.google.code.twig.annotation.Key;
 @SuppressWarnings("deprecation")
 public class LoadMultiple extends LocalDatastoreTestCase
 {
+	public LoadMultiple()
+	{
+		ObjectDatastoreFactory.register(Item.class);
+	}
+	
 	static class Item
 	{
 		@Key long id;

@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -32,11 +33,12 @@ import com.google.appengine.api.memcache.MemcacheServiceFactory;
 import com.google.code.twig.LoadCommand.CacheMode;
 import com.google.code.twig.ObjectDatastore;
 import com.google.code.twig.Settings;
-import com.google.code.twig.Transactable;
+import com.google.code.twig.Work;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.AbstractFuture;
 
 
 /**
@@ -309,7 +311,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 
 	private Key singlePutWithTransaction(Entity entity, Settings settings)
 	{
-		if (transaction == null)
+		if (transaction == null || !transaction.isActive())
 		{
 			Key key = putToDatastoreWithRetry(entity, settings);
 			CacheDetails details = kindToCache.get(entity.getKey().getKind());
@@ -434,7 +436,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 	{
 		if (entities.isEmpty()) return Collections.emptyList();
 
-		if (transaction == null)
+		if (transaction == null || !transaction.isActive())
 		{
 			putToMemoryAndMemcache(entities, settings.getCacheMode());
 			return putToDatastoreWithRetry(entities, settings);
@@ -472,7 +474,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 		try
 		{
 			Entity result = null;
-			if (transaction == null)
+			if (transaction == null || !transaction.isActive())
 			{
 				CacheDetails details = kindToCache.get(key.getKind());
 				if (isCacheEnabled(details, settings.getCacheMode()))
@@ -540,7 +542,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 			
 			statistics.datastoreGets++;
 			Entity result;
-			if (transaction == null)
+			if (transaction == null || !transaction.isActive())
 			{
 				result = service(settings).get(key);
 			}
@@ -614,7 +616,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 		long start = System.currentTimeMillis();
 		try
 		{
-			if (transaction == null)
+			if (transaction == null || !transaction.isActive())
 			{
 				Map<Key, Entity> fromMemory = getFromMemory(keys, settings.getCacheMode());
 
@@ -912,7 +914,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 
 	public void bulkDeleteWithTransaction(Collection<Key> keys, CacheMode mode)
 	{
-		if (transaction == null)
+		if (transaction == null || !transaction.isActive())
 		{
 			Collection<String> removeFromMemcache = null;
 			for (Key key : keys)
@@ -952,7 +954,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 	// TODO return an iterator that updates the cache
 	protected final PreparedQuery servicePrepare(Query query, Settings settings)
 	{
-		if (transaction == null)
+		if (transaction == null || !transaction.isActive())
 		{
 			return service(settings).prepare(query);
 		}
@@ -983,15 +985,65 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 		return transaction;
 	}
 
-	public final void removeTransaction()
+	public final Transaction beginOrJoinTransaction()
 	{
-		transaction = null;
+		final Transaction current = getTransaction();
+		if (current == null || !current.isActive())
+		{
+			return beginTransaction();
+		}
+		else
+		{
+			return new Transaction()
+			{
+				@Override
+				public Future<Void> rollbackAsync()
+				{
+					return current.rollbackAsync();
+				}
+				
+				@Override
+				public void rollback()
+				{
+					current.rollback();
+				}
+				
+				@Override
+				public boolean isActive()
+				{
+					return current.isActive();
+				}
+				
+				@Override
+				public String getId()
+				{
+					return current.getId();
+				}
+				
+				@Override
+				public String getApp()
+				{
+					return current.getApp();
+				}
+				
+				@Override
+				public Future<Void> commitAsync()
+				{
+					return new AbstractFuture<Void>(){};
+				}
+				
+				@Override
+				public void commit()
+				{
+				}
+			};
+		}
 	}
 
 	@Override
 	public void transact(final Runnable runnable)
 	{
-		transact(new Transactable<Void>()
+		transact(new Work<Void>()
 		{
 			@Override
 			public Void perform(ObjectDatastore datastore)
@@ -1003,9 +1055,9 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 	}
 	
 	@SuppressWarnings("unchecked")
-	public final <T> T transact(Transactable<T> transactable)
+	public final <T> T transact(Work<T> transactable)
 	{
-		Transaction transaction = defaultDatastoreService.beginTransaction();
+		Transaction transaction = beginOrJoinTransaction();
 		try
 		{
 			Object result = transactable.perform(this);

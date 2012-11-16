@@ -12,3 +12,4 @@ WEB-INF/appengine-generated
 .externalToolBuilders
 .git
 bin
+.gitignore
