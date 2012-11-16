@@ -8,7 +8,13 @@ import static org.junit.Assert.fail;
 
 public class JoinTableTest extends LocalDatastoreTestCase
 {
-
+	public JoinTableTest()
+	{
+		ObjectDatastoreFactory.register(A.class);
+		ObjectDatastoreFactory.register(B.class);
+		ObjectDatastoreFactory.register(AB.class);
+	}
+	
 	public int countTestCases()
 	{
 		return 0;

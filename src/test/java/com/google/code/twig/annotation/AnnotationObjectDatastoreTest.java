@@ -1,16 +1,24 @@
 package com.google.code.twig.annotation;
 
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertEquals;
-import org.junit.Test;
+import static org.junit.Assert.assertNotNull;
+
 import org.junit.Before;
+import org.junit.Test;
 
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.code.twig.LocalDatastoreTestCase;
+import com.google.code.twig.ObjectDatastoreFactory;
 
 public class AnnotationObjectDatastoreTest extends LocalDatastoreTestCase
 {
+	public AnnotationObjectDatastoreTest()
+	{
+		ObjectDatastoreFactory.register(GaeKeyStringModel.class);
+		ObjectDatastoreFactory.register(GaeKeyModel.class);
+	}
+	
 	protected AnnotationObjectDatastore datastore;
 
 	@Before
@@ -27,7 +35,7 @@ public class AnnotationObjectDatastoreTest extends LocalDatastoreTestCase
 		assertNotNull(key);
 		assertNotNull(instance.key);
 
-		// Avoid any internal cache scenarios
+		// avoid any internal cache scenarios
 		datastore = new AnnotationObjectDatastore();
 		GaeKeyStringModel m = datastore.load(key);
 		assertNotNull(m);

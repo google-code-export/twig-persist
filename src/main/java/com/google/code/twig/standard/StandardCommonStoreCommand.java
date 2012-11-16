@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -24,6 +25,8 @@ import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.StoreCommand.CommonStoreCommand;
+import com.google.code.twig.annotation.Backup;
+import com.google.code.twig.annotation.Version;
 import com.google.code.twig.util.reference.ObjectReference;
 import com.google.code.twig.util.reference.SimpleObjectReference;
 import com.google.common.base.Predicates;
@@ -69,18 +72,21 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 		return (C) this;
 	}
 
-	final void checkUniqueKeys(Collection<Entity> entities)
+	final Transaction checkUniqueKeys(Collection<Entity> entities)
 	{
 		List<Key> keys = new ArrayList<Key>(entities.size());
 		for (Entity entity : entities)
 		{
 			keys.add(entity.getKey());
 		}
+		
+		Transaction txn = datastore.beginOrJoinTransaction();
 		Map<Key, Entity> map = datastore.serviceGet(keys, datastore.getDefaultSettings());
 		if (!map.isEmpty())
 		{
 			throw new IllegalStateException("Keys already exist: " + map);
 		}
+		return txn;
 	}
 
 	public static void setInstanceId(Object instance, Key key, TranslatorObjectDatastore datastore)
@@ -183,9 +189,21 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 
 		for (T instance : instances)
 		{
+			// TODO implement bulk version checking and bulk backup
+			if (instance.getClass().isAnnotationPresent(Version.class))
+			{
+				throw new UnsupportedOperationException("Versioning multiple instances not implemented");
+			}
+			if (instance.getClass().isAnnotationPresent(Backup.class))
+			{
+				throw new UnsupportedOperationException("Backup multiple instances not implemented");
+			}
+			
 			// check instance was not stored while storing another instance
 			Entity entity = null;
-			if (command.update == Boolean.TRUE || datastore.associatedKey(instance) == null)
+			
+			// get if we update or we are doing a store and still don't have key
+			if (command.update || datastore.associatedKey(instance) == null)
 			{
 				// cannot define a key name
 				entity = instanceToEntity(instance, parentKey, null);
@@ -239,16 +257,16 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 
 	protected Key instanceToKey(Object instance, Object id)
 	{
+		// need to check before create entity as incomplete key gets associated
+		boolean update = datastore.isAssociated(instance);
+		
 		// this will store any parents or related instances
 		Entity entity = instanceToEntity(instance, parentKey, id);
-		if (unique)
-		{
-			checkUniqueKeys(Collections.singleton(entity));
-		}
 		
 		Key key;
 		if (datastore.associating)
 		{
+			// just return key from entity with no datastore operation
 			key = entity.getKey();
 			if (!key.isComplete())
 			{
@@ -257,60 +275,120 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 		}
 		else
 		{
-			// not associating so must be updating or storing
-			
-			// if we have a version name then instance is versioned
-			String versionPropertyName = datastore.getConfiguration().versionPropertyName(instance.getClass());
-			if (command.versionPropertyName != null)
+			Transaction txn = null;
+			try
 			{
-				versionPropertyName = command.versionPropertyName;
-			}
-			
-			if (versionPropertyName != null)
-			{
-				try
+				// only version and backup for an update
+				if (update)
 				{
-					// get current version
-					long local = datastore.version(instance);
-
-					// if version is positive it was loaded in this session
-					if (local < 0)
-					{
-						// change to positive to indicate we checked it in this session
-						local = -local;
-						
-						// load existing entity to get current version
-						Entity existing = datastore.serviceGet(entity.getKey(), datastore.getDefaultSettings());
-						Long version = version(existing, instance.getClass());
-						if (version == null)
-						{
-							// allow unversioned types to become versioned
-							version = 1l;
-						}
-
-						if (local != version)
-						{
-							throw new IllegalStateException("Versions not equal " + version + ":" + local);
-						}
-					}
-					
-					// increment the version locally
-					datastore.keyCache.setVersion(instance, ++local);
-
-					// add the version property to store with entity
-					entity.setProperty(versionPropertyName, local);
+					// one of these might start a transaction
+					txn = version(instance, entity);
+					txn = backup(instance, entity.getKey(), txn);
 				}
-				catch (EntityNotFoundException e)
+				else if (unique)
 				{
-					throw new IllegalArgumentException("Update missing entity " + entity.getKey());
+					txn = checkUniqueKeys(Collections.singleton(entity));
+				}
+				
+				// TODO allow command to override settings
+				key = datastore.servicePut(entity, datastore.getDefaultSettings());
+				
+				if (txn != null)
+				{
+					txn.commit();
 				}
 			}
-
-			// TODO allow command to override settings
-			key = datastore.servicePut(entity, datastore.getDefaultSettings());
+			catch (RuntimeException e)
+			{
+				if (txn != null && txn.isActive())
+				{
+					txn.rollback();
+				}
+				throw e;
+			}
 		}
 
 		return key;
+	}
+
+	private Transaction backup(Object instance, Key key, Transaction txn)
+	{
+		if (instance.getClass().isAnnotationPresent(Backup.class))
+		{
+			if (txn == null)
+			{
+				txn = datastore.beginOrJoinTransaction();
+			}
+			
+			try
+			{
+				Entity existing = datastore.serviceGet(key, datastore.getDefaultSettings());
+				
+				Entity backup = new Entity("backup", key);
+				backup.setPropertiesFrom(existing);
+				backup.setProperty("backedup", new Date());
+				
+				datastore.servicePut(backup, datastore.getDefaultSettings());
+				
+				return txn;
+			}
+			catch (EntityNotFoundException e)
+			{
+				txn.rollback();
+				throw new IllegalStateException("Cannot find entity to backup " + key);
+			}
+		}
+		return txn;
+	}
+
+	protected Transaction version(Object instance, Entity entity)
+	{
+		if (instance.getClass().isAnnotationPresent(Version.class))
+		{
+			Transaction txn = datastore.beginOrJoinTransaction();
+			try
+			{
+				// get current version
+				long local = datastore.version(instance);
+
+				// if version is positive it was loaded in this session
+				if (local < 0)
+				{
+					// change to positive to indicate we checked it in this session
+					local = -local;
+					
+					// load existing entity to get current version
+					Entity existing = datastore.serviceGet(entity.getKey(), datastore.getDefaultSettings());
+					Long version = version(existing, instance.getClass());
+					if (version == null)
+					{
+						// allow unversioned types to become versioned
+						version = 1l;
+					}
+
+					if (local != version)
+					{
+						throw new IllegalStateException("Versions not equal " + version + ":" + local);
+					}
+				}
+				
+				// increment the version locally
+				datastore.keyCache.setVersion(instance, ++local);
+
+				String name = instance.getClass().getAnnotation(Version.class).value();
+				
+				// add the version property to store with entity
+				entity.setProperty(name, local);
+				
+				return txn;
+			}
+			catch (EntityNotFoundException e)
+			{
+				txn.rollback();
+				throw new IllegalArgumentException("Update missing entity " + entity.getKey());
+			}
+		}
+		return null;
 	}
 
 	/**
@@ -325,8 +403,7 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 		datastore.encodeKeyDetails = new KeyDetails(kind, parentKey, id);
 
 		// if we are updating the key is already in the key cache
-		if (command.update == Boolean.TRUE ||								// update
-				command.update == null && datastore.isAssociated(instance)) // updateOrStore
+		if (command.update || command.cascade && datastore.isAssociated(instance))
 		{
 			// get the key associated with this instance
 			Key associatedKey = datastore.associatedKey(instance);

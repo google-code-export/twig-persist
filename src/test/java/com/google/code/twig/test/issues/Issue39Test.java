@@ -10,10 +10,17 @@ import org.junit.Test;
 
 import com.google.code.twig.LocalDatastoreTestCase;
 import com.google.code.twig.ObjectDatastore;
+import com.google.code.twig.ObjectDatastoreFactory;
 import com.google.code.twig.annotation.AnnotationObjectDatastore;
 
 public class Issue39Test extends LocalDatastoreTestCase
 {
+	public Issue39Test()
+	{
+		ObjectDatastoreFactory.register(Restaurant.class);
+		ObjectDatastoreFactory.register(City.class);
+	}
+	
 	public static class Restaurant implements Serializable
 	{
 		private static final long serialVersionUID = 1L;
@@ -24,7 +31,7 @@ public class Issue39Test extends LocalDatastoreTestCase
 	{
 		private static final long serialVersionUID = 1L;
 		String cityName;
-		List<Restaurant> restaurants = new ArrayList<Issue39Test.Restaurant>();
+		List<Restaurant> restaurants = new ArrayList<Restaurant>();
 
 		public City(String name)
 		{

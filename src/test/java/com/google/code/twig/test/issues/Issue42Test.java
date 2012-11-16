@@ -12,15 +12,23 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.google.appengine.api.datastore.QueryResultIterator;
-import com.google.code.twig.LocalDatastoreTestCase;
 import com.google.code.twig.FindCommand.MergeFindCommand;
 import com.google.code.twig.FindCommand.MergeOperator;
 import com.google.code.twig.FindCommand.RootFindCommand;
+import com.google.code.twig.LocalDatastoreTestCase;
+import com.google.code.twig.ObjectDatastoreFactory;
 import com.google.code.twig.annotation.AnnotationObjectDatastore;
+import com.google.code.twig.test.issues.Issue39Test.City;
 import com.google.common.collect.Iterators;
 
 public class Issue42Test extends LocalDatastoreTestCase
 {
+	public Issue42Test()
+	{
+		ObjectDatastoreFactory.register(UserEntity.class);
+		ObjectDatastoreFactory.register(City.class);
+	}
+	
 	private AnnotationObjectDatastore ods;
 
 	public enum Sex {

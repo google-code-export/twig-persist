@@ -12,6 +12,11 @@ import com.google.common.collect.Lists;
 
 public class StoreTest extends LocalDatastoreTestCase
 {
+	public StoreTest()
+	{
+		ObjectDatastoreFactory.register(ExampleModel.class);
+	}
+	
 	public static class ExampleModel
 	{
 		@Id

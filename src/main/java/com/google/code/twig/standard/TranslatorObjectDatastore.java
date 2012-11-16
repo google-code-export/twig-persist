@@ -172,7 +172,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	@Override
 	public StandardStoreCommand store()
 	{
-		return new StandardStoreCommand(this);
+		return new StandardStoreCommand(this).update(false);
 	}
 
 	@Override
@@ -258,41 +258,34 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	}
 
 	@Override
-	public final void update(Object instance)
+	public final void update(Object instance, boolean cascade)
 	{
 		assert instance != null;
 
 		// store but set the internal update flag so
-		store().update().instance(instance).now();
+		store().update(true).cascade(cascade).instance(instance).now();
+	}
+
+	@Override
+	public void update(Object instance)
+	{
+		update(instance, false);
+	}
+	
+	@Override
+	public void updateAll(Collection<?> instances, boolean cascade)
+	{
+		assert instances != null;
+
+		store().update(true).cascade(cascade).instances(instances).now();
 	}
 
 	@Override
 	public void updateAll(Collection<?> instances)
 	{
-		assert instances != null;
-
-		store().update().instances(instances).now();
+		updateAll(instances, false);
 	}
-
-	@Override
-	public final void storeOrUpdate(Object instance)
-	{
-		assert instance != null;
-		StandardStoreCommand store = store();
-		if (isAssociated(instance))
-		{
-			store.update();
-		}
-		store.instance(instance).now();
-	}
-
-	@Override
-	public void storeOrUpdateAll(Collection<?> instances)
-	{
-		assert instances != null;
-		store().instances(instances).now();
-	}
-
+	
 	@Override
 	public final void delete(Object instance)
 	{
@@ -490,13 +483,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	}
 
 	@Override
-	public <T> T associate(Class<T> type, long id)
-	{
-		return createSetKeyAssociate(type, id);
-	}
-
-	@Override
-	public <T> T associate(Class<T> type, String id)
+	public <T> T associate(Class<T> type, Object id)
 	{
 		return createSetKeyAssociate(type, id);
 	}

@@ -23,16 +23,15 @@ import java.util.concurrent.Future;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.appengine.api.datastore.Blob;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.appengine.api.datastore.Transaction;
 import com.google.code.twig.LocalDatastoreTestCase;
 import com.google.code.twig.ObjectDatastore;
+import com.google.code.twig.ObjectDatastoreFactory;
 import com.google.code.twig.Settings;
 import com.google.code.twig.annotation.AnnotationObjectDatastore;
-import com.google.code.twig.annotation.Embedded;
 import com.google.code.twig.annotation.Id;
 import com.google.code.twig.test.festival.Band.HairStyle;
 import com.google.code.twig.util.PredicateToRestrictionAdaptor;
@@ -42,6 +41,21 @@ import com.google.common.collect.Iterators;
 
 public class MusicFestivalTestCase extends LocalDatastoreTestCase
 {
+	public MusicFestivalTestCase()
+	{
+		ObjectDatastoreFactory.register(MusicFestival.class);
+		ObjectDatastoreFactory.register(Band.class);
+		ObjectDatastoreFactory.register(RockBand.class);
+		ObjectDatastoreFactory.register(Musician.class);
+		ObjectDatastoreFactory.register(Album.class);
+		ObjectDatastoreFactory.register(SingleDetails.class);
+		ObjectDatastoreFactory.register(DanceBand.class);
+		ObjectDatastoreFactory.register(LongKeyType.class);
+		ObjectDatastoreFactory.register(PrimitiveLongKeyType.class);
+		ObjectDatastoreFactory.register(IntKeyType.class);
+		ObjectDatastoreFactory.register(Type_with__under___scores.class);
+	}
+	
 	private ObjectDatastore datastore;
 
 	@Before

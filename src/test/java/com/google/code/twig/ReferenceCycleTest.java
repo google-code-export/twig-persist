@@ -8,6 +8,12 @@ import com.google.code.twig.annotation.Id;
 
 public class ReferenceCycleTest extends LocalDatastoreTestCase
 {
+	public ReferenceCycleTest()
+	{
+		ObjectDatastoreFactory.register(First.class);
+		ObjectDatastoreFactory.register(Second.class);
+	}
+	
     static class First
     {
     	@Id int id;

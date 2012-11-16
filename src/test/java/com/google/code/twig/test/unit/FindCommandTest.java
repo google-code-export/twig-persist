@@ -11,6 +11,7 @@ import org.junit.Test;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.code.twig.LocalDatastoreTestCase;
 import com.google.code.twig.ObjectDatastore;
+import com.google.code.twig.ObjectDatastoreFactory;
 import com.google.code.twig.annotation.AnnotationObjectDatastore;
 import com.google.code.twig.test.space.Pilot;
 import com.google.code.twig.test.space.RocketShip;
@@ -21,6 +22,12 @@ public class FindCommandTest extends LocalDatastoreTestCase
 {
 	private ObjectDatastore datastore;
 
+	public FindCommandTest()
+	{
+		ObjectDatastoreFactory.register(RocketShip.class);
+		ObjectDatastoreFactory.register(Pilot.class);
+	}
+	
 	@Before
 	public void setup()
 	{

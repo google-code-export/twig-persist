@@ -6,6 +6,7 @@ import org.junit.Test;
 
 import com.google.code.twig.LocalDatastoreTestCase;
 import com.google.code.twig.ObjectDatastore;
+import com.google.code.twig.ObjectDatastoreFactory;
 import com.google.code.twig.annotation.AnnotationObjectDatastore;
 import com.google.code.twig.annotation.Child;
 import com.google.code.twig.annotation.Entity;
@@ -15,6 +16,12 @@ public class StoreCommandTest extends LocalDatastoreTestCase
 {
 	private ObjectDatastore datastore;
 
+	public StoreCommandTest()
+	{
+		ObjectDatastoreFactory.register(ChildClass.class);
+		ObjectDatastoreFactory.register(ParentClass.class);
+	}
+	
 	@Before
 	public void setup()
 	{

@@ -1,1 +1,1 @@
-mvn -DlocalRepositoryPath=$1 -DcreateChecksum=true clean javadoc:jar source:jar install
+mvn -Dmaven.repo.local=$1 -DcreateChecksum=true clean source:jar install

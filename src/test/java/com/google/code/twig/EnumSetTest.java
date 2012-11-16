@@ -10,6 +10,11 @@ import com.google.code.twig.annotation.AnnotationObjectDatastore;
 
 public class EnumSetTest extends LocalDatastoreTestCase
 {
+	public EnumSetTest()
+	{
+		ObjectDatastoreFactory.register(EnumContainer.class);
+	}
+	
 	public enum MyEnum { HELLO, THERE };
 	
 	public static class EnumContainer 

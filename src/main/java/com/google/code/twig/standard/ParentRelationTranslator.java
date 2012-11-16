@@ -37,6 +37,12 @@ final class ParentRelationTranslator extends RelationTranslator
 
 		return keyToInstance(parentKey);
 	}
+	
+	@Override
+	protected boolean isKeyRelation()
+	{
+		return true;
+	}
 
 	public Set<Property> encode(final Object instance, final Path prefix, final boolean indexed)
 	{

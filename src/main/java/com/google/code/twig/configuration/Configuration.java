@@ -143,6 +143,4 @@ public interface Configuration
 	
 	int retryNonTransactionPut();
 
-
-	String versionPropertyName(Class<?> type);
 }

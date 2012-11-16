@@ -9,16 +9,24 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.code.twig.LocalDatastoreTestCase;
-import com.google.code.twig.PropertyTranslator;
+import com.google.code.twig.ObjectDatastoreFactory;
 import com.google.code.twig.annotation.AnnotationObjectDatastore;
 import com.google.code.twig.test.space.Mission;
 import com.google.code.twig.test.space.Pilot;
 import com.google.code.twig.test.space.RocketShip;
-import com.google.code.twig.test.space.SpaceStation;
 import com.google.code.twig.test.space.RocketShip.Planet;
+import com.google.code.twig.test.space.SpaceStation;
 
 public class TranslatorObjectDatastoreTest extends LocalDatastoreTestCase
 {
+	public TranslatorObjectDatastoreTest()
+	{
+		ObjectDatastoreFactory.register(SpaceStation.class);
+		ObjectDatastoreFactory.register(Pilot.class);
+		ObjectDatastoreFactory.register(Mission.class);
+		ObjectDatastoreFactory.register(RocketShip.class);
+	}
+	
 	private AnnotationObjectDatastore datastore;
 
 	@Before
@@ -49,24 +57,18 @@ public class TranslatorObjectDatastoreTest extends LocalDatastoreTestCase
 		// associating an instance that references an unassociated station
 		// should throw an exception.
 		Mission exploration = new Mission("Exploration");
-		exploration.setStation(new SpaceStation("behemoth"));
+		SpaceStation explorers = new SpaceStation("explorers");
+		exploration.setStation(explorers);
 		
-		boolean threw = false;
-		try
-		{
-			datastore.associate(exploration);
-		}
-		catch (Exception e)
-		{
-			threw = true;
-		}
-		Assert.assertTrue(threw);
+		datastore.associate(exploration);
+		
+		Assert.assertFalse(datastore.isAssociated(explorers));
 
 		// associating an instance that references an associated station
 		Mission domination = new Mission("Domination");
 		SpaceStation dominstation = new SpaceStation("behemoth");
 		
-		Assert.assertNotSame(domination, station);
+		Assert.assertNotSame(dominstation, station);
 		dominstation = datastore.associate(dominstation);
 		Assert.assertSame(dominstation, station);
 		

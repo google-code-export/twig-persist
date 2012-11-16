@@ -34,7 +34,7 @@ public class ObjectDatastoreFactory
 	{
 		Entity annotation = model.getAnnotation(Entity.class);
 		String kind;
-		if (annotation == null)
+		if (annotation == null || annotation.kind().isEmpty())
 		{
 			kind = model.getSimpleName();
 		}
@@ -58,5 +58,10 @@ public class ObjectDatastoreFactory
 	public static void setInstance(ObjectDatastoreFactory objectDatastoreFactory)
 	{
 		instance = objectDatastoreFactory;
+	}
+
+	static void unregisterAll()
+	{
+		DefaultConfiguration.unregisterAll();
 	}
 }

@@ -283,15 +283,4 @@ public class AnnotationConfiguration extends DefaultConfiguration
 			return super.name(field);
 		}
 	}
-	
-	@Override
-	public String versionPropertyName(Class<?> type)
-	{
-		Version annotation = type.getAnnotation(Version.class);
-		if (annotation != null)
-		{
-			return annotation.property();
-		}
-		return null;
-	}
 }

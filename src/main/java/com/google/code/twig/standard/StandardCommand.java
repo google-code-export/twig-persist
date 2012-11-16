@@ -1,6 +1,7 @@
 package com.google.code.twig.standard;
 
 import com.google.appengine.api.datastore.Entity;
+import com.google.code.twig.annotation.Version;
 
 class StandardCommand
 {
@@ -17,18 +18,14 @@ class StandardCommand
 		}
 		
 		this.datastore = datastore;
-		if (datastore.getTransaction() != null && datastore.getTransaction().isActive() == false)
-		{
-			datastore.removeTransaction();
-		}
 	}
 
 	protected Long version(Entity entity, Class<?> type)
 	{
-		String versionPropertyName = datastore.getConfiguration().versionPropertyName(type);
-		if (versionPropertyName != null)
+		if (type.isAnnotationPresent(Version.class))
 		{
-			Object property = entity.getProperty(versionPropertyName);
+			String name = type.getAnnotation(Version.class).value();
+			Object property = entity.getProperty(name);
 			if (property != null)
 			{
 				if (property instanceof Long == false)

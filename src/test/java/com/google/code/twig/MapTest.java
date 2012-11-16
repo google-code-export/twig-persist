@@ -14,6 +14,12 @@ import com.google.code.twig.annotation.AnnotationObjectDatastore;
 
 public class MapTest extends LocalDatastoreTestCase
 {
+	public MapTest()
+	{
+		ObjectDatastoreFactory.register(ContainsMaps.class);
+		ObjectDatastoreFactory.register(Contained.class);
+	}
+	
 	public static class ContainsMaps
 	{
 		@Override

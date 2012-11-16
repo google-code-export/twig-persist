@@ -9,6 +9,7 @@ import org.junit.Test;
 import com.google.appengine.api.datastore.Key;
 import com.google.code.twig.LocalDatastoreTestCase;
 import com.google.code.twig.ObjectDatastore;
+import com.google.code.twig.ObjectDatastoreFactory;
 import com.google.code.twig.annotation.Activate;
 import com.google.code.twig.annotation.AnnotationObjectDatastore;
 import com.google.code.twig.annotation.Id;
@@ -31,6 +32,15 @@ public class ActivationTest extends LocalDatastoreTestCase
 	{
 		@Id long id;
 		String field;
+	}
+	
+	public ActivationTest()
+	{
+		ObjectDatastoreFactory.register(A.class);
+		ObjectDatastoreFactory.register(B.class);
+		ObjectDatastoreFactory.register(C.class);
+		ObjectDatastoreFactory.register(X.class);
+		ObjectDatastoreFactory.register(Y.class);
 	}
 
 	@Test

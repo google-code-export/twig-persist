@@ -7,12 +7,12 @@ import com.google.code.twig.StoreCommand;
 
 public class StandardStoreCommand extends StandardCommand implements StoreCommand
 {
-
 	/**
 	 * True for update, False for store, null for update or store
 	 */
-	protected Boolean update;
+	protected boolean update;
 	protected String versionPropertyName;
+	protected boolean cascade;
 
 	protected StandardStoreCommand(TranslatorObjectDatastore datastore)
 	{
@@ -34,15 +34,21 @@ public class StandardStoreCommand extends StandardCommand implements StoreComman
 		return new StandardMultipleStoreCommand<T>(this, Arrays.asList(instances));
 	}
 
-	public StandardStoreCommand update()
+	public StandardStoreCommand update(boolean update)
 	{
-		this.update = true;
+		this.update = update;
 		return this;
 	}
 
 	public StandardStoreCommand version(String name)
 	{
 		this.versionPropertyName = name;
+		return this;
+	}
+
+	public StandardStoreCommand cascade(boolean cascade)
+	{
+		this.cascade = cascade;
 		return this;
 	}
 }
