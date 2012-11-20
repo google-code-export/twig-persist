@@ -145,7 +145,7 @@ public class RelationTranslator implements PropertyTranslator
 	private void transferCommandState(StandardDecodeCommand<?> current, StandardDecodeCommand<?> decode)
 	{
 		decode.activate(current.getDepth() - 1);
-		decode.builder = current.builder;
+		decode.settings = current.settings;
 	}
 
 	public Set<Property> encode(final Object instance, final Path path, final boolean indexed)
@@ -213,15 +213,25 @@ public class RelationTranslator implements PropertyTranslator
 	protected Key instanceToKey(final Object instance)
 	{
 		StandardCommonStoreCommand<?, ?> existing = (StandardCommonStoreCommand<?, ?>) datastore.command;
+
+		boolean cascade = existing.cascaded != null && !existing.cascaded.contains(instance);
+
+		if (cascade)
+		{
+			existing.cascaded.add(instance);
+		}
 		
 		Key key = datastore.associatedKey(instance);
-		if (key == null || !key.isComplete() || existing.command.cascade)
+		
+		if (key == null || !key.isComplete() || cascade)
 		{
 			key = datastore.store()
-					.cascade(existing.command.cascade)
 					.instance(instance)
+					.cascaded(existing.cascaded)
+					.date(existing.date)
 					.parentKey(getParentKey())
 					.now();
+
 		}
 
 //		if (!key.isComplete())
@@ -238,12 +248,21 @@ public class RelationTranslator implements PropertyTranslator
 	{		
 		StandardCommonStoreCommand<?, ?> existing = (StandardCommonStoreCommand<?, ?>) datastore.command;
 
+		
 		Map<T, Key> result = new IdentityHashMap<T, Key>(instances.size());
 		List<T> missed = new ArrayList<T>(instances.size());
 		for (T instance : instances)
 		{
+			boolean cascade = existing.cascaded != null && !existing.cascaded.contains(instance);
+
+			if (cascade)
+			{
+				existing.cascaded.add(instance);
+			}
+			
 			Key key = datastore.associatedKey(instance);
-			if (key == null || existing.command.cascade)
+			
+			if (key == null || cascade)
 			{
 				missed.add(instance);
 			}
@@ -257,8 +276,9 @@ public class RelationTranslator implements PropertyTranslator
 		{
 			// encode the instances to entities
 			 Map<T, Key> instanceToKey = datastore.store()
-					.cascade(existing.command.cascade)
 					.instances(missed)
+					.cascaded(existing.cascaded)
+					.date(existing.date)
 					.parentKey(getParentKey())
 					.now();
 			 

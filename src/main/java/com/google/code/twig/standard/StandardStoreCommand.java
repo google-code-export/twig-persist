@@ -12,7 +12,6 @@ public class StandardStoreCommand extends StandardCommand implements StoreComman
 	 */
 	protected boolean update;
 	protected String versionPropertyName;
-	protected boolean cascade;
 
 	protected StandardStoreCommand(TranslatorObjectDatastore datastore)
 	{
@@ -43,12 +42,6 @@ public class StandardStoreCommand extends StandardCommand implements StoreComman
 	public StandardStoreCommand version(String name)
 	{
 		this.versionPropertyName = name;
-		return this;
-	}
-
-	public StandardStoreCommand cascade(boolean cascade)
-	{
-		this.cascade = cascade;
 		return this;
 	}
 }

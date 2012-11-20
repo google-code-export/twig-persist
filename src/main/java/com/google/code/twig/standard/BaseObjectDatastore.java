@@ -994,17 +994,20 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 		}
 		else
 		{
+			// return a wrapper that ignores commits
 			return new Transaction()
 			{
 				@Override
 				public Future<Void> rollbackAsync()
 				{
+					// any rollback aborts the whole txn
 					return current.rollbackAsync();
 				}
 				
 				@Override
 				public void rollback()
 				{
+					// any rollback aborts the whole txn
 					current.rollback();
 				}
 				
@@ -1029,12 +1032,14 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 				@Override
 				public Future<Void> commitAsync()
 				{
+					// do nothing for commit - will be committed in outer txn
 					return new AbstractFuture<Void>(){};
 				}
 				
 				@Override
 				public void commit()
 				{
+					// do nothing for commit - will be committed in outer txn
 				}
 			};
 		}

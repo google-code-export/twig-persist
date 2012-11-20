@@ -2,8 +2,6 @@ package com.google.code.twig.standard;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,9 +29,6 @@ import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.util.Pair;
-import com.google.code.twig.util.Reflection;
-import com.google.code.twig.util.Strings;
-import com.google.code.twig.util.generic.Generics;
 import com.google.code.twig.util.reference.ObjectReference;
 import com.google.common.base.Predicate;
 import com.google.common.collect.AbstractIterator;
@@ -81,7 +76,7 @@ abstract class StandardCommonFindCommand<C extends StandardCommonFindCommand<C>>
 	@SuppressWarnings("unchecked")
 	public C addFilter(String fieldPathName, FilterOperator operator, Object value)
 	{
-		Pair<Field, String> fieldAndProperty = getFieldAndPropertyForPath(fieldPathName);
+		Pair<Field, String> fieldAndProperty = datastore.getFieldAndPropertyForPath(fieldPathName, getRootCommand().getType());
 		Field field = fieldAndProperty.getFirst();
 		String property = fieldAndProperty.getSecond();
 
@@ -118,73 +113,6 @@ abstract class StandardCommonFindCommand<C extends StandardCommonFindCommand<C>>
 		addFilterDirect(property, operator, encoded);
 
 		return (C) this;
-	}
-
-	// TODO user this for sort fields also
-	protected Pair<Field, String> getFieldAndPropertyForPath(String fieldPathName)
-	{
-		Type type = getRootCommand().getType();
-		Field field = null;
-
-		// get the stored path from the object navigation path
-		String[] fieldNames = Strings.split(fieldPathName, false, '.');
-		Path path = Path.EMPTY_PATH;
-		String property = null;
-		for (String fieldName : fieldNames)
-		{
-			field = null;
-			Class<?> erased = Generics.erase(type);
-
-			// collections use the element type
-			if (Collection.class.isAssignableFrom(erased))
-			{
-				type = ((ParameterizedType) Generics.getExactSuperType(type, Collection.class)).getActualTypeArguments()[0];
-				erased = Generics.erase(type);
-			}
-
-			// get fields that were already cached in any order
-			// TODO cache fields? need to take timings. probably not worth it for filters
-			Collection<Field> fields = Reflection.getAccessibleFields(erased);
-			for (Field candidate : fields)
-			{
-				if (candidate.getName().equals(fieldName))
-				{
-					field = candidate;
-				}
-			}
-
-			if (field == null)
-			{
-				throw new IllegalArgumentException("Could not find field " + fieldName + " in type " + type);
-			}
-
-			// field type could have type variable if defined in superclass
-			type = Generics.getExactFieldType(field, type);
-
-			// if the field is an @Id we need to create a Key value
-			if (datastore.getConfiguration().id(field))
-			{
-				if (!path.isEmpty())
-				{
-					throw new IllegalArgumentException("Id field must be at root of filter");
-				}
-				property = Entity.KEY_RESERVED_PROPERTY;
-				break;
-			}
-
-			// the property name stored in the datastore may use a short name
-			String propertyName = datastore.getConfiguration().name(field);
-			path = new Path.Builder(path).field(propertyName).build();
-		}
-
-		// path will only be empty if we are filtering on id
-		if (!path.isEmpty())
-		{
-			assert property == null;
-			property = path.toString();
-		}
-
-		return new Pair<Field, String>(field, property);
 	}
 
 	@SuppressWarnings("unchecked")
