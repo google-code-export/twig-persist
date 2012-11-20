@@ -1,5 +1,6 @@
 package com.google.code.twig.standard;
 
+import java.io.ObjectInputStream.GetField;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,7 +27,9 @@ import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.StoreCommand.CommonStoreCommand;
 import com.google.code.twig.annotation.Backup;
+import com.google.code.twig.annotation.Unique;
 import com.google.code.twig.annotation.Version;
+import com.google.code.twig.util.Pair;
 import com.google.code.twig.util.reference.ObjectReference;
 import com.google.code.twig.util.reference.SimpleObjectReference;
 import com.google.common.base.Predicates;
@@ -40,6 +43,10 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 	List<?> ids;
 	Key parentKey;
 	boolean unique;
+	
+	// a set of instances already updated during a cascading update
+	Set<Object> cascaded;
+	Date date;
 
 	StandardCommonStoreCommand(StandardStoreCommand command)
 	{
@@ -72,72 +79,72 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 		return (C) this;
 	}
 
-	final Transaction checkUniqueKeys(Collection<Entity> entities)
+	final Transaction unique(Collection<Entity> entities)
 	{
-		List<Key> keys = new ArrayList<Key>(entities.size());
-		for (Entity entity : entities)
+		Transaction txn = null;
+		if (entities != null)
 		{
-			keys.add(entity.getKey());
-		}
-		
-		Transaction txn = datastore.beginOrJoinTransaction();
-		Map<Key, Entity> map = datastore.serviceGet(keys, datastore.getDefaultSettings());
-		if (!map.isEmpty())
-		{
-			throw new IllegalStateException("Keys already exist: " + map);
+			List<Key> keys = new ArrayList<Key>(entities.size());
+			for (Entity entity : entities)
+			{
+				keys.add(entity.getKey());
+			}
+			
+			txn = datastore.beginOrJoinTransaction();
+			Map<Key, Entity> map = datastore.serviceGet(keys, datastore.getDefaultSettings());
+			if (!map.isEmpty())
+			{
+				throw new IllegalStateException("Keys already exist: " + map);
+			}
 		}
 		return txn;
 	}
 
-	public static void setInstanceId(Object instance, Key key, TranslatorObjectDatastore datastore)
+	public static void updateKeyState(Object instance, Key key, TranslatorObjectDatastore datastore)
 	{
-		Field field = datastore.idField(instance.getClass());
 		try
 		{
-			// check that we have an id field
-			if (field != null)
+			Field idField = datastore.idField(instance.getClass());
+			if (idField != null)
 			{
 				// only set numeric ids because they are the only ones auto-generated
-				Class<?> type = field.getType();
+				Class<?> type = idField.getType();
 				if (Number.class.isAssignableFrom(type) || Primitives.allPrimitiveTypes().contains(type))
 				{
 					// convert the long or String to the declared key type
 					Object converted = datastore.getTypeConverter().convert(key.getId(), type);
-					field.set(instance, converted);
+					idField.set(instance, converted);
 				}
 				else
 				{
 					// TODO check that an id was already set
 				}
 			}
-		}
-		catch (IllegalAccessException e)
-		{
-			throw new IllegalStateException(e);
-		}
-	}
-
-	public static void setInstanceKey(Object instance, Key key, TranslatorObjectDatastore datastore)
-	{
-		Field field = datastore.keyField(instance.getClass());
-		try
-		{
-			// check that we have an id field
-			if (field != null)
+			
+			Field keyField = datastore.keyField(instance.getClass());
+			if (keyField != null)
 			{
 				// must be a gae key field
-				if (field.getType() == Key.class)
+				if (keyField.getType() == Key.class)
 				{
-					field.set(instance, key);
+					keyField.set(instance, key);
 				}
-				else if (field.getType() == String.class)
+				else if (keyField.getType() == String.class)
 				{
-					field.set(instance, KeyFactory.keyToString(key));
+					keyField.set(instance, KeyFactory.keyToString(key));
 				}
 				else
 				{
-					throw new IllegalStateException("Cannot set key to field " + field);
+					throw new IllegalStateException("Cannot set key to field " + keyField);
 				}
+			}
+			
+			Version version = instance.getClass().getAnnotation(Version.class);
+			if (version != null)
+			{
+				// the version property might be mapped to different field name
+				Field field = datastore.getFieldAndPropertyForPath(version.value(), instance.getClass()).getFirst();
+				field.set(instance, datastore.version(instance));
 			}
 		}
 		catch (IllegalAccessException e)
@@ -145,6 +152,7 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 			throw new IllegalStateException(e);
 		}
 	}
+
 
 	// TODO this should be in the multiple command but is here as shortcut for single command
 	final Future<Map<T,Key>> storeInstancesLater()
@@ -181,12 +189,7 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 	{
 		Map<T, Entity> entities = new LinkedHashMap<T, Entity>(instances.size());
 
-		if (unique)
-		{
-			// try to read each of the keys to verify it does not already exist
-			checkUniqueKeys(entities.values());
-		}
-
+		Collection<Entity> uniques = null;
 		for (T instance : instances)
 		{
 			// TODO implement bulk version checking and bulk backup
@@ -211,7 +214,18 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 
 			// put null if instance was already stored - don't store again
 			entities.put(instance, entity);
+			
+			if (unique || instance.getClass().isAnnotationPresent(Unique.class))
+			{
+				if (uniques == null) uniques = new ArrayList<Entity>();
+				
+				uniques.add(entity);
+				
+			}
 		}
+
+		// try to read each of the keys to verify it does not already exist
+		unique(uniques);
 
 		// if we are batching this will contain all referenced entities
 		return entities;
@@ -245,12 +259,16 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 			result.put(instance, key);
 
 			// set the ids if auto-generated
-			setInstanceId(instance, key, datastore);
-			setInstanceKey(instance, key, datastore);
+			updateKeyState(instance, key, datastore);
 
 			// the key is now complete for this activated instance
 			assert datastore.associating == false;
-			datastore.associate(instance, key, 1);
+			
+			if (!command.update)
+			{
+				// store always starts with version 1 for activated
+				datastore.associate(instance, key, 1);
+			}
 		}
 		return result;
 	}
@@ -278,16 +296,20 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 			Transaction txn = null;
 			try
 			{
-				// only version and backup for an update
+				txn = version(instance, entity);
+				
+				// backup for an update
 				if (update)
 				{
 					// one of these might start a transaction
-					txn = version(instance, entity);
 					txn = backup(instance, entity.getKey(), txn);
 				}
-				else if (unique)
+				else
 				{
-					txn = checkUniqueKeys(Collections.singleton(entity));
+					if (unique || instance.getClass().isAnnotationPresent(Unique.class))
+					{
+						txn = unique(Collections.singleton(entity));
+					}
 				}
 				
 				// TODO allow command to override settings
@@ -326,7 +348,10 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 				
 				Entity backup = new Entity("backup", key);
 				backup.setPropertiesFrom(existing);
-				backup.setProperty("backedup", new Date());
+				
+				// set the same date for all entities in this command
+				assert date != null;
+				backup.setProperty("backedup", date);
 				
 				datastore.servicePut(backup, datastore.getDefaultSettings());
 				
@@ -343,16 +368,17 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 
 	protected Transaction version(Object instance, Entity entity)
 	{
+		Transaction txn = null;
 		if (instance.getClass().isAnnotationPresent(Version.class))
 		{
-			Transaction txn = datastore.beginOrJoinTransaction();
-			try
+			// get current version
+			long local = datastore.version(instance);
+			
+			// if version is positive it was loaded in this session
+			if (local < 0)
 			{
-				// get current version
-				long local = datastore.version(instance);
-
-				// if version is positive it was loaded in this session
-				if (local < 0)
+				txn = datastore.beginOrJoinTransaction();
+				try
 				{
 					// change to positive to indicate we checked it in this session
 					local = -local;
@@ -371,24 +397,23 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 						throw new IllegalStateException("Versions not equal " + version + ":" + local);
 					}
 				}
-				
-				// increment the version locally
-				datastore.keyCache.setVersion(instance, ++local);
+				catch (EntityNotFoundException e)
+				{
+					txn.rollback();
+					throw new IllegalArgumentException("Update missing entity " + entity.getKey());
+				}
+			}
+			
+			// increment the version locally
+			datastore.keyCache.setVersion(instance, ++local);
 
-				String name = instance.getClass().getAnnotation(Version.class).value();
-				
-				// add the version property to store with entity
-				entity.setProperty(name, local);
-				
-				return txn;
-			}
-			catch (EntityNotFoundException e)
-			{
-				txn.rollback();
-				throw new IllegalArgumentException("Update missing entity " + entity.getKey());
-			}
+			String name = instance.getClass().getAnnotation(Version.class).value();
+			
+			// add the version property to store with entity
+			entity.setProperty(name, local);
 		}
-		return null;
+		
+		return txn;
 	}
 
 	/**
@@ -403,7 +428,7 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 		datastore.encodeKeyDetails = new KeyDetails(kind, parentKey, id);
 
 		// if we are updating the key is already in the key cache
-		if (command.update || command.cascade && datastore.isAssociated(instance))
+		if (command.update || datastore.isAssociated(instance))
 		{
 			// get the key associated with this instance
 			Key associatedKey = datastore.associatedKey(instance);
@@ -531,4 +556,19 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 			}
 		}
 	}
+	
+	@SuppressWarnings("unchecked")
+	public C cascaded(Set<Object> cascaded)
+	{
+		this.cascaded = cascaded;
+		return (C) this;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public C date(Date date)
+	{
+		this.date = date;
+		return (C) this;
+	}
+	
 }

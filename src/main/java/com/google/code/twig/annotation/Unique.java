@@ -7,17 +7,14 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * When updated, begin or join a transaction to copy the current entity to a
- * new child entity with the kind "backup" and an auto-generated id. A new property
- * will be added to this child entity called "backedup" with the date that the
- * operation was run. This exact same date is used for all backup entities created
- * in the same operation.
+ * When stored, begin or create a transaction to check if an entity with the same
+ * key already exists. Throw an IllegalStateException if this key is not unique.
  * 
  * @author John Patterson (john@vercer.com)
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
-public @interface Backup
+public @interface Unique
 {
 }

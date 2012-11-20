@@ -2,11 +2,13 @@ package com.google.code.twig.standard;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -32,7 +34,10 @@ import com.google.code.twig.translator.ChainedTranslator;
 import com.google.code.twig.translator.FieldTranslator;
 import com.google.code.twig.translator.PolymorphicTranslator;
 import com.google.code.twig.util.EntityToKeyFunction;
+import com.google.code.twig.util.Pair;
 import com.google.code.twig.util.Reflection;
+import com.google.code.twig.util.Strings;
+import com.google.code.twig.util.generic.Generics;
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
@@ -211,23 +216,6 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		return store().instances(instances).now();
 	}
 
-	// TODO hook these up!
-//	 protected void onAfterStore(Object instance, Key key)
-//	 {
-//	 }
-//
-//	 protected void onBeforeStore(Object instance)
-//	 {
-//	 }
-//
-//	 protected void onBeforeLoad(Key key)
-//	 {
-//	 }
-//
-//	 protected void onAfterLoad(Key key, Object instance)
-//	 {
-//	 }
-
 	public final <T> QueryResultIterator<T> find(Class<? extends T> type)
 	{
 		return find().type(type).now();
@@ -262,8 +250,12 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	{
 		assert instance != null;
 
-		// store but set the internal update flag so
-		store().update(true).cascade(cascade).instance(instance).now();
+		// store but set the internal update flag
+		store().update(true)
+			.instance(instance)
+			.cascaded(cascade ? new HashSet<Object>() : null)
+			.date(cascade ? new Date() : null)
+			.now();
 	}
 
 	@Override
@@ -276,8 +268,13 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	public void updateAll(Collection<?> instances, boolean cascade)
 	{
 		assert instances != null;
-
-		store().update(true).cascade(cascade).instances(instances).now();
+		
+		// store but set the internal update flag
+		store().update(true)
+			.instances(instances)
+			.cascaded(cascade ? new HashSet<Object>() : null)
+			.date(cascade ? new Date() : null)
+			.now();
 	}
 
 	@Override
@@ -614,11 +611,10 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		{
 			Object instance = keyCache.getInstance(key);
 
-			// instance may have been garbages collected
+			// instance may have been garbage collected
 			if (instance != null)
 			{
-				StandardCommonStoreCommand.setInstanceId(instance, key, this);
-				StandardCommonStoreCommand.setInstanceKey(instance, key, this);
+				StandardCommonStoreCommand.updateKeyState(instance, key, this);
 			}
 		}
 	}
@@ -772,12 +768,6 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	public boolean isActivated(Object instance)
 	{
 		return keyCache.isActivated(instance);
-	}
-
-	// TODO this does not feel right - its internal
-	protected boolean isAssociating()
-	{
-		return this.associating;
 	}
 
 	final Query createQuery(Class<?> type)
@@ -1091,4 +1081,71 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	}
 
 	protected static final Function<Entity, Key> entityToKeyFunction = new EntityToKeyFunction();
+	
+
+	public Pair<Field, String> getFieldAndPropertyForPath(String fieldPathName, Type type)
+	{
+		Field field = null;
+
+		// get the stored path from the object navigation path
+		String[] fieldNames = Strings.split(fieldPathName, false, '.');
+		Path path = Path.EMPTY_PATH;
+		String property = null;
+		for (String fieldName : fieldNames)
+		{
+			field = null;
+			Class<?> erased = Generics.erase(type);
+
+			// collections use the element type
+			if (Collection.class.isAssignableFrom(erased))
+			{
+				type = ((ParameterizedType) Generics.getExactSuperType(type, Collection.class)).getActualTypeArguments()[0];
+				erased = Generics.erase(type);
+			}
+
+			// get fields that were already cached in any order
+			// TODO cache fields? need to take timings. probably not worth it for filters
+			Collection<Field> fields = Reflection.getAccessibleFields(erased);
+			for (Field candidate : fields)
+			{
+				if (candidate.getName().equals(fieldName))
+				{
+					field = candidate;
+				}
+			}
+
+			if (field == null)
+			{
+				throw new IllegalArgumentException("Could not find field " + fieldName + " in type " + type);
+			}
+
+			// field type could have type variable if defined in superclass
+			type = Generics.getExactFieldType(field, type);
+
+			// if the field is an @Id we need to create a Key value
+			if (configuration.id(field))
+			{
+				if (!path.isEmpty())
+				{
+					throw new IllegalArgumentException("Id field must be at root of filter");
+				}
+				property = Entity.KEY_RESERVED_PROPERTY;
+				break;
+			}
+
+			// the property name stored in the datastore may use a short name
+			String propertyName = configuration.name(field);
+			path = new Path.Builder(path).field(propertyName).build();
+		}
+
+		// path will only be empty if we are filtering on id
+		if (!path.isEmpty())
+		{
+			assert property == null;
+			property = path.toString();
+		}
+
+		return new Pair<Field, String>(field, property);
+	}
+
 }

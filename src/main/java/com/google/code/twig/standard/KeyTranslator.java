@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.Set;
 
 import com.google.appengine.api.datastore.KeyFactory;
-
 import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;

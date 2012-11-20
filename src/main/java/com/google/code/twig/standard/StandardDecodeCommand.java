@@ -32,7 +32,7 @@ class StandardDecodeCommand<C extends StandardDecodeCommand<C>> extends Standard
 	protected int depth;
 	protected Restriction<Entity> entityRestriction;
 	protected Restriction<Property> propertyRestriction;
-	protected Settings.Builder builder;
+	protected Settings.Builder settings;
 	private boolean refresh;
 	
 	StandardDecodeCommand(TranslatorObjectDatastore datastore, int initialActivationDepth)
@@ -61,7 +61,7 @@ class StandardDecodeCommand<C extends StandardDecodeCommand<C>> extends Standard
 	
 	public C cache(CacheMode cacheMode)
 	{
-		this.builder.cacheMode(cacheMode);
+		this.settings.cacheMode(cacheMode);
 		return (C) this;
 	}
 	
@@ -136,6 +136,7 @@ class StandardDecodeCommand<C extends StandardDecodeCommand<C>> extends Standard
 		Long version = version(entity, type);
 		if (version != null)
 		{
+			assert version > 0;
 			datastore.keyCache.setVersion(instance, version);
 		}
 		else if (depth >= 0 && !datastore.isActivated(instance))
@@ -315,22 +316,22 @@ class StandardDecodeCommand<C extends StandardDecodeCommand<C>> extends Standard
 	
 	public Settings.Builder getSettingsBuilder()
 	{
-		if (builder == null)
+		if (settings == null)
 		{
-			builder = Settings.copy(datastore.getDefaultSettings());
+			settings = Settings.copy(datastore.getDefaultSettings());
 		}
-		return this.builder;
+		return this.settings;
 	}
 	
 	public Settings getSettings()
 	{
-		if (builder == null)
+		if (settings == null)
 		{
 			return datastore.getDefaultSettings();
 		}
 		else
 		{
-			return builder.build();
+			return settings.build();
 		}
 	}
 	

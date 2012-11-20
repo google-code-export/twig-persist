@@ -2,9 +2,9 @@ package com.google.code.twig.standard;
 
 import java.util.Iterator;
 import java.util.concurrent.Future;
-import com.google.code.twig.FindCommand.ParentsCommand;
 
 import com.google.appengine.api.datastore.FetchOptions;
+import com.google.code.twig.FindCommand.ParentsCommand;
 
 abstract class StandardCommonParentsCommand<P> extends
 		StandardRestrictedFindCommand<StandardCommonParentsCommand<P>> implements ParentsCommand<P>
