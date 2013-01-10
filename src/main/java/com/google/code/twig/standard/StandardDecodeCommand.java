@@ -132,8 +132,8 @@ class StandardDecodeCommand<C extends StandardDecodeCommand<C>> extends Standard
 			instance = null;
 		}
 		
-		// set the version number
-		Long version = version(entity, type);
+		// set the cached version number
+		Long version = readEntityVersion(entity, type);
 		if (version != null)
 		{
 			assert version > 0;

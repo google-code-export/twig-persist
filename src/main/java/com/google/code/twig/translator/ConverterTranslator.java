@@ -7,27 +7,18 @@ import com.google.code.twig.Path;
 import com.google.code.twig.Property;
 import com.google.code.twig.PropertyTranslator;
 import com.google.code.twig.util.PropertySets;
-import com.vercer.convert.CombinedTypeConverter;
-import com.vercer.convert.Converter;
-import com.vercer.convert.ConverterRegistry;
+import com.vercer.convert.CompositeTypeConverter;
+import com.vercer.convert.TypeConverter;
 
 public class ConverterTranslator implements PropertyTranslator
 {
-	private final Converter<?, ?> forward;
-	private final Converter<?, ?> backward;
+	private final TypeConverter forward;
+	private final TypeConverter backward;
 
 	private final Type source;
 	private final Type target;
 
-	public <S, T> ConverterTranslator(Converter<S, T> forward, Converter<T, S> backward)
-	{
-		this.forward = forward;
-		this.backward = backward;
-		source = CombinedTypeConverter.sourceType(forward);
-		target = CombinedTypeConverter.targetType(forward);
-	}
-
-	public ConverterTranslator(Type source, Type target, ConverterRegistry converters)
+	public ConverterTranslator(Type source, Type target, CompositeTypeConverter converters)
 	{
 		this.source = source;
 		this.target = target;
@@ -38,7 +29,6 @@ public class ConverterTranslator implements PropertyTranslator
 	@Override
 	public Object decode(Set<Property> properties, Path path, Type type)
 	{
-		type = CombinedTypeConverter.ignoreWildCardParameters(type);
 		if (type.equals(source))
 		{
 			if (properties.isEmpty()) return NULL_VALUE;
@@ -48,7 +38,7 @@ public class ConverterTranslator implements PropertyTranslator
 			
 			if (value.getClass().equals(target))
 			{
-				return CombinedTypeConverter.typesafe(backward, value);
+				return backward.convert(value, source);
 			}
 		}
 		return null;
@@ -59,7 +49,7 @@ public class ConverterTranslator implements PropertyTranslator
 	{
 		if (instance.getClass().equals(source))
 		{
-			Object value = CombinedTypeConverter.typesafe(forward, instance);
+			Object value = forward.convert(instance, target);
 			return PropertySets.singletonPropertySet(path, value, indexed);
 		}
 		return null;

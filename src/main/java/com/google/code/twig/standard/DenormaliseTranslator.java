@@ -129,7 +129,8 @@ public class DenormaliseTranslator implements PropertyTranslator
 		datastore.encodeKeyDetails = new KeyDetails();
 
 		// get all embedded properties
-		Set<Property> embedded = datastore.getEmbeddedTranslator().encode(instance, path, indexed);
+		PropertyTranslator encoder = datastore.getEmbeddedTranslator();
+		Set<Property> embedded = encoder.encode(instance, path, indexed);
 
 		// reset the existing encode key
 		datastore.encodeKeyDetails = existingEncodeKey;

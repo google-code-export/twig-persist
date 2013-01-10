@@ -9,7 +9,6 @@ import java.util.Locale;
 
 import com.google.code.twig.annotation.Child;
 import com.google.code.twig.annotation.Id;
-import com.google.code.twig.annotation.Type;
 
 public class Band
 {

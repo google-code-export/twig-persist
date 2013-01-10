@@ -42,7 +42,7 @@ public final class StandardSingleStoreCommand<T> extends StandardCommonStoreComm
 		
 		Key key = instanceToKey(instance, id);
 
-		updateKeyState(instance, key, datastore);
+		updateInstanceState(instance, key, datastore);
 		
 		// when associating we might not activate the instance
 		if (!command.update)

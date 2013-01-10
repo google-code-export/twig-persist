@@ -382,7 +382,6 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		datastore.storeAll(Arrays.asList(band1, band2));
 
 		Transaction txn = datastore.beginTransaction();
-
 		datastore.disassociateAll();
 		
 		// overwrite band1
@@ -392,6 +391,8 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		txn.commit();
 
 		txn = datastore.beginTransaction();
+		datastore.disassociateAll();
+
 		Band band4 = new Band();
 		band4.name = "Kasier Chiefs";
 
@@ -400,10 +401,11 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 		{
 			datastore.store().instance(band4).ensureUniqueKey().now();
 		}
-		catch (Exception e)
+		catch (IllegalStateException e)
 		{
 			threw = true;
 	    }
+		
 		txn.rollback();
 		assertTrue(threw);
 	}
@@ -451,14 +453,14 @@ public class MusicFestivalTestCase extends LocalDatastoreTestCase
 	{
 		Band band = new Band();
 		band.name = "The XX";
-		datastore.store().instance(band).ensureUniqueKey().now();
+		datastore.store().instance(band).now();
 
 		band = new Band();
 		band.name = "The XX";
 		boolean threw = false;
 		try
 		{
-			datastore.store().instance(band).ensureUniqueKey().now();
+			datastore.store().instance(band).now();
 		}
 		catch (Exception e)
 		{

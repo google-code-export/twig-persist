@@ -210,6 +210,8 @@ public interface ObjectDatastore extends Activator
 
 	// transactions
 	Transaction beginTransaction();
+	
+	Transaction beginOrJoinTransaction();
 
 	Transaction getTransaction();
 

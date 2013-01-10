@@ -43,6 +43,10 @@ public class DirectTranslator implements PropertyTranslator
 			{
 				return value;
 			}
+			else if (value == null)
+			{
+				return null;
+			}
 			else
 			{
 				return converter.convert(value, type);

@@ -16,6 +16,7 @@ import com.google.code.twig.conversion.CoreConverters.StringToDate;
 import com.google.code.twig.util.io.NoDescriptorObjectInputStream;
 import com.google.code.twig.util.io.NoDescriptorObjectOutputStream;
 import com.vercer.convert.Converter;
+import com.vercer.convert.TypeConverter;
 
 public class EngineConverters implements Iterable<Converter<?, ?>>
 {
@@ -86,7 +87,7 @@ public class EngineConverters implements Iterable<Converter<?, ?>>
 		}
 	}
 
-	public static class BlobToAnything implements Converter<Blob, Object>
+	public static class BlobToAnything extends TypeConverter
 	{
 		public Object convert(Blob blob)
 		{
@@ -108,16 +109,22 @@ public class EngineConverters implements Iterable<Converter<?, ?>>
 		}
 
 		@SuppressWarnings("unchecked")
-		public <T> T convert(Object source, Type type)
+		@Override
+		public <T> T convert(Object instance, Type source, Type target)
 		{
-			if (source != null && source.getClass() == Blob.class)
-			{
-				return (T) convert((Blob) source);
-			}
-			return null;
+			return (T) convert((Blob) instance);
+		}
+
+		@Override
+		public boolean converts(Type source, Type target)
+		{
+			return source.equals(Blob.class);
 		}
 	}
 
+	/**
+	 * Faster serializer that omits the class descriptor 
+	 */
 	public static class NoDescriptorBlobToAnything extends BlobToAnything
 	{
 		@Override
@@ -137,7 +144,6 @@ public class EngineConverters implements Iterable<Converter<?, ?>>
 		new DateToString(),
 		new ByteArrayToBlob(),
 		new BlobToByteArray(),
-		new ObjectToBlob(),
-		new BlobToAnything()).iterator();
+		new ObjectToBlob()).iterator();
 	}
 }

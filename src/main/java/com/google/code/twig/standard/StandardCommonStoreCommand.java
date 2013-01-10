@@ -1,6 +1,5 @@
 package com.google.code.twig.standard;
 
-import java.io.ObjectInputStream.GetField;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -11,6 +10,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.Future;
 
@@ -34,6 +34,7 @@ import com.google.code.twig.util.reference.ObjectReference;
 import com.google.code.twig.util.reference.SimpleObjectReference;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Collections2;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Primitives;
 
 abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreCommand<T, C>> extends StandardEncodeCommand implements CommonStoreCommand<T, C>
@@ -91,16 +92,16 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 			}
 			
 			txn = datastore.beginOrJoinTransaction();
-			Map<Key, Entity> map = datastore.serviceGet(keys, datastore.getDefaultSettings());
-			if (!map.isEmpty())
+			Map<Key, Entity> existing = datastore.serviceGet(keys, datastore.getDefaultSettings());
+			if (!existing.isEmpty())
 			{
-				throw new IllegalStateException("Keys already exist: " + map);
+				throw new IllegalStateException("Keys already exist: " + existing.keySet());
 			}
 		}
 		return txn;
 	}
 
-	public static void updateKeyState(Object instance, Key key, TranslatorObjectDatastore datastore)
+	public static void updateInstanceState(Object instance, Key key, TranslatorObjectDatastore datastore)
 	{
 		try
 		{
@@ -142,9 +143,13 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 			Version version = instance.getClass().getAnnotation(Version.class);
 			if (version != null)
 			{
-				// the version property might be mapped to different field name
-				Field field = datastore.getFieldAndPropertyForPath(version.value(), instance.getClass()).getFirst();
-				field.set(instance, datastore.version(instance));
+				// the version property might be mapped to different field name on the field
+				Pair<Field, String> fieldAndProperty = datastore.getFieldAndPropertyForPath(version.value(), instance.getClass());
+				
+				if (fieldAndProperty != null)
+				{
+					fieldAndProperty.getFirst().set(instance, datastore.version(instance));
+				}
 			}
 		}
 		catch (IllegalAccessException e)
@@ -158,7 +163,7 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 	final Future<Map<T,Key>> storeInstancesLater()
 	{
 		// convert to entities ready to store
-		final Map<T, Entity> entities = instancesToEntities();
+		final Map<Object, Entity> entities = instancesToEntities();
 
 		// we can get null entities when they are already stored
 		Collection<Entity> filtered = Collections2.filter(entities.values(), Predicates.notNull());
@@ -185,18 +190,14 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 		};
 	}
 
-	final Map<T, Entity> instancesToEntities()
+	final Map<Object, Entity> instancesToEntities()
 	{
-		Map<T, Entity> entities = new LinkedHashMap<T, Entity>(instances.size());
+		Map<Object, Entity> entities = new LinkedHashMap<Object, Entity>(instances.size());
 
 		Collection<Entity> uniques = null;
 		for (T instance : instances)
 		{
 			// TODO implement bulk version checking and bulk backup
-			if (instance.getClass().isAnnotationPresent(Version.class))
-			{
-				throw new UnsupportedOperationException("Versioning multiple instances not implemented");
-			}
 			if (instance.getClass().isAnnotationPresent(Backup.class))
 			{
 				throw new UnsupportedOperationException("Backup multiple instances not implemented");
@@ -220,7 +221,6 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 				if (uniques == null) uniques = new ArrayList<Entity>();
 				
 				uniques.add(entity);
-				
 			}
 		}
 
@@ -231,15 +231,16 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 		return entities;
 	}
 
-	protected Map<T, Key> createKeyMapAndUpdateKeyCache(Map<T, Entity> entities, List<Key> keys)
+	@SuppressWarnings("unchecked")
+	protected Map<T, Key> createKeyMapAndUpdateKeyCache(Map<Object, Entity> entities, List<Key> keys)
 	{
 		// build a map of instance to key
-		HashMap<T, Key> result = new HashMap<T, Key>(keys.size());
-		Iterator<T> instances = entities.keySet().iterator();
+		HashMap<Object, Key> result = new HashMap<Object, Key>(keys.size());
+		Iterator<Object> instances = entities.keySet().iterator();
 		Iterator<Key> keyator = keys.iterator();
 		while (instances.hasNext())
 		{
-			T instance = instances.next();
+			Object instance = instances.next();
 			Key key;
 
 			// we may not have stored the entity in this put
@@ -259,18 +260,18 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 			result.put(instance, key);
 
 			// set the ids if auto-generated
-			updateKeyState(instance, key, datastore);
+			updateInstanceState(instance, key, datastore);
 
-			// the key is now complete for this activated instance
 			assert datastore.associating == false;
 			
+			// the key is now complete for this activated instance
 			if (!command.update)
 			{
 				// store always starts with version 1 for activated
-				datastore.associate(instance, key, 1);
+				datastore.keyCache.cache(key, instance, 1);
 			}
 		}
-		return result;
+		return (Map<T, Key>) result;
 	}
 
 	protected Key instanceToKey(Object instance, Object id)
@@ -296,7 +297,7 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 			Transaction txn = null;
 			try
 			{
-				txn = version(instance, entity);
+				txn = version(ImmutableMap.of(instance, entity));
 				
 				// backup for an update
 				if (update)
@@ -366,51 +367,62 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 		return txn;
 	}
 
-	protected Transaction version(Object instance, Entity entity)
+	protected Transaction version(Map<Object, Entity> instanceToEntity)
 	{
 		Transaction txn = null;
-		if (instance.getClass().isAnnotationPresent(Version.class))
+		Set<Entry<Object, Entity>> instanceAndEntities = instanceToEntity.entrySet();
+		for (Entry<Object, Entity> instanceAndEntity : instanceAndEntities)
 		{
-			// get current version
-			long local = datastore.version(instance);
+			Object instance = instanceAndEntity.getKey();
+			Entity entity = instanceAndEntity.getValue();
 			
-			// if version is positive it was loaded in this session
-			if (local < 0)
+			if (instance.getClass().isAnnotationPresent(Version.class))
 			{
-				txn = datastore.beginOrJoinTransaction();
-				try
+				// get current version
+				long current = datastore.version(instance);
+				
+				// if version is positive it was checked in this session
+				if (current < 0)
 				{
-					// change to positive to indicate we checked it in this session
-					local = -local;
+					if (txn == null) 
+					{
+						txn = datastore.beginOrJoinTransaction();
+					}
 					
-					// load existing entity to get current version
-					Entity existing = datastore.serviceGet(entity.getKey(), datastore.getDefaultSettings());
-					Long version = version(existing, instance.getClass());
-					if (version == null)
+					try
 					{
-						// allow unversioned types to become versioned
-						version = 1l;
+						// load existing entity to get current version
+						Entity existing = datastore.serviceGet(entity.getKey(), datastore.getDefaultSettings());
+						Long version = readEntityVersion(existing, instance.getClass());
+						if (version == null)
+						{
+							// allow unversioned types to become versioned
+							version = 1l;
+						}
+						
+						// change to positive to indicate we checked it in this session
+						current = -current;
+						
+						if (current != version)
+						{
+							throw new IllegalStateException("Versions not equal " + version + ":" + current);
+						}
 					}
-
-					if (local != version)
+					catch (EntityNotFoundException e)
 					{
-						throw new IllegalStateException("Versions not equal " + version + ":" + local);
+						txn.rollback();
+						throw new IllegalArgumentException("Update missing entity " + entity.getKey());
 					}
 				}
-				catch (EntityNotFoundException e)
-				{
-					txn.rollback();
-					throw new IllegalArgumentException("Update missing entity " + entity.getKey());
-				}
+				
+				// increment the version locally
+				datastore.keyCache.setVersion(instance, ++current);
+				
+				String name = instance.getClass().getAnnotation(Version.class).value();
+				
+				// add the version property to store with entity
+				entity.setProperty(name, current);
 			}
-			
-			// increment the version locally
-			datastore.keyCache.setVersion(instance, ++local);
-
-			String name = instance.getClass().getAnnotation(Version.class).value();
-			
-			// add the version property to store with entity
-			entity.setProperty(name, local);
 		}
 		
 		return txn;
@@ -492,6 +504,15 @@ abstract class StandardCommonStoreCommand<T, C extends StandardCommonStoreComman
 		// the key will now be set with id and ancestors
 		Entity entity = createEntity();
 
+		// check we will not over write another entity
+		if (!command.update && // only check when storing 
+			cascaded == null && // we can over write when cascading
+			!datastore.associating && // associate can return an existing instance
+			datastore.associatedInstance(entity.getKey()) != null)
+		{
+			throw new IllegalStateException("Instance already associated with key " + entity.getKey());
+		}
+		
 		// will trigger referenced instances to be stored
 		transferProperties(entity, properties);
 

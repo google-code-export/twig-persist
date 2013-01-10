@@ -414,11 +414,6 @@ public class StandardRootFindCommand<T> extends StandardCommonFindCommand<Standa
 	@Override
 	protected Query newQuery()
 	{
-		if (this.ancestor == null && this.datastore.getTransaction() != null)
-		{
-			throw new IllegalStateException("Find command must have an ancestor in a transaction");
-		}
-
 		Query query = new Query(datastore.getConfiguration().typeToKind(type));
 		applyFilters(query);
 		if (sorts != null)
