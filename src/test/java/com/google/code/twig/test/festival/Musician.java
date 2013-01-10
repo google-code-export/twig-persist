@@ -2,7 +2,6 @@ package com.google.code.twig.test.festival;
 
 import java.util.Collection;
 import java.util.Date;
-import java.util.List;
 
 import com.google.code.twig.annotation.Type;
 
@@ -11,7 +10,7 @@ public class Musician
 	String name;
 	Date birthday;
 	
-	@Type(Iterable.class)
+	@Type(Collection.class)
 	int[] favouriteNumbers;
 
 	public Musician(String name)

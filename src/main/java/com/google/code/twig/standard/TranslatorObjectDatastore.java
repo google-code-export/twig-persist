@@ -160,7 +160,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 				new MapTranslator(this, polymorphicTranslator, converter),
 				polymorphicTranslator);
 
-		// by default, translate simple values and then try the fall-back if that fails
+		// by default, translate simple values and then use the fall-back if that fails
 		defaultTranslator = new ChainedTranslator();
 		defaultTranslator.append(new IterableTranslator(this, defaultTranslator));
 		defaultTranslator.append(new MapTranslator(this, defaultTranslator, converter));
@@ -326,51 +326,51 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 	 */
 	protected PropertyTranslator translator(Class<?> instanceClass)
 	{
-		return objectFieldTranslator;
+		return getFieldTranslator();
 	}
 	
 	/**
 	 * Called from {@link ObjectFieldTranslator} to allow extension
 	 * @param field The current field being decoded by {@link ObjectFieldTranslator}
 	 * @param properties The subset of properties for this field
-	 * @return {@link #translator(Field)}
+	 * @return {@link #relation(Field)}
 	 */
 	protected PropertyTranslator decoder(Field field, Set<Property> properties)
 	{
-		return translator(field);
+		return relation(field);
 	}
 
 	/**
 	 * Called from {@link ObjectFieldTranslator} to allow extension
 	 * @param field The current field being encoded by {@link ObjectFieldTranslator}
 	 * @param instance The object value to serialize as {@link Property}'s
-	 * @return {@link #translator(Field)}
+	 * @return {@link #relation(Field)}
 	 */
 	protected PropertyTranslator encoder(Field field, Object instance)
 	{
-		return translator(field);
+		return relation(field);
 	}
 
 	/**
 	 * @param field The current field value being encoded or decoded
 	 * @return The translator for this field
 	 */
-	protected PropertyTranslator translator(Field field)
+	protected PropertyTranslator relation(Field field)
 	{
 		PropertyTranslator result;
 		if (configuration.entity(field))
 		{
 			if (configuration.parent(field))
 			{
-				result = parentTranslator;
+				result = getParentTranslator();
 			}
 			else if (configuration.child(field))
 			{
-				result = childTranslator;
+				result = getChildTranslator();
 			}
 			else
 			{
-				result = independantTranslator;
+				result = getIndependantTranslator();
 			}
 
 			// should we denormalise some paths
@@ -387,17 +387,17 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		}
 		else if (configuration.id(field))
 		{
-			result = idFieldTranslator;
+			result = getIdFieldTranslator();
 		}
 		else if (configuration.embed(field))
 		{
 			if (configuration.polymorphic(field))
 			{
-				result = polymorphicComponentTranslator;
+				result = getPolymorphicTranslator();
 			}
 			else
 			{
-				result = embedTranslator;
+				result = getEmbeddedTranslator();
 			}
 		}
 		else if (configuration.key(field))
@@ -406,7 +406,8 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		}
 		else
 		{
-			result = defaultTranslator;
+			// get the default translator
+			result = relation(field.getType());
 		}
 
 		// if there are too many properties, serialize them 
@@ -417,6 +418,14 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 		}
 
 		return result;
+	}
+
+	/**
+	 * Used for related fields
+	 */
+	protected PropertyTranslator relation(Class<?> type)
+	{
+		return getDefaultTranslator();
 	}
 
 	/**
@@ -614,7 +623,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 			// instance may have been garbage collected
 			if (instance != null)
 			{
-				StandardCommonStoreCommand.updateKeyState(instance, key, this);
+				StandardCommonStoreCommand.updateInstanceState(instance, key, this);
 			}
 		}
 	}
@@ -1116,7 +1125,7 @@ public abstract class TranslatorObjectDatastore extends BaseObjectDatastore
 
 			if (field == null)
 			{
-				throw new IllegalArgumentException("Could not find field " + fieldName + " in type " + type);
+				return null;
 			}
 
 			// field type could have type variable if defined in superclass

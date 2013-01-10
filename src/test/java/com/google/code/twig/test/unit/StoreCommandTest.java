@@ -72,7 +72,7 @@ public class StoreCommandTest extends LocalDatastoreTestCase
 		
 		Assert.assertEquals(0, child1.id);
 		
-		datastore.flushBatchedOperations();
+		datastore.stopBatchMode();
 
 		Assert.assertTrue(child1.id != 0);
 	}

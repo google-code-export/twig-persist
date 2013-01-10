@@ -106,6 +106,7 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 		return this.statistics;
 	}
 
+	@SuppressWarnings("deprecation")
 	public static void registerCachedKind(String kind, int seconds, int maximum, boolean automatic, boolean global)
 	{
 		Map<Key, Entity> cache = null;
@@ -239,12 +240,11 @@ public abstract class BaseObjectDatastore implements ObjectDatastore
 		}
 		else if (!batched.isEmpty())
 		{
-			throw new IllegalStateException("Must flush batch before stopping");
+			// automatically flush
+			flushBatchedOperations();
 		}
-		else
-		{
-			batched = null;
-		}
+		
+		batched = null;
 	}
 
 	protected List<Key> flushEntities(Settings settings)

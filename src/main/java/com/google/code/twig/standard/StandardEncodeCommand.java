@@ -21,7 +21,9 @@ public class StandardEncodeCommand extends StandardCommand
 		if (datastore.encodeKeyDetails.isComplete())
 		{
 			// we have a complete key with id specified 
-			return new Entity(datastore.encodeKeyDetails.toKey());
+			Key key = datastore.encodeKeyDetails.toKey();
+			
+			return new Entity(key);
 		}
 		else
 		{
@@ -47,14 +49,18 @@ public class StandardEncodeCommand extends StandardCommand
 			{
 				throw new RuntimeException("Problem de-referencing property " + property, t);
 			}
+			
+			String name = property.getPath().toString();
+
+			assert !entity.hasProperty(name);
 
 			if (property.isIndexed())
 			{
-				entity.setProperty(property.getPath().toString(), value);
+				entity.setProperty(name, value);
 			}
 			else
 			{
-				entity.setUnindexedProperty(property.getPath().toString(), value);
+				entity.setUnindexedProperty(name, value);
 			}
 		}
 	}

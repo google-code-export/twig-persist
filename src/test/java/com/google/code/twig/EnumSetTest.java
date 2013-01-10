@@ -25,6 +25,8 @@ public class EnumSetTest extends LocalDatastoreTestCase
 	@Test
 	public void testStoreLoadEnumSet()
 	{
+		// TODO removed enum conversion temporarily
+		
 		EnumSet<MyEnum> myEnums = EnumSet.allOf(MyEnum.class);
 		EnumContainer container = new EnumContainer();
 		container.theEnumSet = myEnums;

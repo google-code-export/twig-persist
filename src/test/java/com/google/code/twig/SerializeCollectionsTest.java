@@ -13,7 +13,7 @@ import com.google.code.twig.TypeWithCollections.TypeWithEnum.MyEnum;
 import com.google.code.twig.annotation.AnnotationObjectDatastore;
 import com.google.code.twig.conversion.EngineConverters.BlobToAnything;
 import com.google.code.twig.conversion.EngineConverters.ObjectToBlob;
-import com.vercer.convert.ConverterRegistry;
+import com.vercer.convert.CompositeTypeConverter;
 
 
 public class SerializeCollectionsTest extends LocalDatastoreTestCase
@@ -29,9 +29,9 @@ public class SerializeCollectionsTest extends LocalDatastoreTestCase
 		ObjectDatastore datastore = new AnnotationObjectDatastore()
 		{
 			@Override
-			public ConverterRegistry createStaticConverterRegistry()
+			public CompositeTypeConverter createTypeConverter()
 			{
-				ConverterRegistry combined = super.createStaticConverterRegistry();
+				CompositeTypeConverter combined = super.createTypeConverter();
 				combined.register(new BlobToAnything());
 				combined.register(new ObjectToBlob());
 				return combined;

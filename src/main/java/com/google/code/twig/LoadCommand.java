@@ -13,7 +13,6 @@ public interface LoadCommand
 {
 	<T> TypedLoadCommand<T> type(Class<? extends T> type);
 	SingleUntypedLoadCommand key(Key key);
-//	SingleUntypedLoadCommand<?> key(Key key);
 	MultipleUntypedLoadCommand keys(Collection<Key> key);
 	
 	interface TypedLoadCommand<T>

@@ -1,5 +1,8 @@
 package com.google.code.twig;
 
+import java.util.Arrays;
+import java.util.Map;
+
 import junit.framework.Assert;
 
 import org.junit.Test;
@@ -26,7 +29,7 @@ public class VersionTest extends LocalDatastoreTestCase
 	}
 
 	@Test
-	public void execute()
+	public void storeSingleVersioned()
 	{
 		ObjectDatastore datastore = ObjectDatastoreFactory.createObjectDatastore();
 
@@ -50,5 +53,38 @@ public class VersionTest extends LocalDatastoreTestCase
 		
 		Assert.assertEquals(2, entity.getVersion());
 		Assert.assertEquals(2, datastore.version(entity));
+	}
+	
+	@Test
+	public void storeMultipleVersioned()
+	{
+		ObjectDatastore datastore = ObjectDatastoreFactory.createObjectDatastore();
+
+		VersionedEntity entity1 = new VersionedEntity();
+		VersionedEntity entity2 = new VersionedEntity();
+		
+		Assert.assertEquals(0, entity1.getVersion());
+
+		Map<VersionedEntity, Key> stored = datastore.storeAll(Arrays.asList(entity1, entity2));
+		
+		// the version field should be updated
+		Assert.assertEquals(1, entity1.getVersion());
+		Assert.assertEquals(1, datastore.version(entity1));
+
+		datastore.disassociateAll();
+
+		// re-load the entity
+		entity1 = datastore.load(stored.get(entity1));
+		entity2 = datastore.load(stored.get(entity2));
+		
+		Assert.assertEquals(1, entity1.getVersion());
+		Assert.assertEquals(1, datastore.version(entity1));
+		
+		datastore.updateAll(Arrays.asList(entity1, entity2));
+		
+		Assert.assertEquals(2, entity1.getVersion());
+		Assert.assertEquals(2, datastore.version(entity1));
+		Assert.assertEquals(2, entity2.getVersion());
+		Assert.assertEquals(2, datastore.version(entity2));
 	}
 }

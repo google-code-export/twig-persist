@@ -178,9 +178,12 @@ public abstract class FieldTranslator implements PropertyTranslator
 				value = null;
 			}
 		}
+		else
+		{
+			// the value can be stored as a different type
+			value = converters.convert(value, type, field.getGenericType());
+		}
 
-		// the value can be stored as a different type
-		value = converters.convert(value, type, field.getGenericType());
 
 		setFieldValue(instance, field, value);
 
@@ -266,12 +269,7 @@ public abstract class FieldTranslator implements PropertyTranslator
 					Path childPath = new Path.Builder(path).field(fieldToPartName(field)).build();
 
 					Set<Property> encoded;
-					if (value == null && indexed)
-					{
-						// only store null if it is indexed
-						encoded = PropertySets.singletonPropertySet(childPath, null, indexed(field));
-					}
-					else
+					if (value != null)
 					{
 						// convert the object if a type was configured
 						if (!type.equals(field.getGenericType()))
@@ -288,6 +286,16 @@ public abstract class FieldTranslator implements PropertyTranslator
 						{
 							throw new IllegalStateException("Could not translate value to properties: " + value);
 						}
+					}
+					else if (indexed(field))
+					{
+						// only store null if it is indexed
+						encoded = PropertySets.singletonPropertySet(childPath, null, true);
+					}
+					else
+					{
+						// do not store unindexed null values
+						encoded = Collections.emptySet();
 					}
 
 					merged.addAll(encoded);

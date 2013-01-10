@@ -77,10 +77,15 @@ abstract class StandardCommonFindCommand<C extends StandardCommonFindCommand<C>>
 	public C addFilter(String fieldPathName, FilterOperator operator, Object value)
 	{
 		Pair<Field, String> fieldAndProperty = datastore.getFieldAndPropertyForPath(fieldPathName, getRootCommand().getType());
+		if (fieldAndProperty == null)
+		{
+			throw new IllegalArgumentException("Could not find field at path " + fieldPathName + " in type " + getRootCommand().getType());
+		}
+		
 		Field field = fieldAndProperty.getFirst();
 		String property = fieldAndProperty.getSecond();
 
-		PropertyTranslator translator = datastore.translator(field);
+		PropertyTranslator translator = datastore.relation(field);
 
 		// for IN we need to encode each value of the collection
 		Object encoded;
@@ -213,6 +218,7 @@ abstract class StandardCommonFindCommand<C extends StandardCommonFindCommand<C>>
 		return queries;
 	}
 
+	@SuppressWarnings("deprecation")
 	void applyFilters(Query query)
 	{
 		if (filters != null)

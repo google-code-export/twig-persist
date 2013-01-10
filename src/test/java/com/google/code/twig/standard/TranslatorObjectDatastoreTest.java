@@ -94,7 +94,7 @@ public class TranslatorObjectDatastoreTest extends LocalDatastoreTestCase
 
 		// check we have only the right amount of properties stored
 		Entity entity = datastore.getDefaultService().get(key);
-		Assert.assertEquals(entity.getProperties().size(), 5);
+		Assert.assertEquals(5, entity.getProperties().size());
 		
 		datastore.disassociateAll();
 		

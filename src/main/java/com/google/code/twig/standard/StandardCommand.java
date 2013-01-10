@@ -1,17 +1,7 @@
 package com.google.code.twig.standard;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.Collection;
-
 import com.google.appengine.api.datastore.Entity;
-import com.google.code.twig.Path;
 import com.google.code.twig.annotation.Version;
-import com.google.code.twig.util.Pair;
-import com.google.code.twig.util.Reflection;
-import com.google.code.twig.util.Strings;
-import com.google.code.twig.util.generic.Generics;
 
 class StandardCommand
 {
@@ -30,7 +20,7 @@ class StandardCommand
 		this.datastore = datastore;
 	}
 
-	protected Long version(Entity entity, Class<?> type)
+	protected Long readEntityVersion(Entity entity, Class<?> type)
 	{
 		if (type.isAnnotationPresent(Version.class))
 		{

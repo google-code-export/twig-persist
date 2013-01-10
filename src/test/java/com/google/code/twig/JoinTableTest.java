@@ -1,10 +1,9 @@
 package com.google.code.twig;
 
-import com.google.appengine.api.datastore.Query;
-import com.google.code.twig.ObjectDatastore;
-import com.google.code.twig.annotation.AnnotationObjectDatastore;
-
 import static org.junit.Assert.fail;
+
+import com.google.appengine.api.datastore.Query;
+import com.google.code.twig.annotation.AnnotationObjectDatastore;
 
 public class JoinTableTest extends LocalDatastoreTestCase
 {

@@ -9,9 +9,10 @@ import java.util.concurrent.Future;
 
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.Transaction;
 import com.google.code.twig.StoreCommand.MultipleStoreCommand;
 import com.google.common.base.Predicates;
-import com.google.common.collect.Collections2;
+import com.google.common.collect.Maps;
 
 public class StandardMultipleStoreCommand<T> extends StandardCommonStoreCommand<T, StandardMultipleStoreCommand<T>> implements MultipleStoreCommand<T, StandardMultipleStoreCommand<T>>
 {
@@ -33,23 +34,42 @@ public class StandardMultipleStoreCommand<T> extends StandardCommonStoreCommand<
 		if (instances.isEmpty()) return Collections.emptyMap();
 		
 		// convert into entities ready to store
-		Map<T, Entity> entities = instancesToEntities();
+		Map<Object, Entity> instanceToEntity = (Map<Object, Entity>) instancesToEntities();
 
 		// we can get null entities when they are already stored by being referenced
-		Collection<Entity> filtered = Collections2.filter(entities.values(), Predicates.notNull());
-
+		Map<Object, Entity> filteredInstanceToEntity = Maps.filterValues(instanceToEntity,  Predicates.notNull());
+		
 		if (datastore.associating)
 		{
 			throw new IllegalStateException("Only single store is supported for associate");
 		}
 			
-		// actually put the entities in the datastore
-		
-		// TODO allow command to override settings
-		List<Key> keys = datastore.servicePut(filtered, datastore.getDefaultSettings());
-		
+		Transaction txn = null;
+		try
+		{
+			txn = version(filteredInstanceToEntity);
+			
+			// TODO allow command to override settings
+			List<Key> keys = datastore.servicePut(filteredInstanceToEntity.values(), datastore.getDefaultSettings());
+			
+			if (txn != null)
+			{
+				txn.commit();
+			}
+			
+			// TODO multiple backup 
+			
+			return createKeyMapAndUpdateKeyCache(filteredInstanceToEntity, keys);
+		}
+		catch (RuntimeException e)
+		{
+			if (txn != null && txn.isActive())
+			{
+				txn.rollback();
+			}
+			throw e;
+		}
 		// make a map to return
-		return createKeyMapAndUpdateKeyCache(entities, keys);
 	}
 
 	@Override

@@ -24,6 +24,12 @@ final class IdFieldTranslator extends DecoratingTranslator
 
 	public Set<Property> encode(Object instance, Path path, boolean indexed)
 	{
+		// this check interferes with denormalisation which will encode referenced entities
+//		if (!path.head().isEmpty())
+//		{
+//			throw new IllegalStateException("@Id field should be declared in root entity");
+//		}
+		
 		// key specification may be null if we are in an update as we already have the key
 		if (datastore.encodeKeyDetails != null)
 		{

@@ -226,7 +226,14 @@ public class Path implements Comparable<Path>
 	public Path head()
 	{
 		int index = Strings.lastIndexOf(value, SEPERATORS);
-		return new Path(value.substring(0, index));
+		if (index < 0)
+		{
+			return Path.EMPTY_PATH;
+		}
+		else
+		{
+			return new Path(value.substring(0, index));
+		}
 	}
 	
 	public Path head(int end)
