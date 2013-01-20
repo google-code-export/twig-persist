@@ -1,13 +1,14 @@
 package com.vercer.convert;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Iterator;
 
-import com.google.code.twig.util.generic.Generics;
+import com.vercer.generics.Generics;
 
-public class CollectionToArray extends BaseTypeConverter
+public class CollectionToArray extends TypeConverter
 {
 	private final TypeConverter delegate;
 
@@ -17,24 +18,13 @@ public class CollectionToArray extends BaseTypeConverter
 	}
 	
 	@Override
-	public <T> T convert(Object instance, Type source, Type target) throws CouldNotConvertException
+	public <T> T convert(Object instance, Type source, Type target)
 	{
 		assert Generics.erase(source).isAssignableFrom(instance.getClass());
 		
-		Type sourceElementType;
 		Type targetElementType;
 		
-		Class<?> sourceClass = Generics.erase(source);
 		Class<?> targetClass = Generics.erase(target);
-		
-		if (Collection.class.isAssignableFrom(sourceClass))
-		{
-			sourceElementType = Generics.getTypeParameter(source, Iterable.class.getTypeParameters()[0]);
-		}
-		else
-		{
-			return null;
-		}
 		
 		if (targetClass.isArray())
 		{
@@ -53,12 +43,20 @@ public class CollectionToArray extends BaseTypeConverter
 		for (int i = 0; i < collection.size(); i++)
 		{
 			Object next = iterator.next();
-			next = delegate.convert(next, sourceElementType, targetElementType);
+			next = delegate.convert(next, targetElementType);
 			Array.set(result, i, next);
 		}
 		
 		@SuppressWarnings("unchecked")
 		T cast = (T) result;
 		return cast;
+	}
+
+	@Override
+	public boolean converts(Type source, Type target)
+	{
+		return (target instanceof Class<?> && ((Class<?>) target).isArray()
+				|| target instanceof GenericArrayType) && 
+				Collection.class.isAssignableFrom(Generics.erase(source));
 	}
 }

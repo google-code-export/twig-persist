@@ -7,7 +7,14 @@ public class StringArrayToString implements Converter<String[], String>
 	@Override
 	public String convert(String[] source)
 	{
-		return source[0];
+		if (source.length == 1)
+		{
+			return source[0];
+		}
+		else
+		{
+			return null;
+		}
 	}
 
 }
