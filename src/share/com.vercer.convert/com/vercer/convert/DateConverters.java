@@ -93,7 +93,7 @@ public class DateConverters implements Iterable<Converter<?, ?>>
 			}
 			catch (ParseException e)
 			{
-				throw new IllegalArgumentException("Invalid date format", e);
+				throw new IllegalArgumentException("Illegal date format " + source + " expected " + ((SimpleDateFormat) getFormat()).toPattern(), e);
 			}
 		}
 

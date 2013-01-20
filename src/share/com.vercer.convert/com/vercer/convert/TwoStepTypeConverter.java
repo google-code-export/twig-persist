@@ -2,7 +2,7 @@ package com.vercer.convert;
 
 import java.lang.reflect.Type;
 
-public class TwoStepTypeConverter extends BaseTypeConverter
+public class TwoStepTypeConverter extends TypeConverter
 {
 	private final Type source;
 	private final Type middle;
@@ -18,14 +18,15 @@ public class TwoStepTypeConverter extends BaseTypeConverter
 	}
 	
 	@Override
-	public <T> T convert(Object instance, Type source, Type target) throws CouldNotConvertException
+	public <T> T convert(Object instance, Type source, Type target)
 	{
-		if (source.equals(this.source) && target.equals(this.target))
-		{
-			Object temp = converter.convert(instance, source, middle);
-			return converter.convert(temp, middle, target);
-		}
-		
-		return null;
+		Object temp = converter.convert(instance, source, middle);
+		return converter.convert(temp, middle, target);
+	}
+
+	@Override
+	public boolean converts(Type source, Type target)
+	{
+		return this.source.equals(source) && this.target.equals(target);
 	}
 }
